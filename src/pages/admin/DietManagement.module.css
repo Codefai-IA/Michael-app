@@ -1,0 +1,449 @@
+.content {
+  padding: 0 20px 20px;
+  margin-top: -30px;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+/* Daily Summary Card */
+.dailySummaryCard {
+  padding: 20px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+.dailySummaryCard .sectionTitle {
+  color: white;
+  margin-bottom: 16px;
+}
+
+.dailySummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+}
+
+/* Water Card */
+.waterCard {
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0 0 16px;
+}
+
+.waterField label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.mealsSection {
+  margin-bottom: 24px;
+}
+
+.mealsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mealsHeader .sectionTitle {
+  margin: 0;
+}
+
+.mealCard {
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.mealHeader {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mealHeader > div:first-child {
+  flex: 1;
+}
+
+.mealTime {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.mealTime input {
+  width: 110px;
+}
+
+.deleteButton {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.foodsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.foodItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+}
+
+.foodRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.foodSelectWrapper {
+  flex: 2;
+  min-width: 0;
+}
+
+.quantityWrapper {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.foodRow .deleteButton {
+  width: 36px;
+  height: 36px;
+}
+
+.foodNutrition {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.foodNutrition span {
+  white-space: nowrap;
+}
+
+.addFoodButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.addFoodButton:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.mealTotal {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mealTotalLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mealTotalValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.saveSection {
+  text-align: center;
+}
+
+.savedTimestamp,
+.lastUpdated {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.savedTimestamp {
+  color: #16a34a;
+}
+
+.lastUpdated {
+  color: var(--text-muted);
+}
+
+/* Macro Comparison Panel */
+.comparisonCard {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.comparisonHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.comparisonTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+}
+
+.warningBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #b45309;
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.comparisonTable th {
+  text-align: left;
+  padding: 12px 8px;
+  background: var(--bg-page);
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.comparisonTable th:not(:first-child) {
+  text-align: center;
+}
+
+.comparisonTable td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.comparisonTable td:not(:first-child) {
+  text-align: center;
+}
+
+.nutrientName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.nutrientIcon {
+  font-size: 16px;
+}
+
+.goalValue,
+.currentValue {
+  color: var(--text-secondary);
+}
+
+.currentValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.diffValue {
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.percentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Status Colors */
+.statusGood {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.statusClose {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+}
+
+.statusLow {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.statusHigh {
+  background: rgba(249, 115, 22, 0.1);
+  color: #ea580c;
+}
+
+.statusNeutral {
+  background: var(--bg-page);
+  color: var(--text-muted);
+}
+
+/* Progress Bars */
+.progressBarsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.progressItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.progressLabelName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-page);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressFillGood {
+  background: #22c55e;
+}
+
+.progressFillClose {
+  background: #f59e0b;
+}
+
+.progressFillLow {
+  background: #ef4444;
+}
+
+.progressFillHigh {
+  background: #f97316;
+}
+
+.progressFillNeutral {
+  background: var(--text-muted);
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

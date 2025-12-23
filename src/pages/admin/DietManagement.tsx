@@ -1,0 +1,838 @@
+import { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { Save, Plus, Trash2, Clock, Check, AlertCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { PageContainer, Header } from '../../components/layout';
+import { Card, Input, Button, FoodSelect, Select } from '../../components/ui';
+import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
+
+const MEAL_OPTIONS = [
+  { value: 'Café da Manhã', label: 'Café da Manhã' },
+  { value: 'Lanche da Manhã', label: 'Lanche da Manhã' },
+  { value: 'Almoço', label: 'Almoço' },
+  { value: 'Lanche da Tarde', label: 'Lanche da Tarde' },
+  { value: 'Jantar', label: 'Jantar' },
+  { value: 'Ceia', label: 'Ceia' },
+  { value: 'Pré-Treino', label: 'Pré-Treino' },
+];
+
+import type { Profile, DietPlan, Meal, TabelaTaco } from '../../types/database';
+import styles from './DietManagement.module.css';
+
+interface MealFoodWithNutrition {
+  id: string;
+  meal_id: string;
+  food_name: string;
+  quantity: string;
+  order_index: number;
+  // Valores calculados baseados na quantidade
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
+  // Valores base por 100g (da tabela_taco)
+  calories_per_100g?: number;
+  protein_per_100g?: number;
+  carbs_per_100g?: number;
+  fats_per_100g?: number;
+}
+
+interface MealWithFoods extends Meal {
+  foods: MealFoodWithNutrition[];
+}
+
+interface MacroTotals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
+
+interface MacroGoals {
+  protein_goal: number | null;
+  carbs_goal: number | null;
+  fats_goal: number | null;
+  calories_goal: number | null;
+  fiber_goal: number | null;
+}
+
+type MacroStatus = 'good' | 'close' | 'low' | 'high' | 'neutral';
+
+function getMacroStatus(current: number, goal: number | null): { status: MacroStatus; diff: number; percentage: number } {
+  if (!goal) return { status: 'neutral', diff: 0, percentage: 0 };
+
+  const diff = current - goal;
+  const percentage = Math.round((current / goal) * 100);
+
+  let status: MacroStatus = 'neutral';
+  if (percentage >= 95 && percentage <= 105) status = 'good';
+  else if (percentage < 90) status = 'low';
+  else if (percentage > 110) status = 'high';
+  else status = 'close';
+
+  return { status, diff, percentage };
+}
+
+function getStatusIcon(status: MacroStatus): string {
+  switch (status) {
+    case 'good': return '\u2705';
+    case 'close': return '\uD83D\uDFE1';
+    case 'low': return '\uD83D\uDD34';
+    case 'high': return '\uD83D\uDFE0';
+    default: return '\u26AA';
+  }
+}
+
+export function DietManagement() {
+  const { id } = useParams<{ id: string }>();
+  const [client, setClient] = useState<Profile | null>(null);
+  const [macroGoals, setMacroGoals] = useState<MacroGoals>({
+    protein_goal: null,
+    carbs_goal: null,
+    fats_goal: null,
+    calories_goal: null,
+    fiber_goal: null,
+  });
+  const [dietPlan, setDietPlan] = useState<DietPlan | null>(null);
+  const [meals, setMeals] = useState<MealWithFoods[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      fetchClient();
+      fetchDiet();
+    }
+  }, [id]);
+
+  async function fetchClient() {
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    if (data) {
+      setClient(data);
+      setMacroGoals({
+        protein_goal: data.protein_goal,
+        carbs_goal: data.carbs_goal,
+        fats_goal: data.fats_goal,
+        calories_goal: data.calories_goal,
+        fiber_goal: data.fiber_goal,
+      });
+    }
+  }
+
+  async function fetchDiet() {
+    console.log('=== FETCHING DIET START ===');
+    console.log('User ID:', id);
+
+    try {
+      let { data: plan, error: fetchError } = await supabase
+        .from('diet_plans')
+        .select('*')
+        .eq('client_id', id)
+        .maybeSingle();
+
+      console.log('Fetch result:', plan);
+      if (fetchError) console.log('Fetch error:', fetchError);
+
+      if (!plan) {
+        console.log('No plan found, creating new one...');
+        const { data: newPlan, error: insertError } = await supabase
+          .from('diet_plans')
+          .insert({ client_id: id })
+          .select()
+          .single();
+
+        console.log('Insert result:', newPlan);
+        if (insertError) console.log('Insert error:', insertError);
+        plan = newPlan;
+      }
+
+      if (plan) {
+        setDietPlan(plan);
+        console.log('Diet plan set, fetching meals...');
+
+        const { data: mealsData } = await supabase
+          .from('meals')
+          .select('*')
+          .eq('diet_plan_id', plan.id)
+          .order('order_index');
+
+        console.log('Meals found:', mealsData?.length || 0);
+
+        if (mealsData && mealsData.length > 0) {
+          const mealsWithFoods: MealWithFoods[] = [];
+
+          for (const meal of mealsData) {
+            console.log(`Fetching foods for meal: ${meal.name}`);
+            const { data: foods } = await supabase
+              .from('meal_foods')
+              .select('*')
+              .eq('meal_id', meal.id)
+              .order('order_index');
+
+            console.log(`  Foods found: ${foods?.length || 0}`);
+
+            const foodsWithNutrition: MealFoodWithNutrition[] = [];
+
+            for (const food of foods || []) {
+              console.log(`  Processing food: ${food.food_name}`);
+
+              // Pular se não tiver nome
+              if (!food.food_name) {
+                foodsWithNutrition.push(food);
+                continue;
+              }
+
+              // Buscar dados nutricionais
+              const { data: tacoFood } = await supabase
+                .from('tabela_taco')
+                .select('*')
+                .eq('alimento', food.food_name)
+                .maybeSingle();
+
+              if (tacoFood) {
+                const qty = parseBrazilianNumber(food.quantity);
+                const multiplier = qty / 100;
+
+                // Usa parseBrazilianNumber para converter valores com vírgula
+                const caloriesPer100g = parseBrazilianNumber(tacoFood.caloria);
+                const proteinPer100g = parseBrazilianNumber(tacoFood.proteina);
+                const carbsPer100g = parseBrazilianNumber(tacoFood.carboidrato);
+                const fatsPer100g = parseBrazilianNumber(tacoFood.gordura);
+
+                foodsWithNutrition.push({
+                  ...food,
+                  calories_per_100g: caloriesPer100g,
+                  protein_per_100g: proteinPer100g,
+                  carbs_per_100g: carbsPer100g,
+                  fats_per_100g: fatsPer100g,
+                  calories: caloriesPer100g * multiplier,
+                  protein: proteinPer100g * multiplier,
+                  carbs: carbsPer100g * multiplier,
+                  fats: fatsPer100g * multiplier,
+                });
+              } else {
+                foodsWithNutrition.push(food);
+              }
+            }
+
+            mealsWithFoods.push({ ...meal, foods: foodsWithNutrition });
+          }
+
+          console.log('Setting meals with foods:', mealsWithFoods.length);
+          setMeals(mealsWithFoods);
+        } else {
+          setMeals([]);
+        }
+      }
+
+      console.log('=== FETCHING DIET COMPLETE ===');
+    } catch (error) {
+      console.error('=== FETCH DIET ERROR ===', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Calcular totais por refeição
+  const calculateMealTotals = (foods: MealFoodWithNutrition[]): MacroTotals => {
+    return foods.reduce(
+      (total, food) => ({
+        calories: total.calories + (food.calories || 0),
+        protein: total.protein + (food.protein || 0),
+        carbs: total.carbs + (food.carbs || 0),
+        fats: total.fats + (food.fats || 0),
+      }),
+      { calories: 0, protein: 0, carbs: 0, fats: 0 }
+    );
+  };
+
+  // Calcular totais diários
+  const dailyTotals = useMemo((): MacroTotals => {
+    return meals.reduce(
+      (total, meal) => {
+        const mealTotals = calculateMealTotals(meal.foods);
+        return {
+          calories: total.calories + mealTotals.calories,
+          protein: total.protein + mealTotals.protein,
+          carbs: total.carbs + mealTotals.carbs,
+          fats: total.fats + mealTotals.fats,
+        };
+      },
+      { calories: 0, protein: 0, carbs: 0, fats: 0 }
+    );
+  }, [meals]);
+
+  // Sanitiza dados do alimento para salvar no banco
+  function sanitizeFoodForSave(food: MealFoodWithNutrition) {
+    // Garantir que quantity seja uma string válida
+    const quantityStr = String(food.quantity || '').trim();
+    return {
+      food_name: food.food_name || '',
+      quantity: quantityStr,
+      order_index: Number(food.order_index) || 0,
+    };
+  }
+
+  async function handleSave() {
+    console.log('=== 1. SAVE DIET STARTED ===');
+
+    // Debug: Log todos os dados antes de salvar
+    console.log('dietPlan:', dietPlan);
+    console.log('meals count:', meals.length);
+    meals.forEach((meal, mealIndex) => {
+      console.log(`Meal ${mealIndex}:`, meal.name, `(id: ${meal.id})`);
+      meal.foods.forEach((food, foodIndex) => {
+        console.log(`  Food ${foodIndex}:`, {
+          id: food.id,
+          name: food.food_name,
+          quantity: food.quantity,
+          quantityType: typeof food.quantity,
+          isNaN: isNaN(parseFloat(food.quantity)),
+          order_index: food.order_index,
+        });
+      });
+    });
+
+    if (!dietPlan) {
+      console.error('dietPlan is null - cannot save');
+      alert('Erro: Plano de dieta não carregado. Recarregue a página.');
+      return;
+    }
+
+    setSaving(true);
+    setSaveStatus('idle');
+
+    try {
+      const now = new Date().toISOString();
+      console.log('=== 2. SAVING DIET PLAN ===');
+
+      // Salvar totais calculados no plano
+      const planUpdateData = {
+        daily_calories: Math.round(dailyTotals.calories) || 0,
+        protein_g: Math.round(dailyTotals.protein) || 0,
+        carbs_g: Math.round(dailyTotals.carbs) || 0,
+        fat_g: Math.round(dailyTotals.fats) || 0,
+        water_goal_liters: dietPlan.water_goal_liters || null,
+        notes: dietPlan.notes || null,
+        updated_at: now,
+      };
+      console.log('Plan update data:', planUpdateData);
+
+      const { error: planError } = await supabase
+        .from('diet_plans')
+        .update(planUpdateData)
+        .eq('id', dietPlan.id);
+
+      console.log('=== 3. DIET PLAN UPDATE RESULT:', planError ? 'ERROR' : 'SUCCESS');
+      if (planError) {
+        console.error('Plan error:', planError);
+        throw planError;
+      }
+
+      console.log('=== 4. PROCESSING MEALS ===');
+      for (let mealIdx = 0; mealIdx < meals.length; mealIdx++) {
+        const meal = meals[mealIdx];
+        console.log(`Processing meal ${mealIdx}: ${meal.name} (id: ${meal.id})`);
+
+        let currentMealId = meal.id;
+
+        if (meal.id.startsWith('new-')) {
+          console.log(`  Creating new meal...`);
+          const { data: newMeal, error: mealError } = await supabase
+            .from('meals')
+            .insert({
+              diet_plan_id: dietPlan.id,
+              name: meal.name || '',
+              suggested_time: meal.suggested_time || null,
+              order_index: Number(meal.order_index) || 0,
+            })
+            .select()
+            .single();
+
+          if (mealError) {
+            console.error(`  Meal insert error:`, mealError);
+            throw mealError;
+          }
+          console.log(`  New meal created with id: ${newMeal?.id}`);
+          currentMealId = newMeal?.id || meal.id;
+        } else {
+          console.log(`  Updating existing meal...`);
+          const { error: mealUpdateError } = await supabase
+            .from('meals')
+            .update({
+              name: meal.name || '',
+              suggested_time: meal.suggested_time || null,
+              order_index: Number(meal.order_index) || 0,
+            })
+            .eq('id', meal.id);
+
+          if (mealUpdateError) {
+            console.error(`  Meal update error:`, mealUpdateError);
+            throw mealUpdateError;
+          }
+          console.log(`  Meal updated successfully`);
+        }
+
+        // Processar alimentos da refeição
+        console.log(`  Processing ${meal.foods.length} foods...`);
+        for (let foodIdx = 0; foodIdx < meal.foods.length; foodIdx++) {
+          const food = meal.foods[foodIdx];
+          const sanitizedFood = sanitizeFoodForSave(food);
+          console.log(`    Food ${foodIdx}: ${food.food_name} (id: ${food.id})`);
+          console.log(`    Sanitized:`, sanitizedFood);
+
+          if (food.id.startsWith('new-')) {
+            console.log(`    Inserting new food...`);
+            const { error: foodInsertError } = await supabase.from('meal_foods').insert({
+              meal_id: currentMealId,
+              ...sanitizedFood,
+            });
+            if (foodInsertError) {
+              console.error(`    Food insert error:`, foodInsertError);
+              throw foodInsertError;
+            }
+            console.log(`    Food inserted successfully`);
+          } else {
+            console.log(`    Updating existing food...`);
+            const { error: foodUpdateError } = await supabase
+              .from('meal_foods')
+              .update(sanitizedFood)
+              .eq('id', food.id);
+            if (foodUpdateError) {
+              console.error(`    Food update error:`, foodUpdateError);
+              throw foodUpdateError;
+            }
+            console.log(`    Food updated successfully`);
+          }
+        }
+      }
+
+      console.log('=== 5. FETCHING UPDATED DATA ===');
+      await fetchDiet();
+
+      console.log('=== 6. SAVE COMPLETE ===');
+      setLastSavedAt(now);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    } catch (error) {
+      console.error('=== SAVE ERROR ===', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } finally {
+      console.log('=== 7. FINALLY BLOCK ===');
+      setSaving(false);
+    }
+  }
+
+  function addMeal() {
+    const newMeal: MealWithFoods = {
+      id: `new-${Date.now()}`,
+      diet_plan_id: dietPlan?.id || '',
+      name: '',
+      suggested_time: null,
+      order_index: meals.length,
+      foods: [],
+    };
+    setMeals([...meals, newMeal]);
+  }
+
+  function updateMeal(index: number, field: keyof Meal, value: string | number | null) {
+    const updated = [...meals];
+    updated[index] = { ...updated[index], [field]: value };
+    setMeals(updated);
+  }
+
+  async function removeMeal(index: number) {
+    const meal = meals[index];
+    if (!meal.id.startsWith('new-')) {
+      await supabase.from('meal_foods').delete().eq('meal_id', meal.id);
+      await supabase.from('meals').delete().eq('id', meal.id);
+    }
+    setMeals(meals.filter((_, i) => i !== index));
+  }
+
+  function addFood(mealIndex: number) {
+    const updated = [...meals];
+    const newFood: MealFoodWithNutrition = {
+      id: `new-${Date.now()}`,
+      meal_id: updated[mealIndex].id,
+      food_name: '',
+      quantity: '',
+      order_index: updated[mealIndex].foods.length,
+    };
+    updated[mealIndex].foods.push(newFood);
+    setMeals(updated);
+  }
+
+  function updateFood(
+    mealIndex: number,
+    foodIndex: number,
+    field: keyof MealFoodWithNutrition,
+    value: string | number
+  ) {
+    const updated = [...meals];
+    updated[mealIndex].foods[foodIndex] = {
+      ...updated[mealIndex].foods[foodIndex],
+      [field]: value,
+    };
+    setMeals(updated);
+  }
+
+  function handleFoodSelect(mealIndex: number, foodIndex: number, selectedFood: TabelaTaco) {
+    const updated = [...meals];
+    const currentQty = parseBrazilianNumber(updated[mealIndex].foods[foodIndex].quantity) || 100;
+    const multiplier = currentQty / 100;
+
+    // Valores base por 100g - usando parseBrazilianNumber para converter vírgula
+    const caloriesPer100g = parseBrazilianNumber(selectedFood.caloria);
+    const proteinPer100g = parseBrazilianNumber(selectedFood.proteina);
+    const carbsPer100g = parseBrazilianNumber(selectedFood.carboidrato);
+    const fatsPer100g = parseBrazilianNumber(selectedFood.gordura);
+
+    updated[mealIndex].foods[foodIndex] = {
+      ...updated[mealIndex].foods[foodIndex],
+      food_name: selectedFood.alimento,
+      // Valores base por 100g
+      calories_per_100g: caloriesPer100g,
+      protein_per_100g: proteinPer100g,
+      carbs_per_100g: carbsPer100g,
+      fats_per_100g: fatsPer100g,
+      // Valores calculados
+      calories: caloriesPer100g * multiplier,
+      protein: proteinPer100g * multiplier,
+      carbs: carbsPer100g * multiplier,
+      fats: fatsPer100g * multiplier,
+    };
+    setMeals(updated);
+  }
+
+  function handleQuantityChange(mealIndex: number, foodIndex: number, quantity: string) {
+    const updated = [...meals];
+    const food = updated[mealIndex].foods[foodIndex];
+    const newQty = parseBrazilianNumber(quantity);
+    const multiplier = newQty / 100;
+
+    // Se tem valores base por 100g, recalcular
+    if (food.calories_per_100g !== undefined) {
+      updated[mealIndex].foods[foodIndex] = {
+        ...food,
+        quantity,
+        calories: (food.calories_per_100g || 0) * multiplier,
+        protein: (food.protein_per_100g || 0) * multiplier,
+        carbs: (food.carbs_per_100g || 0) * multiplier,
+        fats: (food.fats_per_100g || 0) * multiplier,
+      };
+    } else {
+      updated[mealIndex].foods[foodIndex] = {
+        ...food,
+        quantity,
+      };
+    }
+    setMeals(updated);
+  }
+
+  async function removeFood(mealIndex: number, foodIndex: number) {
+    const food = meals[mealIndex].foods[foodIndex];
+    if (!food.id.startsWith('new-')) {
+      await supabase.from('meal_foods').delete().eq('id', food.id);
+    }
+    const updated = [...meals];
+    updated[mealIndex].foods = updated[mealIndex].foods.filter((_, i) => i !== foodIndex);
+    setMeals(updated);
+  }
+
+  if (loading) {
+    return (
+      <PageContainer hasBottomNav={false}>
+        <Header title="Gerenciar Dieta" showBack />
+        <div className={styles.loading}>Carregando...</div>
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer hasBottomNav={false}>
+      <Header
+        title="Gerenciar Dieta"
+        subtitle={client?.full_name}
+        showBack
+        rightAction={
+          <Button size="sm" onClick={handleSave} loading={saving}>
+            <Save size={18} />
+            Salvar
+          </Button>
+        }
+      />
+
+      <main className={styles.content}>
+        {/* Comparação com Metas */}
+        <Card className={styles.comparisonCard}>
+          <div className={styles.comparisonHeader}>
+            <h2 className={styles.comparisonTitle}>Comparação com Metas</h2>
+          </div>
+
+          {/* Warning if no goals set */}
+          {!macroGoals.protein_goal && !macroGoals.carbs_goal && !macroGoals.fats_goal && !macroGoals.calories_goal && (
+            <div className={styles.warningBanner}>
+              Metas nutricionais não definidas. Configure na aba de Anamnese.
+            </div>
+          )}
+
+          {/* Comparison Table */}
+          <table className={styles.comparisonTable}>
+            <thead>
+              <tr>
+                <th>Nutriente</th>
+                <th>Meta</th>
+                <th>Atual</th>
+                <th>Diferença</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { name: 'Proteínas', icon: '\uD83E\uDD69', current: dailyTotals.protein, goal: macroGoals.protein_goal, unit: 'g' },
+                { name: 'Carboidratos', icon: '\uD83C\uDF5A', current: dailyTotals.carbs, goal: macroGoals.carbs_goal, unit: 'g' },
+                { name: 'Gorduras', icon: '\uD83E\uDD51', current: dailyTotals.fats, goal: macroGoals.fats_goal, unit: 'g' },
+                { name: 'Calorias', icon: '\uD83D\uDD25', current: dailyTotals.calories, goal: macroGoals.calories_goal, unit: 'kcal' },
+              ].map((macro) => {
+                const { status, diff, percentage } = getMacroStatus(macro.current, macro.goal);
+                return (
+                  <tr key={macro.name}>
+                    <td>
+                      <span className={styles.nutrientName}>
+                        <span className={styles.nutrientIcon}>{macro.icon}</span>
+                        {macro.name}
+                      </span>
+                    </td>
+                    <td className={styles.goalValue}>
+                      {macro.goal ? `${macro.goal}${macro.unit}` : '-'}
+                    </td>
+                    <td className={styles.currentValue}>
+                      {Math.round(macro.current * 10) / 10}{macro.unit}
+                    </td>
+                    <td>
+                      {macro.goal ? (
+                        <span className={`${styles.diffValue} ${styles[`status${status.charAt(0).toUpperCase() + status.slice(1)}`]}`}>
+                          {diff > 0 ? '+' : ''}{Math.round(diff * 10) / 10}{macro.unit}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td>
+                      {macro.goal ? (
+                        <span className={`${styles.percentBadge} ${styles[`status${status.charAt(0).toUpperCase() + status.slice(1)}`]}`}>
+                          {getStatusIcon(status)} {percentage}%
+                        </span>
+                      ) : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Progress Bars */}
+          <div className={styles.progressBarsSection}>
+            {[
+              { name: 'Proteínas', icon: '\uD83E\uDD69', current: dailyTotals.protein, goal: macroGoals.protein_goal, unit: 'g' },
+              { name: 'Carboidratos', icon: '\uD83C\uDF5A', current: dailyTotals.carbs, goal: macroGoals.carbs_goal, unit: 'g' },
+              { name: 'Gorduras', icon: '\uD83E\uDD51', current: dailyTotals.fats, goal: macroGoals.fats_goal, unit: 'g' },
+              { name: 'Calorias', icon: '\uD83D\uDD25', current: dailyTotals.calories, goal: macroGoals.calories_goal, unit: 'kcal' },
+            ].map((macro) => {
+              if (!macro.goal) return null;
+              const { status } = getMacroStatus(macro.current, macro.goal);
+              const percentage = Math.min(100, Math.round((macro.current / macro.goal) * 100));
+              const statusClass = `progressFill${status.charAt(0).toUpperCase() + status.slice(1)}`;
+
+              return (
+                <div key={`bar-${macro.name}`} className={styles.progressItem}>
+                  <div className={styles.progressLabel}>
+                    <span className={styles.progressLabelName}>
+                      {macro.icon} {macro.name}
+                    </span>
+                    <span>{Math.round(macro.current)}/{macro.goal}{macro.unit}</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div
+                      className={`${styles.progressFill} ${styles[statusClass]}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className={styles.legend}>
+            <span className={styles.legendItem}>{'\u2705'} 95-105% = Ideal</span>
+            <span className={styles.legendItem}>{'\uD83D\uDFE1'} 90-95% ou 105-110% = Próximo</span>
+            <span className={styles.legendItem}>{'\uD83D\uDD34'} {'<'}90% = Baixo</span>
+            <span className={styles.legendItem}>{'\uD83D\uDFE0'} {'>'}110% = Alto</span>
+          </div>
+        </Card>
+
+        {/* Resumo Diário - Calculado automaticamente */}
+        <Card className={styles.dailySummaryCard}>
+          <h2 className={styles.sectionTitle}>Resumo Diário</h2>
+          <div className={styles.dailySummaryGrid}>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryValue}>{Math.round(dailyTotals.calories)}</span>
+              <span className={styles.summaryLabel}>kcal</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryValue}>{Math.round(dailyTotals.protein)}g</span>
+              <span className={styles.summaryLabel}>Proteína</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryValue}>{Math.round(dailyTotals.carbs)}g</span>
+              <span className={styles.summaryLabel}>Carbos</span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryValue}>{Math.round(dailyTotals.fats)}g</span>
+              <span className={styles.summaryLabel}>Gordura</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Meta de Água */}
+        <Card className={styles.waterCard}>
+          <div className={styles.waterField}>
+            <label>Meta de água (litros)</label>
+            <Input
+              type="number"
+              step="0.5"
+              value={dietPlan?.water_goal_liters || ''}
+              onChange={(e) =>
+                setDietPlan((prev) =>
+                  prev ? { ...prev, water_goal_liters: Number(e.target.value) } : null
+                )
+              }
+            />
+          </div>
+        </Card>
+
+        <section className={styles.mealsSection}>
+          <div className={styles.mealsHeader}>
+            <h2 className={styles.sectionTitle}>Refeições</h2>
+            <Button size="sm" variant="outline" onClick={addMeal}>
+              <Plus size={16} />
+              Adicionar
+            </Button>
+          </div>
+
+          {meals.map((meal, mealIndex) => {
+            const mealTotals = calculateMealTotals(meal.foods);
+
+            return (
+              <Card key={meal.id} className={styles.mealCard}>
+                <div className={styles.mealHeader}>
+                  <Select
+                    value={meal.name}
+                    onChange={(e) => updateMeal(mealIndex, 'name', e.target.value)}
+                    options={MEAL_OPTIONS}
+                    placeholder="Selecione a refeição"
+                  />
+                  <div className={styles.mealTime}>
+                    <Clock size={18} />
+                    <Input
+                      type="time"
+                      value={meal.suggested_time || ''}
+                      onChange={(e) => updateMeal(mealIndex, 'suggested_time', e.target.value)}
+                    />
+                  </div>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={() => removeMeal(mealIndex)}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+
+                <div className={styles.foodsList}>
+                  {meal.foods.map((food, foodIndex) => (
+                    <div key={food.id} className={styles.foodItem}>
+                      <div className={styles.foodRow}>
+                        <div className={styles.foodSelectWrapper}>
+                          <FoodSelect
+                            value={food.food_name}
+                            onChange={(foodName) =>
+                              updateFood(mealIndex, foodIndex, 'food_name', foodName)
+                            }
+                            onFoodSelect={(selectedFood: TabelaTaco) => {
+                              handleFoodSelect(mealIndex, foodIndex, selectedFood);
+                            }}
+                            placeholder="Buscar alimento..."
+                          />
+                        </div>
+                        <div className={styles.quantityWrapper}>
+                          <Input
+                            type="number"
+                            value={food.quantity}
+                            onChange={(e) =>
+                              handleQuantityChange(mealIndex, foodIndex, e.target.value)
+                            }
+                            placeholder="g"
+                          />
+                        </div>
+                        <button
+                          className={styles.deleteButton}
+                          onClick={() => removeFood(mealIndex, foodIndex)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      {food.calories !== undefined && food.calories > 0 && (
+                        <div className={styles.foodNutrition}>
+                          <span>{Math.round(food.calories)} kcal</span>
+                          <span>P: {Math.round(food.protein || 0)}g</span>
+                          <span>C: {Math.round(food.carbs || 0)}g</span>
+                          <span>G: {Math.round(food.fats || 0)}g</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button className={styles.addFoodButton} onClick={() => addFood(mealIndex)}>
+                  <Plus size={16} />
+                  Adicionar alimento
+                </button>
+
+                {meal.foods.length > 0 && (
+                  <div className={styles.mealTotal}>
+                    <span className={styles.mealTotalLabel}>Total da refeição:</span>
+                    <span className={styles.mealTotalValue}>
+                      {Math.round(mealTotals.calories)} kcal | P: {Math.round(mealTotals.protein)}g | C: {Math.round(mealTotals.carbs)}g | G: {Math.round(mealTotals.fats)}g
+                    </span>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </section>
+
+        <div className={styles.saveSection}>
+          <Button fullWidth onClick={handleSave} loading={saving} variant={saveStatus === 'success' ? 'primary' : saveStatus === 'error' ? 'danger' : 'primary'}>
+            {saveStatus === 'success' ? <Check size={18} /> : saveStatus === 'error' ? <AlertCircle size={18} /> : <Save size={18} />}
+            {saveStatus === 'success' ? 'Salvo com sucesso!' : saveStatus === 'error' ? 'Erro ao salvar' : 'Salvar Dieta'}
+          </Button>
+          {saveStatus === 'success' && lastSavedAt && (
+            <p className={styles.savedTimestamp}>
+              <Clock size={14} />
+              Última atualização: {new Date(lastSavedAt).toLocaleString('pt-BR')}
+            </p>
+          )}
+          {dietPlan?.updated_at && saveStatus === 'idle' && (
+            <p className={styles.lastUpdated}>
+              <Clock size={14} />
+              Última atualização: {new Date(dietPlan.updated_at).toLocaleString('pt-BR')}
+            </p>
+          )}
+        </div>
+      </main>
+    </PageContainer>
+  );
+}
