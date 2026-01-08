@@ -61,13 +61,16 @@ export function Anamnesis() {
     const { data } = await supabase
       .from('anamnesis')
       .select('*')
-      .eq('id', id)
+      .eq('client_id', id)
       .single();
 
     if (data) {
-      // Corrigir valor antigo do enum se existir
+      // Corrigir valores antigos do enum se existirem
       if (data.bowel_frequency === 'once_daily') {
         data.bowel_frequency = 'once_a_day';
+      }
+      if (data.digestion === 'bad') {
+        data.digestion = 'poor';
       }
       setAnamnesis(data);
     }
@@ -80,7 +83,6 @@ export function Anamnesis() {
 
     // Enviar apenas os campos válidos da tabela
     const anamnesisData = {
-      id: id,
       client_id: id,
       meals_per_day: anamnesis.meals_per_day || null,
       water_liters_per_day: anamnesis.water_liters_per_day || null,
@@ -418,7 +420,7 @@ export function Anamnesis() {
             >
               <option value="">Selecione</option>
               <option value="good">Boa</option>
-              <option value="bad">Ruim</option>
+              <option value="poor">Ruim</option>
               <option value="terrible">Péssima</option>
             </select>
           </div>

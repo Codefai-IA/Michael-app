@@ -162,16 +162,24 @@ export function DietManagement() {
         .eq('client_id', id)
         .maybeSingle();
 
-      if (fetchError) console.error('Fetch error:', fetchError);
+      if (fetchError) {
+        console.error('Fetch error:', fetchError);
+        alert('Erro ao buscar plano de dieta: ' + fetchError.message);
+        return;
+      }
 
       if (!plan) {
         const { data: newPlan, error: insertError } = await supabase
           .from('diet_plans')
-          .insert({ client_id: id })
+          .insert({ client_id: id, water_goal_liters: 2 })
           .select()
           .single();
 
-        if (insertError) console.error('Insert error:', insertError);
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          alert('Erro ao criar plano de dieta: ' + insertError.message);
+          return;
+        }
         plan = newPlan;
       }
 
