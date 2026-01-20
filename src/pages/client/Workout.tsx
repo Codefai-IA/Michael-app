@@ -66,7 +66,7 @@ export function Workout() {
   const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog>({});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [autoSaving, setAutoSaving] = useState<Set<string>>(new Set());
-  const autoSaveTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const autoSaveTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const today = getBrasiliaDate();
 
   const fetchAllData = useCallback(async () => {
