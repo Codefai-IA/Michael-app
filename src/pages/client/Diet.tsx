@@ -9,7 +9,8 @@ import type { ExtraMeal } from '../../components/ui';
 import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
 import { formatFoodName } from '../../utils/formatters';
 import { formatQuantityDisplay } from '../../utils/foodUnits';
-import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan } from '../../types/database';
+import { UNIT_TYPES } from '../../constants/foodUnits';
+import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem } from '../../types/database';
 import styles from './Diet.module.css';
 
 // Helper para salvar/carregar dieta selecionada do localStorage
@@ -42,36 +43,52 @@ interface MealFoodWithNutrition extends MealFood {
   display_name?: string; // Nome simplificado para exibicao
 }
 
-interface MealWithNutrition extends Meal {
-  foods: MealFoodWithNutrition[];
+// Substitution item with nutrition data
+interface MealSubstitutionItemWithNutrition extends MealSubstitutionItem {
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
+  display_name?: string;
+}
+
+// Substitution with calculated totals
+interface MealSubstitutionWithNutrition extends Omit<MealSubstitution, 'items'> {
+  items: MealSubstitutionItemWithNutrition[];
   totalCalories: number;
   totalProtein: number;
   totalCarbs: number;
   totalFats: number;
 }
 
+interface MealWithNutrition extends Meal {
+  foods: MealFoodWithNutrition[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFats: number;
+  meal_substitutions_with_nutrition?: MealSubstitutionWithNutrition[];
+}
+
 // Retorna a data atual no fuso horário de Brasília (UTC-3) no formato YYYY-MM-DD
 function getBrasiliaDate(): string {
-  const now = new Date();
-  // Brasília é UTC-3
-  const brasiliaOffset = -3 * 60; // -3 horas em minutos
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const brasiliaTime = new Date(utc + (brasiliaOffset * 60000));
-  return brasiliaTime.toISOString().split('T')[0];
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
 }
 
 // Retorna a data formatada para exibição no header
 function getBrasiliaDisplayDate(): string {
-  const now = new Date();
-  const brasiliaOffset = -3 * 60;
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const brasiliaTime = new Date(utc + (brasiliaOffset * 60000));
-  return brasiliaTime.toLocaleDateString('pt-BR', {
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
     weekday: 'long',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  });
+  }).format(new Date());
 }
 
 export function Diet() {
@@ -87,6 +104,8 @@ export function Diet() {
   const [showAddExtraMeal, setShowAddExtraMeal] = useState(false);
   const [equivalenceGroups, setEquivalenceGroups] = useState<EquivalenceGroupWithFoods[]>([]);
   const [expandedEquivalences, setExpandedEquivalences] = useState<Set<string>>(new Set());
+  // Track which meal option (0 = original, 1+ = substitution index) is selected for each meal
+  const [selectedMealOptions, setSelectedMealOptions] = useState<Record<string, number>>({});
 
   // Multiple diets support
   const [availableDiets, setAvailableDiets] = useState<DietPlan[]>([]);
@@ -308,6 +327,7 @@ export function Diet() {
           name,
           suggested_time,
           order_index,
+          meal_substitutions,
           meal_foods (
             id,
             food_name,
@@ -335,7 +355,7 @@ export function Diet() {
       return;
     }
 
-    // Extrair todos os nomes de alimentos únicos
+    // Extrair todos os nomes de alimentos únicos (incluindo das substituições de refeição)
     const allFoodNames = new Set<string>();
     dietPlanData.meals?.forEach((meal: any) => {
       meal.meal_foods?.forEach((food: any) => {
@@ -343,10 +363,18 @@ export function Diet() {
           allFoodNames.add(food.food_name);
         }
       });
+      // Também coletar alimentos das substituições de refeição
+      meal.meal_substitutions?.forEach((sub: any) => {
+        sub.items?.forEach((item: any) => {
+          if (item.food_name) {
+            allFoodNames.add(item.food_name);
+          }
+        });
+      });
     });
 
     // Buscar dados nutricionais e nomes simplificados de todos os alimentos de uma vez só
-    let nutritionMap = new Map<string, { caloria: string; proteina: string; carboidrato: string; gordura: string; nome_simplificado?: string }>();
+    let nutritionMap = new Map<string, { caloria: string; proteina: string; carboidrato: string; gordura: string; nome_simplificado?: string; peso_por_unidade?: number }>();
 
     if (allFoodNames.size > 0) {
       const { data: tacoData } = await supabase
@@ -358,7 +386,8 @@ export function Diet() {
           carboidrato,
           gordura,
           food_metadata (
-            nome_simplificado
+            nome_simplificado,
+            peso_por_unidade
           )
         `)
         .in('alimento', Array.from(allFoodNames));
@@ -376,6 +405,7 @@ export function Diet() {
             carboidrato: item.carboidrato,
             gordura: item.gordura,
             nome_simplificado: metadata?.nome_simplificado || undefined,
+            peso_por_unidade: metadata?.peso_por_unidade || undefined,
           });
         });
       }
@@ -417,6 +447,60 @@ export function Diet() {
           { calories: 0, protein: 0, carbs: 0, fats: 0 }
         );
 
+        // Processar meal_substitutions com dados nutricionais
+        const substitutionsWithNutrition: MealSubstitutionWithNutrition[] = (meal.meal_substitutions || []).map((sub: any) => {
+          const itemsWithNutrition: MealSubstitutionItemWithNutrition[] = (sub.items || []).map((item: any) => {
+            const nutrition = item.food_name ? nutritionMap.get(item.food_name) : null;
+
+            if (nutrition) {
+              const qtyValue = parseBrazilianNumber(item.quantity);
+              const unitType = item.unit_type || 'gramas';
+
+              // For unit-based items (not grams/ml), convert to grams using peso_por_unidade
+              let gramsForCalculation: number;
+              if (unitType === 'gramas' || unitType === 'ml') {
+                gramsForCalculation = qtyValue;
+              } else {
+                // quantity is the number of units, multiply by peso_por_unidade to get grams
+                const pesoUnidade = nutrition.peso_por_unidade || 100; // fallback to 100g if not set
+                gramsForCalculation = qtyValue * pesoUnidade;
+              }
+
+              const multiplier = gramsForCalculation / 100;
+
+              return {
+                ...item,
+                calories: parseBrazilianNumber(nutrition.caloria) * multiplier,
+                protein: parseBrazilianNumber(nutrition.proteina) * multiplier,
+                carbs: parseBrazilianNumber(nutrition.carboidrato) * multiplier,
+                fats: parseBrazilianNumber(nutrition.gordura) * multiplier,
+                display_name: nutrition.nome_simplificado || undefined,
+              };
+            }
+            return item as MealSubstitutionItemWithNutrition;
+          });
+
+          // Calcular totais da substituição
+          const subTotals = itemsWithNutrition.reduce(
+            (acc, item) => ({
+              calories: acc.calories + (item.calories || 0),
+              protein: acc.protein + (item.protein || 0),
+              carbs: acc.carbs + (item.carbs || 0),
+              fats: acc.fats + (item.fats || 0),
+            }),
+            { calories: 0, protein: 0, carbs: 0, fats: 0 }
+          );
+
+          return {
+            ...sub,
+            items: itemsWithNutrition,
+            totalCalories: subTotals.calories,
+            totalProtein: subTotals.protein,
+            totalCarbs: subTotals.carbs,
+            totalFats: subTotals.fats,
+          };
+        });
+
         return {
           ...meal,
           foods: foodsWithNutrition,
@@ -424,6 +508,7 @@ export function Diet() {
           totalProtein: totals.protein,
           totalCarbs: totals.carbs,
           totalFats: totals.fats,
+          meal_substitutions_with_nutrition: substitutionsWithNutrition.length > 0 ? substitutionsWithNutrition : undefined,
         };
       });
 
@@ -588,6 +673,7 @@ export function Diet() {
           name,
           suggested_time,
           order_index,
+          meal_substitutions,
           meal_foods (
             id,
             food_name,
@@ -618,9 +704,17 @@ export function Diet() {
           allFoodNames.add(food.food_name);
         }
       });
+      // Também coletar alimentos das substituições de refeição
+      meal.meal_substitutions?.forEach((sub: any) => {
+        sub.items?.forEach((item: any) => {
+          if (item.food_name) {
+            allFoodNames.add(item.food_name);
+          }
+        });
+      });
     });
 
-    let nutritionMap = new Map<string, { caloria: string; proteina: string; carboidrato: string; gordura: string; nome_simplificado?: string }>();
+    let nutritionMap = new Map<string, { caloria: string; proteina: string; carboidrato: string; gordura: string; nome_simplificado?: string; peso_por_unidade?: number }>();
 
     if (allFoodNames.size > 0) {
       const { data: tacoData } = await supabase
@@ -632,7 +726,8 @@ export function Diet() {
           carboidrato,
           gordura,
           food_metadata (
-            nome_simplificado
+            nome_simplificado,
+            peso_por_unidade
           )
         `)
         .in('alimento', Array.from(allFoodNames));
@@ -649,6 +744,7 @@ export function Diet() {
             carboidrato: item.carboidrato,
             gordura: item.gordura,
             nome_simplificado: metadata?.nome_simplificado || undefined,
+            peso_por_unidade: metadata?.peso_por_unidade || undefined,
           });
         });
       }
@@ -688,6 +784,59 @@ export function Diet() {
           { calories: 0, protein: 0, carbs: 0, fats: 0 }
         );
 
+        // Processar meal_substitutions com dados nutricionais
+        const substitutionsWithNutrition: MealSubstitutionWithNutrition[] = (meal.meal_substitutions || []).map((sub: any) => {
+          const itemsWithNutrition: MealSubstitutionItemWithNutrition[] = (sub.items || []).map((item: any) => {
+            const nutrition = item.food_name ? nutritionMap.get(item.food_name) : null;
+
+            if (nutrition) {
+              const qtyValue = parseBrazilianNumber(item.quantity);
+              const unitType = item.unit_type || 'gramas';
+
+              // For unit-based items (not grams/ml), convert to grams using peso_por_unidade
+              let gramsForCalculation: number;
+              if (unitType === 'gramas' || unitType === 'ml') {
+                gramsForCalculation = qtyValue;
+              } else {
+                // quantity is the number of units, multiply by peso_por_unidade to get grams
+                const pesoUnidade = nutrition.peso_por_unidade || 100; // fallback to 100g if not set
+                gramsForCalculation = qtyValue * pesoUnidade;
+              }
+
+              const multiplier = gramsForCalculation / 100;
+
+              return {
+                ...item,
+                calories: parseBrazilianNumber(nutrition.caloria) * multiplier,
+                protein: parseBrazilianNumber(nutrition.proteina) * multiplier,
+                carbs: parseBrazilianNumber(nutrition.carboidrato) * multiplier,
+                fats: parseBrazilianNumber(nutrition.gordura) * multiplier,
+                display_name: nutrition.nome_simplificado || undefined,
+              };
+            }
+            return item as MealSubstitutionItemWithNutrition;
+          });
+
+          const subTotals = itemsWithNutrition.reduce(
+            (acc, item) => ({
+              calories: acc.calories + (item.calories || 0),
+              protein: acc.protein + (item.protein || 0),
+              carbs: acc.carbs + (item.carbs || 0),
+              fats: acc.fats + (item.fats || 0),
+            }),
+            { calories: 0, protein: 0, carbs: 0, fats: 0 }
+          );
+
+          return {
+            ...sub,
+            items: itemsWithNutrition,
+            totalCalories: subTotals.calories,
+            totalProtein: subTotals.protein,
+            totalCarbs: subTotals.carbs,
+            totalFats: subTotals.fats,
+          };
+        });
+
         return {
           ...meal,
           foods: foodsWithNutrition,
@@ -695,6 +844,7 @@ export function Diet() {
           totalProtein: totals.protein,
           totalCarbs: totals.carbs,
           totalFats: totals.fats,
+          meal_substitutions_with_nutrition: substitutionsWithNutrition.length > 0 ? substitutionsWithNutrition : undefined,
         };
       });
 
@@ -926,6 +1076,15 @@ export function Diet() {
           <>
             {meals.map((meal) => {
               const isCompleted = completedMeals.includes(meal.id);
+              const hasMealOptions = meal.meal_substitutions_with_nutrition && meal.meal_substitutions_with_nutrition.length > 0;
+              const selectedOption = selectedMealOptions[meal.id] || 0;
+              const totalOptions = hasMealOptions ? meal.meal_substitutions_with_nutrition!.length + 1 : 1;
+
+              // Get calories based on selected option
+              const displayCalories = selectedOption === 0
+                ? meal.totalCalories
+                : meal.meal_substitutions_with_nutrition?.[selectedOption - 1]?.totalCalories || 0;
+
               return (
                 <Card
                   key={meal.id}
@@ -942,6 +1101,28 @@ export function Diet() {
                     <h3 className={`${styles.mealName} ${isCompleted ? styles.completed : ''}`}>
                       {meal.name}
                     </h3>
+
+                    {/* Meal Options Tabs/Pills */}
+                    {hasMealOptions && (
+                      <div
+                        className={styles.mealOptionsTabs}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {Array.from({ length: totalOptions }).map((_, idx) => (
+                          <button
+                            key={idx}
+                            className={`${styles.mealOptionTab} ${selectedOption === idx ? styles.mealOptionTabActive : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMealOptions(prev => ({ ...prev, [meal.id]: idx }));
+                            }}
+                          >
+                            {idx === 0 ? 'Opção 1' : meal.meal_substitutions_with_nutrition![idx - 1].name || `Opção ${idx + 1}`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className={styles.mealMeta}>
                       {meal.suggested_time && (
                         <span className={styles.mealTime}>
@@ -949,9 +1130,9 @@ export function Diet() {
                           {formatTime(meal.suggested_time)}
                         </span>
                       )}
-                      {meal.totalCalories > 0 && (
+                      {displayCalories > 0 && (
                         <span className={styles.mealCalories}>
-                          {Math.round(meal.totalCalories)} kcal
+                          {Math.round(displayCalories)} kcal
                         </span>
                       )}
                     </div>
@@ -1019,8 +1200,23 @@ export function Diet() {
         checked={selectedMeal ? completedMeals.includes(selectedMeal.id) : false}
       >
         <div className={styles.modalContent}>
-          {/* Gráfico de Macros */}
-          {selectedMeal && (selectedMeal.totalProtein > 0 || selectedMeal.totalCarbs > 0) && (
+          {/* Meal Options Tabs in Modal */}
+          {selectedMeal && selectedMeal.meal_substitutions_with_nutrition && selectedMeal.meal_substitutions_with_nutrition.length > 0 && (
+            <div className={styles.mealOptionsTabs}>
+              {Array.from({ length: selectedMeal.meal_substitutions_with_nutrition.length + 1 }).map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`${styles.mealOptionTab} ${(selectedMealOptions[selectedMeal.id] || 0) === idx ? styles.mealOptionTabActive : ''}`}
+                  onClick={() => setSelectedMealOptions(prev => ({ ...prev, [selectedMeal.id]: idx }))}
+                >
+                  {idx === 0 ? 'Opção 1' : selectedMeal.meal_substitutions_with_nutrition![idx - 1].name || `Opção ${idx + 1}`}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Gráfico de Macros - show for original option */}
+          {selectedMeal && (selectedMealOptions[selectedMeal.id] || 0) === 0 && (selectedMeal.totalProtein > 0 || selectedMeal.totalCarbs > 0) && (
             <div className={styles.chartSection}>
               <MacroPieChart
                 protein={selectedMeal.totalProtein}
@@ -1032,9 +1228,28 @@ export function Diet() {
             </div>
           )}
 
+          {/* Gráfico de Macros - show for substitution options */}
+          {selectedMeal && (selectedMealOptions[selectedMeal.id] || 0) > 0 && selectedMeal.meal_substitutions_with_nutrition && (() => {
+            const sub = selectedMeal.meal_substitutions_with_nutrition[(selectedMealOptions[selectedMeal.id] || 0) - 1];
+            return sub && (sub.totalProtein > 0 || sub.totalCarbs > 0) ? (
+              <div className={styles.chartSection}>
+                <MacroPieChart
+                  protein={sub.totalProtein}
+                  carbs={sub.totalCarbs}
+                  fats={sub.totalFats}
+                  calories={sub.totalCalories}
+                  size="md"
+                />
+              </div>
+            ) : null;
+          })()}
+
           <h4 className={styles.modalLabel}>Alimentos:</h4>
-          <ul className={styles.foodList}>
-            {selectedMeal?.foods.map((food) => {
+
+          {/* Show original foods (option 0) */}
+          {selectedMeal && (selectedMealOptions[selectedMeal.id] || 0) === 0 && (
+            <ul className={styles.foodList}>
+              {selectedMeal.foods.map((food) => {
               const foodSubs = getSubstitutionsForFood(food.food_name);
               const isExpanded = expandedFoods.has(food.id);
               const hasSubstitutions = foodSubs.length > 0;
@@ -1131,7 +1346,53 @@ export function Diet() {
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          )}
+
+          {/* Show substitution foods (option > 0) */}
+          {selectedMeal && (selectedMealOptions[selectedMeal.id] || 0) > 0 && selectedMeal.meal_substitutions_with_nutrition && (
+            <ul className={styles.foodList}>
+              {selectedMeal.meal_substitutions_with_nutrition[(selectedMealOptions[selectedMeal.id] || 0) - 1]?.items.map((item, idx) => {
+                // For substitution items, quantity contains the value in the selected unit
+                // If unit_type is not 'gramas'/'ml', treat quantity as units count
+                const unitType = item.unit_type || 'gramas';
+                const qtyValue = parseBrazilianNumber(item.quantity);
+
+                let quantityDisplay: string;
+                if (unitType === 'gramas') {
+                  quantityDisplay = `${qtyValue}g`;
+                } else if (unitType === 'ml') {
+                  quantityDisplay = `${qtyValue}ml`;
+                } else {
+                  // For units (unidade, fatia, colher, etc.), quantity is the count
+                  // Show as "2 unidades" without grams since we don't have accurate gram conversion
+                  const unitsCount = item.quantity_units ?? qtyValue;
+                  const unitInfo = UNIT_TYPES[unitType] || { singular: unitType, plural: unitType };
+                  const label = unitsCount === 1 ? unitInfo.singular : unitInfo.plural;
+                  quantityDisplay = `${unitsCount} ${label}`;
+                }
+
+                return (
+                  <li key={idx} className={styles.foodItemWrapper}>
+                    <div className={styles.foodItem}>
+                      <span className={styles.foodBullet} />
+                      <div className={styles.foodInfo}>
+                        <span className={styles.foodName}>
+                          {item.display_name || formatFoodName(item.food_name)}
+                        </span>
+                        <span className={styles.foodDetails}>
+                          {quantityDisplay}
+                          {item.calories !== undefined && item.calories > 0 && (
+                            <> • {Math.round(item.calories)} kcal</>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
           <Button fullWidth onClick={handleCloseMeal}>
             Fechar

@@ -11,11 +11,12 @@ import styles from './Home.module.css';
 
 // Retorna a data atual no fuso horario de Brasilia
 function getBrasiliaDate(): string {
-  const now = new Date();
-  const brasiliaOffset = -3 * 60;
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const brasiliaTime = new Date(utc + (brasiliaOffset * 60000));
-  return brasiliaTime.toISOString().split('T')[0];
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
 }
 
 export function Home() {
