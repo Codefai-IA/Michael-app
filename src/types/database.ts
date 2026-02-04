@@ -117,6 +117,17 @@ export interface MealSubstitutionItem {
   quantity: string;
   unit_type: UnitType;
   quantity_units: number | null;
+  peso_por_unidade?: number | null;
+  // Valores base por 100g
+  calories_per_100g?: number;
+  protein_per_100g?: number;
+  carbs_per_100g?: number;
+  fats_per_100g?: number;
+  // Valores calculados
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
 }
 
 export interface MealSubstitution {

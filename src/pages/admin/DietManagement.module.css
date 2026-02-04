@@ -896,8 +896,8 @@
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 500px;
-  max-height: 85vh;
+  max-width: 650px;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
@@ -966,6 +966,15 @@
 
 .mealSubFoodItem {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.mealSubFoodRow {
+  display: flex;
   gap: 10px;
   align-items: center;
 }
@@ -1000,4 +1009,39 @@
 
 .mealSubFoodDelete:hover {
   background: rgba(239, 68, 68, 0.2);
+}
+
+.mealSubFoodNutrition {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding-left: 4px;
+}
+
+.mealSubFoodNutrition span {
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.mealSubTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-top: 12px;
+  background: var(--primary);
+  border-radius: var(--radius-md);
+  color: white;
+}
+
+.mealSubTotalLabel {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.mealSubTotalValue {
+  font-size: 0.8rem;
+  opacity: 0.95;
 }
