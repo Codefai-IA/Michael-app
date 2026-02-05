@@ -1018,7 +1018,7 @@ export function DietManagement() {
       };
     } else if (field === 'unit_type' && typeof value === 'string') {
       // Se mudou o tipo de unidade, resetar quantity_units
-      updated[index] = { ...food, [field]: value, quantity_units: null };
+      updated[index] = { ...food, unit_type: value as UnitType, quantity_units: null };
     } else {
       updated[index] = { ...food, [field]: value };
     }
