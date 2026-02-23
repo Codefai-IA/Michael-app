@@ -22,6 +22,11 @@ const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
   { value: 'ml', label: 'Mililitros (ml)' },
   { value: 'unidade', label: 'Unidade' },
   { value: 'fatia', label: 'Fatia' },
+  { value: 'colher_sopa', label: 'Colher de Sopa' },
+  { value: 'colher_cha', label: 'Colher de Cha' },
+  { value: 'xicara', label: 'Xicara' },
+  { value: 'copo', label: 'Copo' },
+  { value: 'porcao', label: 'Porcao' },
 ];
 
 import type { Profile, DietPlan, Meal, TabelaTaco, FoodSubstitution, UnitType, TabelaTacoWithMetadata, MealSubstitution, MealSubstitutionItem } from '../../types/database';
@@ -79,6 +84,7 @@ interface LocalSubstitution {
   original_food: string;
   substitute_food: string;
   substitute_quantity: string;
+  substitute_unit_type: UnitType;
   isNew?: boolean;
   isDeleted?: boolean;
 }
@@ -134,6 +140,7 @@ export function DietManagement() {
   const [editingFoodName, setEditingFoodName] = useState<string | null>(null);
   const [newSubstituteFood, setNewSubstituteFood] = useState('');
   const [newSubstituteQty, setNewSubstituteQty] = useState('');
+  const [newSubstituteUnit, setNewSubstituteUnit] = useState<UnitType>('gramas');
 
   // Meal Substitutions state
   const [showMealSubModal, setShowMealSubModal] = useState(false);
@@ -203,6 +210,7 @@ export function DietManagement() {
             original_food: sub.original_food,
             substitute_food: sub.substitute_food,
             substitute_quantity: sub.substitute_quantity,
+            substitute_unit_type: (sub.substitute_unit_type as UnitType) || 'gramas',
           })));
         } else {
           setSubstitutions([]);
@@ -473,6 +481,7 @@ export function DietManagement() {
           original_food: sub.original_food,
           substitute_food: sub.substitute_food,
           substitute_quantity: sub.substitute_quantity,
+          substitute_unit_type: sub.substitute_unit_type,
         });
         if (insertError) {
           console.error('Substitution insert error:', insertError);
@@ -580,6 +589,7 @@ export function DietManagement() {
           original_food: foodName,
           substitute_food: sub.substitute_food,
           substitute_quantity: sub.substitute_quantity,
+          substitute_unit_type: 'gramas',
           isNew: true,
         });
       });
@@ -912,6 +922,7 @@ export function DietManagement() {
     setEditingFoodName(foodName);
     setNewSubstituteFood('');
     setNewSubstituteQty('');
+    setNewSubstituteUnit('gramas');
     setShowSubstitutionModal(true);
   }
 
@@ -920,6 +931,7 @@ export function DietManagement() {
     setEditingFoodName(null);
     setNewSubstituteFood('');
     setNewSubstituteQty('');
+    setNewSubstituteUnit('gramas');
   }
 
   function addSubstitution() {
@@ -930,12 +942,14 @@ export function DietManagement() {
       original_food: editingFoodName,
       substitute_food: newSubstituteFood,
       substitute_quantity: newSubstituteQty,
+      substitute_unit_type: newSubstituteUnit,
       isNew: true,
     };
 
     setSubstitutions([...substitutions, newSub]);
     setNewSubstituteFood('');
     setNewSubstituteQty('');
+    setNewSubstituteUnit('gramas');
   }
 
   function removeSubstitution(subId: string) {
@@ -1509,7 +1523,7 @@ export function DietManagement() {
                   getSubstitutionsForFood(editingFoodName).map((sub) => (
                     <div key={sub.id} className={styles.substitutionItem}>
                       <span className={styles.substitutionItemText}>
-                        {sub.substitute_food} ({sub.substitute_quantity}g)
+                        {sub.substitute_food} ({sub.substitute_quantity} {sub.substitute_unit_type === 'gramas' ? 'g' : sub.substitute_unit_type === 'ml' ? 'ml' : getUnitLabel(sub.substitute_unit_type, parseFloat(sub.substitute_quantity) || 1)})
                       </span>
                       <button
                         className={styles.substitutionItemDelete}
@@ -1534,12 +1548,19 @@ export function DietManagement() {
                       placeholder="Buscar alimento..."
                     />
                   </div>
+                  <div className={styles.addSubstitutionUnit}>
+                    <Select
+                      value={newSubstituteUnit}
+                      onChange={(e) => setNewSubstituteUnit(e.target.value as UnitType)}
+                      options={UNIT_OPTIONS}
+                    />
+                  </div>
                   <div className={styles.addSubstitutionQty}>
                     <Input
                       type="number"
                       value={newSubstituteQty}
                       onChange={(e) => setNewSubstituteQty(e.target.value)}
-                      placeholder="g"
+                      placeholder={newSubstituteUnit === 'gramas' ? 'g' : newSubstituteUnit === 'ml' ? 'ml' : 'Qtd'}
                     />
                   </div>
                   <Button

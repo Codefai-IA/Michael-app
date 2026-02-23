@@ -24,6 +24,7 @@ import { DietManagement } from './pages/admin/DietManagement';
 import { WorkoutManagement } from './pages/admin/WorkoutManagement';
 import { LibraryManagement } from './pages/admin/LibraryManagement';
 import { GuidelinesManagement } from './pages/admin/GuidelinesManagement';
+import { LoadProgression } from './pages/admin/LoadProgression';
 
 // Helper function for Brasilia date
 function getBrasiliaDate(): string {
@@ -171,6 +172,11 @@ function KeyedWorkoutManagement() {
 function KeyedGuidelinesManagement() {
   const { id } = useParams<{ id: string }>();
   return <GuidelinesManagement key={id} />;
+}
+
+function KeyedLoadProgression() {
+  const { id } = useParams<{ id: string }>();
+  return <LoadProgression key={id} />;
 }
 
 function AppRoutes() {
@@ -325,6 +331,14 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <KeyedGuidelinesManagement />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/aluno/:id/progressao"
+        element={
+          <AdminRoute>
+            <KeyedLoadProgression />
           </AdminRoute>
         }
       />

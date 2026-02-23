@@ -763,8 +763,13 @@
   min-width: 0;
 }
 
+.addSubstitutionUnit {
+  width: 130px;
+  flex-shrink: 0;
+}
+
 .addSubstitutionQty {
-  width: 80px;
+  width: 70px;
   flex-shrink: 0;
 }
 

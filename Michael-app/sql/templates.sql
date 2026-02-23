@@ -284,3 +284,32 @@ CREATE POLICY "Admins can manage food equivalences"
       AND profiles.role = 'admin'
     )
   );
+
+-- =============================================
+-- APP SETTINGS (Global configurations)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  home_video_urls JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+
+-- Admins can read and write
+CREATE POLICY "Admins can manage app_settings" ON app_settings
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+    )
+  );
+
+-- All authenticated users can read (clients need to read videos)
+CREATE POLICY "Authenticated users can read app_settings" ON app_settings
+  FOR SELECT
+  USING (auth.uid() IS NOT NULL);

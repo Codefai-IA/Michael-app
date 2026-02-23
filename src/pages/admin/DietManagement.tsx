@@ -22,6 +22,11 @@ const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
   { value: 'ml', label: 'Mililitros (ml)' },
   { value: 'unidade', label: 'Unidade' },
   { value: 'fatia', label: 'Fatia' },
+  { value: 'colher_sopa', label: 'Colher de Sopa' },
+  { value: 'colher_cha', label: 'Colher de Cha' },
+  { value: 'xicara', label: 'Xicara' },
+  { value: 'copo', label: 'Copo' },
+  { value: 'porcao', label: 'Porcao' },
 ];
 
 import type { Profile, DietPlan, Meal, TabelaTaco, FoodSubstitution, UnitType, TabelaTacoWithMetadata, MealSubstitution, MealSubstitutionItem } from '../../types/database';
@@ -79,6 +84,7 @@ interface LocalSubstitution {
   original_food: string;
   substitute_food: string;
   substitute_quantity: string;
+  substitute_unit_type: UnitType;
   isNew?: boolean;
   isDeleted?: boolean;
 }
@@ -134,6 +140,7 @@ export function DietManagement() {
   const [editingFoodName, setEditingFoodName] = useState<string | null>(null);
   const [newSubstituteFood, setNewSubstituteFood] = useState('');
   const [newSubstituteQty, setNewSubstituteQty] = useState('');
+  const [newSubstituteUnit, setNewSubstituteUnit] = useState<UnitType>('gramas');
 
   // Meal Substitutions state
   const [showMealSubModal, setShowMealSubModal] = useState(false);
@@ -203,6 +210,7 @@ export function DietManagement() {
             original_food: sub.original_food,
             substitute_food: sub.substitute_food,
             substitute_quantity: sub.substitute_quantity,
+            substitute_unit_type: (sub.substitute_unit_type as UnitType) || 'gramas',
           })));
         } else {
           setSubstitutions([]);
@@ -473,6 +481,7 @@ export function DietManagement() {
           original_food: sub.original_food,
           substitute_food: sub.substitute_food,
           substitute_quantity: sub.substitute_quantity,
+          substitute_unit_type: sub.substitute_unit_type,
         });
         if (insertError) {
           console.error('Substitution insert error:', insertError);
@@ -580,6 +589,7 @@ export function DietManagement() {
           original_food: foodName,
           substitute_food: sub.substitute_food,
           substitute_quantity: sub.substitute_quantity,
+          substitute_unit_type: 'gramas',
           isNew: true,
         });
       });
@@ -912,6 +922,7 @@ export function DietManagement() {
     setEditingFoodName(foodName);
     setNewSubstituteFood('');
     setNewSubstituteQty('');
+    setNewSubstituteUnit('gramas');
     setShowSubstitutionModal(true);
   }
 
@@ -920,6 +931,7 @@ export function DietManagement() {
     setEditingFoodName(null);
     setNewSubstituteFood('');
     setNewSubstituteQty('');
+    setNewSubstituteUnit('gramas');
   }
 
   function addSubstitution() {
@@ -930,12 +942,14 @@ export function DietManagement() {
       original_food: editingFoodName,
       substitute_food: newSubstituteFood,
       substitute_quantity: newSubstituteQty,
+      substitute_unit_type: newSubstituteUnit,
       isNew: true,
     };
 
     setSubstitutions([...substitutions, newSub]);
     setNewSubstituteFood('');
     setNewSubstituteQty('');
+    setNewSubstituteUnit('gramas');
   }
 
   function removeSubstitution(subId: string) {
@@ -989,40 +1003,7 @@ export function DietManagement() {
 
   function updateMealSubFood(index: number, field: keyof MealSubstitutionItem, value: string | number | null) {
     const updated = [...mealSubFoods];
-    const food = updated[index];
-
-    // Se mudou a quantidade, recalcular os macros
-    if (field === 'quantity' && typeof value === 'string') {
-      const inputNum = parseBrazilianNumber(value) || 0;
-      let gramsQty: number;
-      let quantityUnits: number | null = null;
-
-      // Se usando unidades, converter para gramas
-      if (food.unit_type !== 'gramas' && food.peso_por_unidade && food.peso_por_unidade > 0) {
-        quantityUnits = inputNum;
-        gramsQty = calculateGramsFromUnits(inputNum, food.peso_por_unidade);
-      } else {
-        gramsQty = inputNum;
-      }
-
-      const multiplier = gramsQty / 100;
-
-      updated[index] = {
-        ...food,
-        quantity: String(Math.round(gramsQty)),
-        quantity_units: quantityUnits,
-        calories: (food.calories_per_100g || 0) * multiplier,
-        protein: (food.protein_per_100g || 0) * multiplier,
-        carbs: (food.carbs_per_100g || 0) * multiplier,
-        fats: (food.fats_per_100g || 0) * multiplier,
-      };
-    } else if (field === 'unit_type' && typeof value === 'string') {
-      // Se mudou o tipo de unidade, resetar quantity_units
-      updated[index] = { ...food, unit_type: value as UnitType, quantity_units: null };
-    } else {
-      updated[index] = { ...food, [field]: value };
-    }
-
+    updated[index] = { ...updated[index], [field]: value };
     setMealSubFoods(updated);
   }
 
@@ -1030,45 +1011,9 @@ export function DietManagement() {
     setMealSubFoods(mealSubFoods.filter((_, i) => i !== index));
   }
 
-  async function handleMealSubFoodSelect(index: number, selectedFood: TabelaTaco) {
+  function handleMealSubFoodSelect(index: number, selectedFood: TabelaTaco) {
     const updated = [...mealSubFoods];
-    const currentFood = updated[index];
-    const currentQty = parseBrazilianNumber(currentFood.quantity) || 100;
-    const multiplier = currentQty / 100;
-
-    // Valores base por 100g
-    const caloriesPer100g = parseBrazilianNumber(selectedFood.caloria);
-    const proteinPer100g = parseBrazilianNumber(selectedFood.proteina);
-    const carbsPer100g = parseBrazilianNumber(selectedFood.carboidrato);
-    const fatsPer100g = parseBrazilianNumber(selectedFood.gordura);
-
-    // Fetch food_metadata to get peso_por_unidade
-    let pesoPorUnidade: number | null = null;
-    const { data: metadata } = await supabase
-      .from('food_metadata')
-      .select('peso_por_unidade')
-      .eq('taco_id', selectedFood.id)
-      .maybeSingle();
-
-    if (metadata) {
-      pesoPorUnidade = metadata.peso_por_unidade;
-    }
-
-    updated[index] = {
-      ...currentFood,
-      food_name: selectedFood.alimento,
-      peso_por_unidade: pesoPorUnidade,
-      // Valores base por 100g
-      calories_per_100g: caloriesPer100g,
-      protein_per_100g: proteinPer100g,
-      carbs_per_100g: carbsPer100g,
-      fats_per_100g: fatsPer100g,
-      // Valores calculados
-      calories: caloriesPer100g * multiplier,
-      protein: proteinPer100g * multiplier,
-      carbs: carbsPer100g * multiplier,
-      fats: fatsPer100g * multiplier,
-    };
+    updated[index] = { ...updated[index], food_name: selectedFood.alimento };
     setMealSubFoods(updated);
   }
 
@@ -1578,7 +1523,7 @@ export function DietManagement() {
                   getSubstitutionsForFood(editingFoodName).map((sub) => (
                     <div key={sub.id} className={styles.substitutionItem}>
                       <span className={styles.substitutionItemText}>
-                        {sub.substitute_food} ({sub.substitute_quantity}g)
+                        {sub.substitute_food} ({sub.substitute_quantity} {sub.substitute_unit_type === 'gramas' ? 'g' : sub.substitute_unit_type === 'ml' ? 'ml' : getUnitLabel(sub.substitute_unit_type, parseFloat(sub.substitute_quantity) || 1)})
                       </span>
                       <button
                         className={styles.substitutionItemDelete}
@@ -1603,12 +1548,19 @@ export function DietManagement() {
                       placeholder="Buscar alimento..."
                     />
                   </div>
+                  <div className={styles.addSubstitutionUnit}>
+                    <Select
+                      value={newSubstituteUnit}
+                      onChange={(e) => setNewSubstituteUnit(e.target.value as UnitType)}
+                      options={UNIT_OPTIONS}
+                    />
+                  </div>
                   <div className={styles.addSubstitutionQty}>
                     <Input
                       type="number"
                       value={newSubstituteQty}
                       onChange={(e) => setNewSubstituteQty(e.target.value)}
-                      placeholder="g"
+                      placeholder={newSubstituteUnit === 'gramas' ? 'g' : newSubstituteUnit === 'ml' ? 'ml' : 'Qtd'}
                     />
                   </div>
                   <Button
@@ -1674,61 +1626,38 @@ export function DietManagement() {
                   <div className={styles.mealSubFoodsList}>
                     {mealSubFoods.map((food, idx) => (
                       <div key={idx} className={styles.mealSubFoodItem}>
-                        <div className={styles.mealSubFoodRow}>
-                          <div className={styles.mealSubFoodSelect}>
-                            <FoodSelect
-                              value={food.food_name}
-                              onChange={(name) => updateMealSubFood(idx, 'food_name', name)}
-                              onFoodSelect={(selected) => handleMealSubFoodSelect(idx, selected)}
-                              placeholder="Buscar alimento..."
-                            />
-                          </div>
-                          <div className={styles.mealSubFoodUnit}>
-                            <Select
-                              value={food.unit_type || 'gramas'}
-                              onChange={(e) => updateMealSubFood(idx, 'unit_type', e.target.value)}
-                              options={UNIT_OPTIONS}
-                            />
-                          </div>
-                          <div className={styles.mealSubFoodQty}>
-                            <Input
-                              type="number"
-                              value={food.unit_type !== 'gramas' && food.quantity_units !== null ? food.quantity_units : food.quantity}
-                              onChange={(e) => updateMealSubFood(idx, 'quantity', e.target.value)}
-                              placeholder={food.unit_type === 'gramas' ? 'g' : food.unit_type === 'ml' ? 'ml' : 'qtd'}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            className={styles.mealSubFoodDelete}
-                            onClick={() => removeMealSubFood(idx)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                        <div className={styles.mealSubFoodSelect}>
+                          <FoodSelect
+                            value={food.food_name}
+                            onChange={(name) => updateMealSubFood(idx, 'food_name', name)}
+                            onFoodSelect={(selected) => handleMealSubFoodSelect(idx, selected)}
+                            placeholder="Buscar alimento..."
+                          />
                         </div>
-                        {food.calories !== undefined && food.calories > 0 && (
-                          <div className={styles.mealSubFoodNutrition}>
-                            <span>{Math.round(food.calories)} kcal</span>
-                            <span>P: {Math.round(food.protein || 0)}g</span>
-                            <span>C: {Math.round(food.carbs || 0)}g</span>
-                            <span>G: {Math.round(food.fats || 0)}g</span>
-                          </div>
-                        )}
+                        <div className={styles.mealSubFoodUnit}>
+                          <Select
+                            value={food.unit_type || 'gramas'}
+                            onChange={(e) => updateMealSubFood(idx, 'unit_type', e.target.value)}
+                            options={UNIT_OPTIONS}
+                          />
+                        </div>
+                        <div className={styles.mealSubFoodQty}>
+                          <Input
+                            type="number"
+                            value={food.quantity}
+                            onChange={(e) => updateMealSubFood(idx, 'quantity', e.target.value)}
+                            placeholder={food.unit_type === 'gramas' ? 'g' : food.unit_type === 'ml' ? 'ml' : 'qtd'}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.mealSubFoodDelete}
+                          onClick={() => removeMealSubFood(idx)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     ))}
-                  </div>
-                )}
-
-                {/* Total de macros da opção */}
-                {mealSubFoods.length > 0 && mealSubFoods.some(f => f.calories && f.calories > 0) && (
-                  <div className={styles.mealSubTotal}>
-                    <span className={styles.mealSubTotalLabel}>Total da opção:</span>
-                    <span className={styles.mealSubTotalValue}>
-                      {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.calories || 0), 0))} kcal |
-                      P: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.protein || 0), 0))}g |
-                      C: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.carbs || 0), 0))}g |
-                      G: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.fats || 0), 0))}g
-                    </span>
                   </div>
                 )}
               </div>

@@ -16,3 +16,4 @@ export { PlanExpiringBanner } from './PlanExpiringBanner';
 export { YouTubeEmbed } from './YouTubeEmbed';
 export { TechniqueBadge } from './TechniqueBadge';
 export { InstallPWA } from './InstallPWA';
+export { VideoCarousel } from './VideoCarousel';

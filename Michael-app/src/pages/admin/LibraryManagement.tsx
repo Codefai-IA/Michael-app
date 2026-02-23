@@ -6,9 +6,10 @@ import { ExerciseLibraryManager } from '../../components/admin/ExerciseLibraryMa
 import { FoodLibraryManager } from '../../components/admin/FoodLibraryManager';
 import { DietTemplatesManager } from '../../components/admin/DietTemplatesManager';
 import { WorkoutTemplatesManager } from '../../components/admin/WorkoutTemplatesManager';
+import { HomeVideosManager } from '../../components/admin/HomeVideosManager';
 import styles from './LibraryManagement.module.css';
 
-type TabType = 'exercises' | 'foods' | 'dietTemplates' | 'workoutTemplates';
+type TabType = 'exercises' | 'foods' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos';
 
 export function LibraryManagement() {
   const navigate = useNavigate();
@@ -51,6 +52,12 @@ export function LibraryManagement() {
         >
           Templates Treino
         </button>
+        <button
+          onClick={() => setActiveTab('homeVideos')}
+          className={`${styles.tab} ${activeTab === 'homeVideos' ? styles.tabActive : ''}`}
+        >
+          Videos
+        </button>
       </div>
 
       <main className={styles.content}>
@@ -65,6 +72,9 @@ export function LibraryManagement() {
         </div>
         <div style={{ display: activeTab === 'workoutTemplates' ? 'block' : 'none' }}>
           <WorkoutTemplatesManager />
+        </div>
+        <div style={{ display: activeTab === 'homeVideos' ? 'block' : 'none' }}>
+          <HomeVideosManager />
         </div>
       </main>
     </PageContainer>

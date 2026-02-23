@@ -1,11 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Pill, FlaskConical, Utensils, FileText, Check } from 'lucide-react';
+import { Pill, FlaskConical, Utensils, FileText, Check, Play, Trash2, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button } from '../../components/ui';
 import type { Profile } from '../../types/database';
 import styles from './GuidelinesManagement.module.css';
+
+interface VideoItem {
+  url: string;
+  title: string;
+}
 
 export function GuidelinesManagement() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +21,9 @@ export function GuidelinesManagement() {
     free_meal_video_url: '',
     general_notes: ''
   });
+  const [videoUrls, setVideoUrls] = useState<VideoItem[]>([]);
+  const [newVideoUrl, setNewVideoUrl] = useState('');
+  const [newVideoTitle, setNewVideoTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,6 +57,7 @@ export function GuidelinesManagement() {
         free_meal_video_url: guidelinesResult.data.free_meal_video_url || '',
         general_notes: guidelinesResult.data.general_notes || ''
       });
+      setVideoUrls(guidelinesResult.data.video_urls || []);
     }
 
     setLoading(false);
@@ -69,6 +78,18 @@ export function GuidelinesManagement() {
     setSaving(true);
 
     try {
+      // Auto-add pending video URL if user forgot to click "Adicionar"
+      let videosToSave = [...videoUrls];
+      if (newVideoUrl.trim()) {
+        const pendingId = getVideoId(newVideoUrl);
+        if (pendingId) {
+          videosToSave.push({ url: newVideoUrl.trim(), title: newVideoTitle.trim() });
+          setVideoUrls(videosToSave);
+          setNewVideoUrl('');
+          setNewVideoTitle('');
+        }
+      }
+
       // Check if record exists
       const { data: existing } = await supabase
         .from('patient_guidelines')
@@ -82,27 +103,28 @@ export function GuidelinesManagement() {
         manipulated_supplements: formData.manipulated_supplements || null,
         free_meal_video_url: formData.free_meal_video_url || null,
         general_notes: formData.general_notes || null,
+        video_urls: videosToSave,
         updated_at: new Date().toISOString()
       };
 
-      let error;
+      let result;
 
       if (existing) {
-        // Update
-        const result = await supabase
+        result = await supabase
           .from('patient_guidelines')
           .update(guidelinesData)
-          .eq('id', existing.id);
-        error = result.error;
+          .eq('id', existing.id)
+          .select()
+          .single();
       } else {
-        // Insert
-        const result = await supabase
+        result = await supabase
           .from('patient_guidelines')
-          .insert(guidelinesData);
-        error = result.error;
+          .insert(guidelinesData)
+          .select()
+          .single();
       }
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -127,6 +149,24 @@ export function GuidelinesManagement() {
       if (match) return match[1];
     }
     return '';
+  };
+
+  const handleAddVideo = () => {
+    if (!newVideoUrl.trim()) return;
+    const videoId = getVideoId(newVideoUrl);
+    if (!videoId) {
+      alert('Cole um link valido do YouTube');
+      return;
+    }
+    setVideoUrls(prev => [...prev, { url: newVideoUrl.trim(), title: newVideoTitle.trim() }]);
+    setNewVideoUrl('');
+    setNewVideoTitle('');
+    setSaved(false);
+  };
+
+  const handleRemoveVideo = (index: number) => {
+    setVideoUrls(prev => prev.filter((_, i) => i !== index));
+    setSaved(false);
   };
 
   const videoId = getVideoId(formData.free_meal_video_url);
@@ -243,6 +283,69 @@ export function GuidelinesManagement() {
             placeholder="Outras orientacoes, lembretes ou informacoes importantes..."
             rows={5}
           />
+        </Card>
+
+        {/* Videos do Carrossel */}
+        <Card className={styles.fieldCard}>
+          <div className={styles.fieldHeader}>
+            <div className={`${styles.fieldIcon} ${styles.videos}`}>
+              <Play size={20} />
+            </div>
+            <label className={styles.fieldLabel}>Videos (Carrossel)</label>
+          </div>
+          <p className={styles.fieldHint} style={{ marginTop: 0, marginBottom: 12 }}>
+            Adicione videos do YouTube que aparecerao na aba Orientacoes deste paciente
+          </p>
+
+          {/* Current video list */}
+          {videoUrls.map((video, index) => {
+            const vid = getVideoId(video.url);
+            return (
+              <div key={index} className={styles.videoItem}>
+                <div className={styles.videoItemInfo}>
+                  {vid && (
+                    <img
+                      src={`https://img.youtube.com/vi/${vid}/default.jpg`}
+                      alt=""
+                      className={styles.videoThumb}
+                    />
+                  )}
+                  <div className={styles.videoItemText}>
+                    <span className={styles.videoItemTitle}>{video.title || 'Sem titulo'}</span>
+                    <span className={styles.videoItemUrl}>{video.url}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveVideo(index)}
+                  className={styles.removeBtn}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Add new video form */}
+          <div className={styles.addVideoForm}>
+            <input
+              type="url"
+              value={newVideoUrl}
+              onChange={(e) => setNewVideoUrl(e.target.value)}
+              className={styles.input}
+              placeholder="https://youtube.com/watch?v=..."
+            />
+            <input
+              type="text"
+              value={newVideoTitle}
+              onChange={(e) => setNewVideoTitle(e.target.value)}
+              className={styles.input}
+              placeholder="Titulo do video (opcional)"
+            />
+            <Button variant="outline" onClick={handleAddVideo} size="sm">
+              <Plus size={16} /> Adicionar Video
+            </Button>
+          </div>
         </Card>
 
         {/* Save Button */}

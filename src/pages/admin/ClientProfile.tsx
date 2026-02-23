@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy } from 'lucide-react';
+import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
@@ -552,6 +552,21 @@ export function ClientProfile() {
                       Não configurado
                     </>
                   )}
+                </span>
+              </div>
+              <ChevronRight size={20} className={styles.menuArrow} />
+            </Card>
+          </Link>
+
+          <Link to={`/admin/aluno/${id}/progressao`} className={styles.menuLink}>
+            <Card hoverable className={styles.menuItem}>
+              <div className={styles.menuIcon}>
+                <TrendingUp size={22} />
+              </div>
+              <div className={styles.menuContent}>
+                <span className={styles.menuText}>Progressao de Cargas</span>
+                <span className={styles.menuStatus}>
+                  Evolucao de peso por exercicio
                 </span>
               </div>
               <ChevronRight size={20} className={styles.menuArrow} />

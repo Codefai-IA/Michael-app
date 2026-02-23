@@ -103,6 +103,7 @@ export interface FoodSubstitution {
   original_food: string;
   substitute_food: string;
   substitute_quantity: string;
+  substitute_unit_type: UnitType;
 }
 
 export interface TemplateFoodSubstitution {
@@ -266,6 +267,13 @@ export interface ExerciseLogRecord {
   created_at: string;
 }
 
+export interface AppSettings {
+  id: string;
+  home_video_urls: Array<{ url: string; title: string }> | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -353,6 +361,11 @@ export interface Database {
         Row: ExerciseLogRecord;
         Insert: Omit<ExerciseLogRecord, 'id' | 'created_at'>;
         Update: Partial<Omit<ExerciseLogRecord, 'id'>>;
+      };
+      app_settings: {
+        Row: AppSettings;
+        Insert: Omit<AppSettings, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<AppSettings, 'id'>>;
       };
     };
   };

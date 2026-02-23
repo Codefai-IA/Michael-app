@@ -5,9 +5,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
 import { PageContainer, BottomNav } from '../../components/layout';
-import { Card, ProgressBar } from '../../components/ui';
+import { Card, ProgressBar, VideoCarousel } from '../../components/ui';
 import type { DailyProgress } from '../../types/database';
 import styles from './Home.module.css';
+
+interface VideoItem {
+  url: string;
+  title: string;
+}
 
 // Retorna a data atual no fuso horario de Brasilia
 function getBrasiliaDate(): string {
@@ -23,6 +28,7 @@ export function Home() {
   const { profile } = useAuth();
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [weeklyStats, setWeeklyStats] = useState({ workouts: 0, meals: 0, totalWorkouts: 7, totalMeals: 7 });
+  const [videoUrls, setVideoUrls] = useState<VideoItem[]>([]);
 
   const fetchAllData = useCallback(async () => {
     if (!profile?.id) return;
@@ -31,8 +37,8 @@ export function Home() {
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
-    // Buscar progresso de hoje e semanal em paralelo
-    const [todayResult, weekResult] = await Promise.all([
+    // Buscar progresso de hoje, semanal e videos globais em paralelo
+    const [todayResult, weekResult, settingsResult] = await Promise.all([
       supabase
         .from('daily_progress')
         .select('*')
@@ -44,7 +50,12 @@ export function Home() {
         .select('*')
         .eq('client_id', profile.id)
         .gte('date', weekStart.toISOString().split('T')[0])
-        .lte('date', today)
+        .lte('date', today),
+      supabase
+        .from('app_settings')
+        .select('home_video_urls')
+        .limit(1)
+        .maybeSingle()
     ]);
 
     if (todayResult.data) {
@@ -57,6 +68,10 @@ export function Home() {
       const workouts = weekResult.data.filter(d => d.exercises_completed?.length > 0).length;
       const meals = weekResult.data.filter(d => d.meals_completed?.length > 0).length;
       setWeeklyStats({ workouts, meals, totalWorkouts: 7, totalMeals: 7 });
+    }
+
+    if (settingsResult.data?.home_video_urls) {
+      setVideoUrls(settingsResult.data.home_video_urls as VideoItem[]);
     }
   }, [profile?.id]);
 
@@ -105,6 +120,8 @@ export function Home() {
             className={styles.bannerImage}
           />
         </a>
+
+        <VideoCarousel videos={videoUrls} />
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Hoje</h2>

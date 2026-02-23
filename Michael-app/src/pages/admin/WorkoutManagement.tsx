@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Save, Plus, Trash2, GripVertical, Check, AlertCircle, Clock, FileText } from 'lucide-react';
+import { Save, Plus, Trash2, GripVertical, Check, AlertCircle, Clock, FileText, ArrowRightLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Input, Button, ExerciseSelect } from '../../components/ui';
@@ -140,14 +140,18 @@ export function WorkoutManagement() {
       if (planUpdateError) throw planUpdateError;
 
       for (const workout of dailyWorkouts) {
-        // Skip days with no exercises and no workout type
-        if (!workout.workout_type && workout.exercises.length === 0) {
+        const hasContent = workout.workout_type || workout.exercises.length > 0;
+        const isNewDay = workout.id.startsWith('new-');
+
+        // Skip days that are new AND empty (never saved, nothing to save)
+        if (isNewDay && !hasContent) {
           continue;
         }
 
         let workoutId = workout.id;
 
-        if (workout.id.startsWith('new-')) {
+        if (isNewDay && hasContent) {
+          // Create new daily_workout for this day
           const { data: newWorkout, error: workoutError } = await supabase
             .from('daily_workouts')
             .insert({
@@ -162,7 +166,8 @@ export function WorkoutManagement() {
           if (newWorkout) {
             workoutId = newWorkout.id;
           }
-        } else {
+        } else if (!isNewDay) {
+          // Update existing daily_workout (even if empty - might have been cleared by a move)
           const { error: updateError } = await supabase
             .from('daily_workouts')
             .update({ workout_type: workout.workout_type })
@@ -199,6 +204,7 @@ export function WorkoutManagement() {
             const { error: updateExerciseError } = await supabase
               .from('exercises')
               .update({
+                daily_workout_id: workoutId,
                 name: exercise.name,
                 sets: exercise.sets,
                 reps: exercise.reps,
@@ -404,6 +410,31 @@ export function WorkoutManagement() {
     );
   }
 
+  function moveWorkoutToDay(targetDay: number) {
+    if (targetDay === selectedDay) return;
+
+    setDailyWorkouts(prev => {
+      const updated = [...prev];
+      const sourceIndex = updated.findIndex(w => w.day_of_week === selectedDay);
+      const targetIndex = updated.findIndex(w => w.day_of_week === targetDay);
+
+      if (sourceIndex === -1 || targetIndex === -1) return prev;
+
+      // Swap workout_type and exercises between the two days
+      const sourceType = updated[sourceIndex].workout_type;
+      const sourceExercises = updated[sourceIndex].exercises;
+      const targetType = updated[targetIndex].workout_type;
+      const targetExercises = updated[targetIndex].exercises;
+
+      updated[sourceIndex] = { ...updated[sourceIndex], workout_type: targetType, exercises: targetExercises };
+      updated[targetIndex] = { ...updated[targetIndex], workout_type: sourceType, exercises: sourceExercises };
+
+      return updated;
+    });
+
+    setSelectedDay(targetDay);
+  }
+
   const currentWorkout = getCurrentWorkout();
 
   if (loading) {
@@ -458,6 +489,30 @@ export function WorkoutManagement() {
               placeholder="Ex: Peito e Triceps"
             />
           </div>
+
+          {/* Move workout to another day */}
+          {currentWorkout && (currentWorkout.workout_type || currentWorkout.exercises.length > 0) && (
+            <div className={styles.moveSection}>
+              <ArrowRightLeft size={16} />
+              <span className={styles.moveLabel}>Mover para:</span>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) moveWorkoutToDay(Number(e.target.value));
+                }}
+                className={styles.moveSelect}
+              >
+                <option value="">Selecione o dia...</option>
+                {DAYS.map((day, index) => (
+                  index !== selectedDay && (
+                    <option key={index} value={index}>
+                      {day}
+                    </option>
+                  )
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className={styles.exercisesHeader}>
             <h3 className={styles.exercisesTitle}>Exercícios</h3>

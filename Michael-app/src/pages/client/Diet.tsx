@@ -8,7 +8,7 @@ import { Card, Checkbox, Button, Modal, MacroPieChart, DailyMacrosSummary, AddEx
 import type { ExtraMeal } from '../../components/ui';
 import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
 import { formatFoodName } from '../../utils/formatters';
-import { formatQuantityDisplay } from '../../utils/foodUnits';
+import { formatQuantityDisplay, getUnitLabel } from '../../utils/foodUnits';
 import { UNIT_TYPES } from '../../constants/foodUnits';
 import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem } from '../../types/database';
 import styles from './Diet.module.css';
@@ -342,7 +342,8 @@ export function Diet() {
           diet_plan_id,
           original_food,
           substitute_food,
-          substitute_quantity
+          substitute_quantity,
+          substitute_unit_type
         )
       `)
       .eq('id', dietToLoad.id)
@@ -688,7 +689,8 @@ export function Diet() {
           diet_plan_id,
           original_food,
           substitute_food,
-          substitute_quantity
+          substitute_quantity,
+          substitute_unit_type
         )
       `)
       .eq('id', dietId)
@@ -1301,7 +1303,7 @@ export function Diet() {
                       {foodSubs.map((sub) => (
                         <div key={sub.id} className={styles.substitutionRow}>
                           <span className={styles.substitutionArrow}>→</span>
-                          <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}g)</span>
+                          <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}{sub.substitute_unit_type === 'gramas' ? 'g' : sub.substitute_unit_type === 'ml' ? 'ml' : ` ${getUnitLabel(sub.substitute_unit_type || 'gramas', parseFloat(sub.substitute_quantity) || 1)}`})</span>
                         </div>
                       ))}
                     </div>

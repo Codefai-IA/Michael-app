@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
-import { Card } from '../../components/ui';
+import { Card, VideoCarousel } from '../../components/ui';
 import styles from './OrientacoesGerais.module.css';
 
 interface Guidelines {
@@ -12,6 +12,7 @@ interface Guidelines {
   manipulated_supplements: string | null;
   free_meal_video_url: string | null;
   general_notes: string | null;
+  video_urls: Array<{url: string; title: string}> | null;
 }
 
 export function OrientacoesGerais() {
@@ -80,7 +81,8 @@ export function OrientacoesGerais() {
     guidelines.recommended_supplements ||
     guidelines.manipulated_supplements ||
     guidelines.free_meal_video_url ||
-    guidelines.general_notes
+    guidelines.general_notes ||
+    (guidelines.video_urls && guidelines.video_urls.length > 0)
   );
 
   return (
@@ -158,6 +160,11 @@ export function OrientacoesGerais() {
                   />
                 </div>
               </Card>
+            )}
+
+            {/* Video Carousel */}
+            {guidelines.video_urls && guidelines.video_urls.length > 0 && (
+              <VideoCarousel videos={guidelines.video_urls} />
             )}
 
             {/* Observacoes Gerais */}
