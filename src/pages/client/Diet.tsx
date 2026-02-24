@@ -282,14 +282,22 @@ export function Diet() {
 
   async function fetchDiet() {
     console.log('[Diet] fetchDiet started - profile?.id:', profile?.id);
+    if (!profile?.id) {
+      console.log('[Diet] fetchDiet - no profile.id, aborting');
+      return;
+    }
 
     // 1. First, fetch all available diets for this client
-    const { data: dietsData } = await supabase
+    const { data: dietsData, error: dietsError } = await supabase
       .from('diet_plans')
       .select('*')
-      .eq('client_id', profile!.id)
+      .eq('client_id', profile.id)
       .order('display_order', { ascending: true })
       .order('created_at', { ascending: true });
+
+    if (dietsError) {
+      console.error('[Diet] fetchDiet - error fetching diet_plans:', dietsError.message, dietsError.code, dietsError.details);
+    }
 
     if (!dietsData || dietsData.length === 0) {
       console.log('[Diet] fetchDiet - NO diets found, returning');
@@ -318,7 +326,7 @@ export function Diet() {
     }
 
     // 3. Now fetch the meals for the selected diet
-    const { data: dietPlanData } = await supabase
+    const { data: dietPlanData, error: mealsError } = await supabase
       .from('diet_plans')
       .select(`
         id,
@@ -342,14 +350,17 @@ export function Diet() {
           diet_plan_id,
           original_food,
           substitute_food,
-          substitute_quantity,
-          substitute_unit_type
+          substitute_quantity
         )
       `)
       .eq('id', dietToLoad.id)
       .single();
 
     console.log('[Diet] fetchDiet - supabase query returned, dietPlanData:', !!dietPlanData);
+
+    if (mealsError) {
+      console.error('[Diet] fetchDiet - error fetching meals:', mealsError.message, mealsError.code, mealsError.details);
+    }
 
     if (!dietPlanData) {
       console.log('[Diet] fetchDiet - NO dietPlanData, returning');
@@ -521,12 +532,13 @@ export function Diet() {
 
   async function fetchProgress() {
     console.log('[Diet] fetchProgress started');
+    if (!profile?.id) return;
     const today = getBrasiliaDate();
 
     const { data } = await supabase
       .from('daily_progress')
       .select('meals_completed')
-      .eq('client_id', profile!.id)
+      .eq('client_id', profile.id)
       .eq('date', today)
       .maybeSingle();
 
@@ -582,6 +594,7 @@ export function Diet() {
   // Buscar refeições extras do banco de dados
   async function fetchExtraMeals() {
     console.log('[Diet] fetchExtraMeals started');
+    if (!profile?.id) return;
     const today = getBrasiliaDate();
 
     try {
@@ -607,7 +620,7 @@ export function Diet() {
             fats
           )
         `)
-        .eq('client_id', profile!.id)
+        .eq('client_id', profile?.id)
         .eq('date', today);
 
       if (error) {
@@ -689,8 +702,7 @@ export function Diet() {
           diet_plan_id,
           original_food,
           substitute_food,
-          substitute_quantity,
-          substitute_unit_type
+          substitute_quantity
         )
       `)
       .eq('id', dietId)
@@ -1303,7 +1315,7 @@ export function Diet() {
                       {foodSubs.map((sub) => (
                         <div key={sub.id} className={styles.substitutionRow}>
                           <span className={styles.substitutionArrow}>→</span>
-                          <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}{sub.substitute_unit_type === 'gramas' ? 'g' : sub.substitute_unit_type === 'ml' ? 'ml' : ` ${getUnitLabel(sub.substitute_unit_type || 'gramas', parseFloat(sub.substitute_quantity) || 1)}`})</span>
+                          <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}g)</span>
                         </div>
                       ))}
                     </div>
