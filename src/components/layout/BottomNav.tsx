@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, ClipboardList, TrendingUp, Utensils, Dumbbell, User } from 'lucide-react';
+import { Home, ClipboardList, TrendingUp, Utensils, Dumbbell, Trophy, User } from 'lucide-react';
 import styles from './BottomNav.module.css';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/app/progresso', icon: TrendingUp, label: 'Progresso' },
   { to: '/app/dieta', icon: Utensils, label: 'Dieta' },
   { to: '/app/treino', icon: Dumbbell, label: 'Treino' },
+  { to: '/app/ranking', icon: Trophy, label: 'Ranking' },
   { to: '/app/perfil', icon: User, label: 'Perfil' },
 ];
 

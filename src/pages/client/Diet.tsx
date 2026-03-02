@@ -11,6 +11,7 @@ import { formatFoodName } from '../../utils/formatters';
 import { formatQuantityDisplay, getUnitLabel } from '../../utils/foodUnits';
 import { UNIT_TYPES } from '../../constants/foodUnits';
 import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem } from '../../types/database';
+import { maybeAwardDietPoints } from '../../lib/points';
 import styles from './Diet.module.css';
 
 // Helper para salvar/carregar dieta selecionada do localStorage
@@ -984,6 +985,11 @@ export function Diet() {
         });
 
         if (error) throw error;
+      }
+
+      // Award points when first meal of the day is checked
+      if (!isCompleted && completedMeals.length === 0) {
+        maybeAwardDietPoints(profile!.id, today);
       }
     } catch (error) {
       console.error('Erro ao salvar progresso:', error);

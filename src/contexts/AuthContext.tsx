@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { subscribeToPush } from '../lib/pushNotifications';
 import type { Profile } from '../types/database';
 
 // Timeout máximo para verificação de autenticação (5 segundos)
@@ -140,6 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsAdmin(roleFromDb);
             // Atualizar cache com role do banco
             setCachedRole(userProfile.role, existingSession.user.id);
+            // Subscribe to push notifications for client users
+            if (!roleFromDb) {
+              subscribeToPush(existingSession.user.id);
+            }
           }
         } else {
           // Sem sessão - limpar tudo
@@ -285,6 +290,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Salvar no cache
       if (userProfile) {
         setCachedRole(userProfile.role, data.user.id);
+      }
+
+      // Subscribe to push notifications for client users
+      if (!isUserAdmin) {
+        subscribeToPush(data.user.id);
       }
 
       return { error: null, isAdmin: isUserAdmin };

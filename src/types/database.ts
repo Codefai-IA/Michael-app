@@ -270,8 +270,45 @@ export interface ExerciseLogRecord {
 export interface AppSettings {
   id: string;
   home_video_urls: Array<{ url: string; title: string }> | null;
+  ranking_monthly_gift: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MonthlyPoints {
+  id: string;
+  client_id: string;
+  year_month: string;
+  workout_points: number;
+  diet_points: number;
+  water_points: number;
+  total_points: number;
+  days_with_workout: number;
+  days_with_diet: number;
+  days_with_water: number;
+  updated_at: string;
+}
+
+export interface PointsLog {
+  id: string;
+  client_id: string;
+  date: string;
+  action_type: 'workout_day' | 'diet_day' | 'water_day';
+  points: number;
+  created_at: string;
+}
+
+export interface PushSubscription {
+  id: string;
+  client_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+}
+
+export interface RankingEntry extends MonthlyPoints {
+  profiles: Pick<Profile, 'full_name' | 'photo_url'>;
 }
 
 export interface Database {
@@ -366,6 +403,21 @@ export interface Database {
         Row: AppSettings;
         Insert: Omit<AppSettings, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<AppSettings, 'id'>>;
+      };
+      monthly_points: {
+        Row: MonthlyPoints;
+        Insert: Omit<MonthlyPoints, 'id' | 'total_points' | 'updated_at'>;
+        Update: Partial<Omit<MonthlyPoints, 'id' | 'total_points'>>;
+      };
+      points_log: {
+        Row: PointsLog;
+        Insert: Omit<PointsLog, 'id' | 'created_at'>;
+        Update: Partial<Omit<PointsLog, 'id'>>;
+      };
+      push_subscriptions: {
+        Row: PushSubscription;
+        Insert: Omit<PushSubscription, 'id' | 'created_at'>;
+        Update: Partial<Omit<PushSubscription, 'id'>>;
       };
     };
   };

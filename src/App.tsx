@@ -14,6 +14,7 @@ import { Workout } from './pages/client/Workout';
 import { Diet } from './pages/client/Diet';
 import { Progress } from './pages/client/Progress';
 import { Profile } from './pages/client/Profile';
+import { Ranking } from './pages/client/Ranking';
 import { OrientacoesGerais } from './pages/client/OrientacoesGerais';
 
 // Admin pages
@@ -273,6 +274,14 @@ function AppRoutes() {
         element={
           <ClientRoute>
             <Progress />
+          </ClientRoute>
+        }
+      />
+      <Route
+        path="/app/ranking"
+        element={
+          <ClientRoute>
+            <Ranking />
           </ClientRoute>
         }
       />

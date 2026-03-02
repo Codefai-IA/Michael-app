@@ -7,9 +7,10 @@ import { FoodLibraryManager } from '../../components/admin/FoodLibraryManager';
 import { DietTemplatesManager } from '../../components/admin/DietTemplatesManager';
 import { WorkoutTemplatesManager } from '../../components/admin/WorkoutTemplatesManager';
 import { HomeVideosManager } from '../../components/admin/HomeVideosManager';
+import { RankingGiftManager } from '../../components/admin/RankingGiftManager';
 import styles from './LibraryManagement.module.css';
 
-type TabType = 'exercises' | 'foods' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos';
+type TabType = 'exercises' | 'foods' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'ranking';
 
 export function LibraryManagement() {
   const navigate = useNavigate();
@@ -58,6 +59,12 @@ export function LibraryManagement() {
         >
           Videos
         </button>
+        <button
+          onClick={() => setActiveTab('ranking')}
+          className={`${styles.tab} ${activeTab === 'ranking' ? styles.tabActive : ''}`}
+        >
+          Ranking
+        </button>
       </div>
 
       <main className={styles.content}>
@@ -75,6 +82,9 @@ export function LibraryManagement() {
         </div>
         <div style={{ display: activeTab === 'homeVideos' ? 'block' : 'none' }}>
           <HomeVideosManager />
+        </div>
+        <div style={{ display: activeTab === 'ranking' ? 'block' : 'none' }}>
+          <RankingGiftManager />
         </div>
       </main>
     </PageContainer>

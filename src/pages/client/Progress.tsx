@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } fr
 import { TrendingDown, TrendingUp, Droplets, Plus, Minus, CalendarDays, CheckCircle2, Clock, Scale } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { maybeAwardWaterPoints } from '../../lib/points';
 import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, ProgressBar, Button, Input } from '../../components/ui';
@@ -313,6 +314,12 @@ export function Progress() {
         }
 
         if (updateError) throw updateError;
+
+        // Award 2 points if water goal reached (fire-and-forget)
+        if (valueToSave >= waterGoal && clientId) {
+          console.log('Water goal reached! Awarding points...', { valueToSave, waterGoal, clientId, today });
+          maybeAwardWaterPoints(clientId, today);
+        }
       } catch (error) {
         console.error('Erro ao atualizar água:', error);
       }

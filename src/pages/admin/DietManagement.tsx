@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Save, Plus, Trash2, Clock, Check, AlertCircle, FileText, RefreshCw, X, ChevronUp, ChevronDown, Layers, Copy } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { notifyDietUpdated } from '../../lib/notifications';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Input, Button, FoodSelect, Select } from '../../components/ui';
 import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
@@ -493,6 +494,11 @@ export function DietManagement() {
       setLastSavedAt(now);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 5000);
+
+      // Notify client that their diet was updated (fire-and-forget)
+      if (id) {
+        notifyDietUpdated(id);
+      }
     } catch (error) {
       console.error('Save error:', error);
       setSaveStatus('error');

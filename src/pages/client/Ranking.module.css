@@ -1,0 +1,37 @@
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  padding: 24px 20px 60px;
+  border-radius: 0 0 var(--radius-3xl) var(--radius-3xl);
+  text-align: center;
+  position: relative;
+}
+
+.logo {
+  position: absolute;
+  top: 24px;
+  right: 20px;
+  height: 40px;
+  width: auto;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 4px 0 0;
+}
+
+.content {
+  padding: 0 20px 20px;
+  margin-top: -40px;
+  position: relative;
+  z-index: 1;
+}

@@ -6,6 +6,7 @@ import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, Checkbox, YouTubeEmbed, TechniqueBadge } from '../../components/ui';
 import type { DailyWorkout, Exercise } from '../../types/database';
+import { maybeAwardWorkoutPoints } from '../../lib/points';
 import styles from './Workout.module.css';
 
 // Retorna a data atual no fuso horário de Brasília
@@ -255,6 +256,11 @@ export function Workout() {
         meals_completed: [],
         water_consumed_ml: 0,
       });
+    }
+
+    // Award points when ALL exercises for the day are completed
+    if (!isCompleted && newCompleted.length === exercises.length && exercises.length > 0) {
+      maybeAwardWorkoutPoints(profile!.id, today);
     }
   }
 
