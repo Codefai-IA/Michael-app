@@ -1,10 +1,11 @@
+/// <reference lib="webworker" />
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
-declare let self: ServiceWorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope;
 
 // Workbox precaching (vite-plugin-pwa injects the manifest here)
 precacheAndRoute(self.__WB_MANIFEST);
@@ -47,7 +48,7 @@ registerRoute(
 
 // --- Push Notification Handlers ---
 
-self.addEventListener('push', (event) => {
+self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
 
   const data = event.data.json();
@@ -66,7 +67,7 @@ self.addEventListener('push', (event) => {
   );
 });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
   const url = event.notification.data?.url || '/';
@@ -75,8 +76,8 @@ self.addEventListener('notificationclick', (event) => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(url);
-          return client.focus();
+          (client as WindowClient).navigate(url);
+          return (client as WindowClient).focus();
         }
       }
       return self.clients.openWindow(url);

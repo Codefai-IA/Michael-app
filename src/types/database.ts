@@ -103,7 +103,7 @@ export interface FoodSubstitution {
   original_food: string;
   substitute_food: string;
   substitute_quantity: string;
-  substitute_unit_type: UnitType;
+  substitute_unit_type?: UnitType;
 }
 
 export interface TemplateFoodSubstitution {
