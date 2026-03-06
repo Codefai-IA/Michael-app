@@ -1,11 +1,88 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp } from 'lucide-react';
+import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
-import type { Profile, DietPlan, WorkoutPlan } from '../../types/database';
+import type { Profile, DietPlan, WorkoutPlan, WeightHistory } from '../../types/database';
 import styles from './ClientProfile.module.css';
+
+
+function WeightChart({ weightHistory }: { weightHistory: WeightHistory[] }) {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
+
+  const chartData = weightHistory.slice(0, 7).reverse();
+  const maxWeight = Math.max(...chartData.map(w => Number(w.weight_kg)));
+  const minWeight = Math.min(...chartData.map(w => Number(w.weight_kg)));
+  const range = maxWeight - minWeight || 1;
+
+  const heights = chartData.map(record =>
+    Math.round(((Number(record.weight_kg) - minWeight) / range) * 40 + 60)
+  );
+
+  useLayoutEffect(() => {
+    const updateLines = () => {
+      if (!chartRef.current) return;
+      const chartRect = chartRef.current.getBoundingClientRect();
+      const newLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+      for (let i = 0; i < dotsRef.current.length - 1; i++) {
+        const dot1 = dotsRef.current[i];
+        const dot2 = dotsRef.current[i + 1];
+        if (dot1 && dot2) {
+          const rect1 = dot1.getBoundingClientRect();
+          const rect2 = dot2.getBoundingClientRect();
+          newLines.push({
+            x1: rect1.left - chartRect.left + rect1.width / 2,
+            y1: rect1.top - chartRect.top + rect1.height / 2,
+            x2: rect2.left - chartRect.left + rect2.width / 2,
+            y2: rect2.top - chartRect.top + rect2.height / 2,
+          });
+        }
+      }
+      setLines(newLines);
+    };
+
+    const timer = setTimeout(updateLines, 50);
+    window.addEventListener('resize', updateLines);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateLines);
+    };
+  }, [chartData.length, heights]);
+
+  return (
+    <div className={styles.weightChart} ref={chartRef}>
+      <svg className={styles.chartLines}>
+        {lines.map((line, index) => (
+          <line
+            key={index}
+            x1={line.x1} y1={line.y1}
+            x2={line.x2} y2={line.y2}
+            className={styles.svgConnectorLine}
+          />
+        ))}
+      </svg>
+      {chartData.map((record, index) => (
+        <div key={record.id} className={styles.chartBar}>
+          <span className={styles.barValue}>{Number(record.weight_kg).toFixed(1)}kg</span>
+          <div className={styles.barContainer} style={{ height: `${heights[index]}px` }}>
+            <div
+              className={styles.barDot}
+              ref={el => { dotsRef.current[index] = el; }}
+            />
+            <div className={styles.bar} />
+          </div>
+          <span className={styles.barLabel}>
+            {new Date(record.recorded_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function ClientProfile() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +90,7 @@ export function ClientProfile() {
   const [client, setClient] = useState<Profile | null>(null);
   const [dietPlans, setDietPlans] = useState<DietPlan[]>([]);
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
+  const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -43,8 +121,9 @@ export function ClientProfile() {
     setClient(null);
     setDietPlans([]);
     setWorkoutPlan(null);
+    setWeightHistory([]);
 
-    const [clientResult, dietResult, workoutResult] = await Promise.all([
+    const [clientResult, dietResult, workoutResult, weightResult] = await Promise.all([
       supabase
         .from('profiles')
         .select('*')
@@ -61,7 +140,13 @@ export function ClientProfile() {
         .select('*')
         .eq('client_id', id)
         .order('created_at', { ascending: false })
-        .limit(1)
+        .limit(1),
+      supabase
+        .from('weight_history')
+        .select('*')
+        .eq('client_id', id)
+        .order('recorded_at', { ascending: false })
+        .limit(10)
     ]);
 
     if (clientResult.data) {
@@ -76,6 +161,10 @@ export function ClientProfile() {
 
     if (workoutResult.data?.[0]) {
       setWorkoutPlan(workoutResult.data[0]);
+    }
+
+    if (weightResult.data) {
+      setWeightHistory(weightResult.data);
     }
 
     setLoading(false);
@@ -344,6 +433,10 @@ export function ClientProfile() {
   const bmi = height > 0 && client.current_weight_kg
     ? client.current_weight_kg / (height * height)
     : 0;
+  const startingWeight = client.starting_weight_kg ?? 0;
+  const currentWeight = client.current_weight_kg ?? 0;
+  const goalWeight = client.goal_weight_kg ?? 0;
+  const weightDiff = startingWeight > 0 && currentWeight > 0 ? startingWeight - currentWeight : 0;
 
   return (
     <PageContainer hasBottomNav={false}>
@@ -389,6 +482,98 @@ export function ClientProfile() {
               <span className={styles.statValue}>{bmi > 0 ? bmi.toFixed(1) : '-'}</span>
             </div>
           </div>
+        </Card>
+
+
+        {/* Weight Evolution Section */}
+        <Card className={styles.weightEvolutionCard}>
+          <h3 className={styles.weightEvolutionTitle}>
+            <Scale size={20} />
+            Evolucao de Peso
+          </h3>
+
+          <div className={styles.weightSummary}>
+            <div className={styles.weightSummaryItem}>
+              <span className={styles.weightSummaryLabel}>Inicial</span>
+              <span className={styles.weightSummaryValue}>
+                {startingWeight > 0 ? `${startingWeight.toFixed(1)}kg` : '--'}
+              </span>
+            </div>
+            <div className={styles.weightSummaryItem}>
+              <span className={styles.weightSummaryLabel}>Atual</span>
+              <span className={`${styles.weightSummaryValue} ${styles.weightCurrent}`}>
+                {currentWeight > 0 ? `${currentWeight.toFixed(1)}kg` : '--'}
+              </span>
+            </div>
+            <div className={styles.weightSummaryItem}>
+              <span className={styles.weightSummaryLabel}>Meta</span>
+              <span className={styles.weightSummaryValue}>
+                {goalWeight > 0 ? `${goalWeight.toFixed(1)}kg` : '--'}
+              </span>
+            </div>
+          </div>
+
+          {weightDiff !== 0 && currentWeight > 0 && (
+            <div className={`${styles.weightDiffBadge} ${weightDiff > 0 ? styles.weightLost : styles.weightGained}`}>
+              {weightDiff > 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
+              <span>
+                {weightDiff > 0
+                  ? `Perdeu ${weightDiff.toFixed(1)}kg desde o inicio`
+                  : `Ganhou ${Math.abs(weightDiff).toFixed(1)}kg desde o inicio`
+                }
+              </span>
+            </div>
+          )}
+
+          {goalWeight > 0 && currentWeight > 0 && (
+            <div className={styles.goalRemainingBadge}>
+              <Target size={14} />
+              <span>
+                {Math.abs(currentWeight - goalWeight).toFixed(1)}kg para a meta
+              </span>
+            </div>
+          )}
+
+          {weightHistory.length > 1 && (
+            <WeightChart weightHistory={weightHistory} />
+          )}
+
+          {weightHistory.length > 0 ? (
+            <div className={styles.weightHistoryList}>
+              <h4 className={styles.weightHistoryTitle}>Historico Recente</h4>
+              {weightHistory.slice(0, 5).map((record, index) => {
+                const prevRecord = weightHistory[index + 1];
+                const diff = prevRecord ? Number(record.weight_kg) - Number(prevRecord.weight_kg) : 0;
+
+                return (
+                  <div key={record.id} className={styles.weightHistoryItem}>
+                    <span className={styles.weightHistoryDate}>
+                      {new Date(record.recorded_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </span>
+                    <div className={styles.weightHistoryRight}>
+                      <span className={styles.weightHistoryWeight}>
+                        {Number(record.weight_kg).toFixed(1)}kg
+                      </span>
+                      {diff !== 0 && (
+                        <span className={`${styles.weightHistoryTrend} ${diff < 0 ? styles.trendDown : styles.trendUp}`}>
+                          {diff < 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                          {Math.abs(diff).toFixed(1)}kg
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.weightEmpty}>
+              <p>Nenhum registro de peso</p>
+            </div>
+          )}
         </Card>
 
         {/* Plan Dates Section */}

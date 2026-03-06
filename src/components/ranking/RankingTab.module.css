@@ -3,6 +3,46 @@
   flex-direction: column;
   gap: 16px;
 }
+/* ======================== */
+/* Prize Banner             */
+/* ======================== */
+
+.prizeBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 50px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.prizeBannerIcon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.prizeBannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #1a1a1a;
+}
+
+.prizeBannerText strong {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.prizeBannerText span {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
 
 /* Loading State */
 .loadingState {
@@ -245,7 +285,7 @@
 .monthTitle {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0;
   text-transform: capitalize;
 }
@@ -446,7 +486,7 @@
 }
 
 /* ======================== */
-/* Empty & Prize            */
+/* Empty State              */
 /* ======================== */
 
 .emptyState {
@@ -468,21 +508,4 @@
   font-size: 13px !important;
   color: var(--text-muted);
 }
-
-.prizeInfo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  background: rgba(243, 152, 91, 0.15);
-  border-radius: var(--radius-lg);
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.prizeInfo strong {
-  color: #1a1a1a;
-  font-weight: 700;
-}
+

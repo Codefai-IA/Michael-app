@@ -540,3 +540,239 @@
 .newDietButtons button {
   flex: 1;
 }
+
+/* Weight Evolution Section */
+.weightEvolutionCard {
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.weightEvolutionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.weightSummary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.weightSummaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+}
+
+.weightSummaryLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.weightSummaryValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.weightCurrent {
+  color: var(--primary);
+}
+
+.weightDiffBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.weightLost {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.weightGained {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.goalRemainingBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* Weight Chart */
+.weightChart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 4px;
+  padding: 16px 0;
+  position: relative;
+  min-height: 140px;
+  margin-bottom: 16px;
+}
+
+.chartLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.svgConnectorLine {
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.chartBar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  z-index: 2;
+}
+
+.barValue {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.barContainer {
+  width: 100%;
+  max-width: 28px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.barDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 0 2px var(--primary);
+  z-index: 3;
+  margin-bottom: -4px;
+}
+
+.bar {
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to top, var(--primary-light), var(--primary));
+  border-radius: 3px;
+  opacity: 0.4;
+}
+
+.barLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  white-space: nowrap;
+}
+
+/* Weight History List */
+.weightHistoryList {
+  border-top: 1px solid var(--border-light);
+  padding-top: 16px;
+}
+
+.weightHistoryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.weightHistoryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.weightHistoryItem:last-child {
+  border-bottom: none;
+}
+
+.weightHistoryDate {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.weightHistoryRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weightHistoryWeight {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.weightHistoryTrend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trendDown {
+  color: #16a34a;
+}
+
+.trendUp {
+  color: #ef4444;
+}
+
+.weightEmpty {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.weightEmpty p {
+  margin: 0;
+}

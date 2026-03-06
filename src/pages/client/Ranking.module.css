@@ -5,6 +5,7 @@
   border-radius: 0 0 var(--radius-3xl) var(--radius-3xl);
   text-align: center;
   position: relative;
+  z-index: 2;
 }
 
 .logo {

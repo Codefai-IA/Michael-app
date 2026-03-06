@@ -159,6 +159,15 @@ export function RankingTab() {
 
   return (
     <div className={styles.container}>
+      {/* Prize Banner - Top */}
+      <div className={styles.prizeBanner}>
+        <span className={styles.prizeBannerIcon}>🏆</span>
+        <div className={styles.prizeBannerText}>
+          <strong>1° lugar ganha:</strong>
+          <span>WHEY PROTEIN + CREATINA</span>
+        </div>
+      </div>
+
       {/* Last Month Winner Banner - only from April 2026 onwards */}
       {showLastMonthWinner && lastMonthWinners.length > 0 && lastMonthWinners[0] && (
         <div className={styles.winnerBanner}>
@@ -277,12 +286,6 @@ export function RankingTab() {
           <p className={styles.emptyHint}>Complete treinos e dietas para aparecer no ranking!</p>
         </Card>
       )}
-
-      {/* Prize Info */}
-      <div className={styles.prizeInfo}>
-        <Trophy size={16} />
-        <span>{monthlyGift ? <>1° lugar ganha: <strong>{monthlyGift}</strong></> : '1° lugar ganha um premio no final do mes!'}</span>
-      </div>
     </div>
   );
 }
