@@ -973,6 +973,7 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .mealSubFoodSelect {
@@ -1005,4 +1006,21 @@
 
 .mealSubFoodDelete:hover {
   background: rgba(239, 68, 68, 0.2);
+}
+
+.mealSubFoodMacros {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--accent);
+  width: 100%;
+  padding: 0 0 4px;
+}
+
+.mealSubTotals {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
 }

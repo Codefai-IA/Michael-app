@@ -592,6 +592,24 @@
   color: var(--primary);
 }
 
+/* Goal Weight Edit */
+.goalWeightEdit {
+  padding: 16px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.goalWeightField {
+  margin-bottom: 12px;
+}
+
+.goalWeightField label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .weightDiffBadge {
   display: flex;
   align-items: center;

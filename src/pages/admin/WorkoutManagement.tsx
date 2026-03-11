@@ -76,20 +76,24 @@ export function WorkoutManagement() {
     if (plan) {
       setWorkoutPlan(plan);
 
-      // Buscar daily workouts e todos os exercicios em paralelo
-      const [dailyResult, exercisesResult] = await Promise.all([
-        supabase
-          .from('daily_workouts')
-          .select('*')
-          .eq('workout_plan_id', plan.id),
-        supabase
+      // Buscar daily workouts primeiro
+      const { data: dailyData } = await supabase
+        .from('daily_workouts')
+        .select('*')
+        .eq('workout_plan_id', plan.id);
+
+      const dailyIds = (dailyData || []).map(d => d.id);
+
+      // Buscar exercicios apenas dos daily_workouts deste plano
+      const allExercises: Exercise[] = [];
+      if (dailyIds.length > 0) {
+        const { data: exercisesData } = await supabase
           .from('exercises')
           .select('*')
-          .order('order_index')
-      ]);
-
-      const dailyData = dailyResult.data || [];
-      const allExercises = exercisesResult.data || [];
+          .in('daily_workout_id', dailyIds)
+          .order('order_index');
+        if (exercisesData) allExercises.push(...exercisesData);
+      }
 
       // Criar mapa de exercicios por daily_workout_id para lookup rapido
       const exercisesByWorkout = new Map<string, typeof allExercises>();
@@ -102,7 +106,7 @@ export function WorkoutManagement() {
       const workoutsWithExercises: DailyWorkoutWithExercises[] = [];
 
       for (let day = 0; day < 7; day++) {
-        const existing = dailyData.find((d) => d.day_of_week === day);
+        const existing = (dailyData || []).find((d) => d.day_of_week === day);
         if (existing) {
           const exercises = exercisesByWorkout.get(existing.id) || [];
           workoutsWithExercises.push({ ...existing, exercises });

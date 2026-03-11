@@ -1009,7 +1009,32 @@ export function DietManagement() {
 
   function updateMealSubFood(index: number, field: keyof MealSubstitutionItem, value: string | number | null) {
     const updated = [...mealSubFoods];
-    updated[index] = { ...updated[index], [field]: value };
+    const food = { ...updated[index], [field]: value };
+
+    // Recalculate macros when quantity or unit_type changes
+    if ((field === 'quantity' || field === 'unit_type') && food.calories_per_100g !== undefined) {
+      const inputNum = parseBrazilianNumber(String(field === 'quantity' ? value : food.quantity)) || 0;
+      const unitType = field === 'unit_type' ? String(value) : food.unit_type;
+
+      let gramsQty: number;
+      if (unitType !== 'gramas' && food.peso_por_unidade && food.peso_por_unidade > 0) {
+        food.quantity_units = inputNum;
+        gramsQty = calculateGramsFromUnits(inputNum, food.peso_por_unidade);
+        food.quantity = String(Math.round(gramsQty));
+      } else {
+        gramsQty = inputNum;
+        food.quantity_units = null;
+        if (field === 'quantity') food.quantity = String(value);
+      }
+
+      const multiplier = gramsQty / 100;
+      food.calories = (food.calories_per_100g || 0) * multiplier;
+      food.protein = (food.protein_per_100g || 0) * multiplier;
+      food.carbs = (food.carbs_per_100g || 0) * multiplier;
+      food.fats = (food.fats_per_100g || 0) * multiplier;
+    }
+
+    updated[index] = food;
     setMealSubFoods(updated);
   }
 
@@ -1017,9 +1042,41 @@ export function DietManagement() {
     setMealSubFoods(mealSubFoods.filter((_, i) => i !== index));
   }
 
-  function handleMealSubFoodSelect(index: number, selectedFood: TabelaTaco) {
+  async function handleMealSubFoodSelect(index: number, selectedFood: TabelaTaco) {
+    const caloriesPer100g = parseBrazilianNumber(selectedFood.caloria);
+    const proteinPer100g = parseBrazilianNumber(selectedFood.proteina);
+    const carbsPer100g = parseBrazilianNumber(selectedFood.carboidrato);
+    const fatsPer100g = parseBrazilianNumber(selectedFood.gordura);
+
+    let pesoPorUnidade: number | null = null;
+    const { data: metadata } = await supabase
+      .from('food_metadata')
+      .select('peso_por_unidade')
+      .eq('taco_id', selectedFood.id)
+      .maybeSingle();
+    if (metadata) {
+      pesoPorUnidade = metadata.peso_por_unidade;
+    }
+
     const updated = [...mealSubFoods];
-    updated[index] = { ...updated[index], food_name: selectedFood.alimento };
+    const currentQty = parseBrazilianNumber(updated[index].quantity) || 100;
+    const multiplier = currentQty / 100;
+
+    updated[index] = {
+      ...updated[index],
+      food_name: selectedFood.alimento,
+      unit_type: 'gramas',
+      quantity_units: null,
+      peso_por_unidade: pesoPorUnidade,
+      calories_per_100g: caloriesPer100g,
+      protein_per_100g: proteinPer100g,
+      carbs_per_100g: carbsPer100g,
+      fats_per_100g: fatsPer100g,
+      calories: caloriesPer100g * multiplier,
+      protein: proteinPer100g * multiplier,
+      carbs: carbsPer100g * multiplier,
+      fats: fatsPer100g * multiplier,
+    };
     setMealSubFoods(updated);
   }
 
@@ -1662,8 +1719,28 @@ export function DietManagement() {
                         >
                           <Trash2 size={14} />
                         </button>
+                        {food.calories !== undefined && food.calories > 0 && (
+                          <div className={styles.mealSubFoodMacros}>
+                            <span>{Math.round(food.calories)} kcal</span>
+                            <span>P: {Math.round(food.protein || 0)}g</span>
+                            <span>C: {Math.round(food.carbs || 0)}g</span>
+                            <span>G: {Math.round(food.fats || 0)}g</span>
+                          </div>
+                        )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {mealSubFoods.some(f => f.calories && f.calories > 0) && (
+                  <div className={styles.mealSubTotals}>
+                    <span className={styles.mealTotalLabel}>Total da opcao:</span>
+                    <span className={styles.mealTotalValue}>
+                      {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.calories || 0), 0))} kcal |{' '}
+                      P: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.protein || 0), 0))}g |{' '}
+                      C: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.carbs || 0), 0))}g |{' '}
+                      G: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.fats || 0), 0))}g
+                    </span>
                   </div>
                 )}
               </div>

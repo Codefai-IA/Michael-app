@@ -9,6 +9,7 @@ import { Login } from './pages/auth/Login';
 import { AdminLogin } from './pages/auth/AdminLogin';
 
 // Client pages
+import { GoalSelection } from './pages/client/GoalSelection';
 import { Home } from './pages/client/Home';
 import { Workout } from './pages/client/Workout';
 import { Diet } from './pages/client/Diet';
@@ -66,6 +67,13 @@ function ClientRoute({ children }: { children: React.ReactNode }) {
   // Admin tentando acessar área de aluno -> redireciona para admin
   if (isAdmin && !loading) {
     return <Navigate to="/admin" replace />;
+  }
+
+  // Onboarding: redireciona para tela de objetivo se não completou
+  const needsOnboarding = profile && !profile.onboarding_completed;
+  const isOnboardingPage = location.pathname === '/app/objetivo';
+  if (needsOnboarding && !isOnboardingPage && !loading) {
+    return <Navigate to="/app/objetivo" replace />;
   }
 
   // Check if plan expired (allow access to profile page)
@@ -237,6 +245,14 @@ function AppRoutes() {
       />
 
       {/* ========== ROTAS DO ALUNO (/app/*) ========== */}
+      <Route
+        path="/app/objetivo"
+        element={
+          <ClientRoute>
+            <GoalSelection />
+          </ClientRoute>
+        }
+      />
       <Route
         path="/app"
         element={

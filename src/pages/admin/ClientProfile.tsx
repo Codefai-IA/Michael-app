@@ -94,6 +94,11 @@ export function ClientProfile() {
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Goal weight state
+  const [goalWeightInput, setGoalWeightInput] = useState('');
+  const [savingGoalWeight, setSavingGoalWeight] = useState(false);
+  const [goalWeightSaved, setGoalWeightSaved] = useState(false);
+
   // Plan dates state
   const [planStartDate, setPlanStartDate] = useState('');
   const [planEndDate, setPlanEndDate] = useState('');
@@ -153,6 +158,7 @@ export function ClientProfile() {
       setClient(clientResult.data);
       setPlanStartDate(clientResult.data.plan_start_date || '');
       setPlanEndDate(clientResult.data.plan_end_date || '');
+      setGoalWeightInput(clientResult.data.goal_weight_kg?.toString() || '');
     }
 
     if (dietResult.data) {
@@ -200,6 +206,34 @@ export function ClientProfile() {
       console.error('Error saving plan dates:', error);
     } finally {
       setSavingDates(false);
+    }
+  }
+
+  async function handleSaveGoalWeight() {
+    if (!id) return;
+
+    setSavingGoalWeight(true);
+
+    try {
+      const value = goalWeightInput ? Number(goalWeightInput) : null;
+      await supabase
+        .from('profiles')
+        .update({
+          goal_weight_kg: value,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (client) {
+        setClient({ ...client, goal_weight_kg: value });
+      }
+
+      setGoalWeightSaved(true);
+      setTimeout(() => setGoalWeightSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving goal weight:', error);
+    } finally {
+      setSavingGoalWeight(false);
     }
   }
 
@@ -511,6 +545,43 @@ export function ClientProfile() {
                 {goalWeight > 0 ? `${goalWeight.toFixed(1)}kg` : '--'}
               </span>
             </div>
+          </div>
+
+          {/* Editar Peso Meta */}
+          <div className={styles.goalWeightEdit}>
+            <div className={styles.goalWeightField}>
+              <label className={styles.dateLabel}>
+                <Target size={16} />
+                Peso Meta (kg)
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="30"
+                max="300"
+                value={goalWeightInput}
+                onChange={(e) => setGoalWeightInput(e.target.value)}
+                placeholder="Ex: 75.0"
+                className={styles.dateInput}
+              />
+            </div>
+            <button
+              onClick={handleSaveGoalWeight}
+              disabled={savingGoalWeight}
+              className={`${styles.saveDatesBtn} ${goalWeightSaved ? styles.saved : ''}`}
+            >
+              {savingGoalWeight ? (
+                'Salvando...'
+              ) : goalWeightSaved ? (
+                <>
+                  <Check size={16} />
+                  Salvo!
+                </>
+              ) : (
+                'Salvar Meta'
+              )}
+            </button>
           </div>
 
           {weightDiff !== 0 && currentWeight > 0 && (

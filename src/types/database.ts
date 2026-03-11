@@ -1,4 +1,5 @@
 export type UserRole = 'client' | 'admin';
+export type GoalType = 'perder_peso' | 'ganhar_massa' | 'manter_peso' | 'melhorar_saude' | 'definicao';
 export type HealthRating = 'excellent' | 'good' | 'regular' | 'poor';
 export type UnitType = 'gramas' | 'ml' | 'unidade' | 'fatia' | 'colher_sopa' | 'colher_cha' | 'xicara' | 'copo' | 'porcao';
 export type DigestionRating = 'good' | 'poor' | 'terrible';
@@ -21,6 +22,8 @@ export interface Profile {
   plan_start_date: string | null;
   plan_end_date: string | null;
   goals: string | null;
+  goal_type: GoalType | null;
+  onboarding_completed: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -118,6 +121,15 @@ export interface MealSubstitutionItem {
   quantity: string;
   unit_type: UnitType;
   quantity_units: number | null;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
+  calories_per_100g?: number;
+  protein_per_100g?: number;
+  carbs_per_100g?: number;
+  fats_per_100g?: number;
+  peso_por_unidade?: number | null;
 }
 
 export interface MealSubstitution {
