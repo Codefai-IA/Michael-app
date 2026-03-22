@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Save, Plus, Trash2, GripVertical, Check, AlertCircle, Clock, FileText, ArrowRightLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { notifyWorkoutUpdated } from '../../lib/notifications';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Input, Button, ExerciseSelect } from '../../components/ui';
 import type { Profile, WorkoutPlan, DailyWorkout, Exercise } from '../../types/database';
@@ -231,6 +232,11 @@ export function WorkoutManagement() {
       setLastSavedAt(now);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 5000);
+
+      // Notify client that their workout was updated (fire-and-forget)
+      if (id) {
+        notifyWorkoutUpdated(id);
+      }
     } catch (error) {
       console.error('Erro ao salvar treino:', error);
       setSaveStatus('error');

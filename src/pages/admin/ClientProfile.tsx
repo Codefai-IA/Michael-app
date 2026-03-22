@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target } from 'lucide-react';
+import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
@@ -110,6 +110,11 @@ export function ClientProfile() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
+  // Admin notes state
+  const [adminNotes, setAdminNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+
   // New diet modal state
   const [showNewDietModal, setShowNewDietModal] = useState(false);
   const [newDietName, setNewDietName] = useState('');
@@ -159,6 +164,7 @@ export function ClientProfile() {
       setPlanStartDate(clientResult.data.plan_start_date || '');
       setPlanEndDate(clientResult.data.plan_end_date || '');
       setGoalWeightInput(clientResult.data.goal_weight_kg?.toString() || '');
+      setAdminNotes(clientResult.data.admin_notes || '');
     }
 
     if (dietResult.data) {
@@ -234,6 +240,29 @@ export function ClientProfile() {
       console.error('Error saving goal weight:', error);
     } finally {
       setSavingGoalWeight(false);
+    }
+  }
+
+  async function handleSaveNotes() {
+    if (!id) return;
+
+    setSavingNotes(true);
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          admin_notes: adminNotes || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving admin notes:', error);
+    } finally {
+      setSavingNotes(false);
     }
   }
 
@@ -695,6 +724,37 @@ export function ClientProfile() {
               </>
             ) : (
               'Salvar Datas'
+            )}
+          </button>
+        </Card>
+
+        {/* Admin Notes Section */}
+        <Card className={styles.notesCard}>
+          <h3 className={styles.notesTitle}>
+            <StickyNote size={20} />
+            Anotacoes do Admin
+          </h3>
+          <textarea
+            className={styles.notesTextarea}
+            value={adminNotes}
+            onChange={(e) => setAdminNotes(e.target.value)}
+            placeholder="Escreva suas anotacoes sobre este aluno..."
+            rows={5}
+          />
+          <button
+            onClick={handleSaveNotes}
+            disabled={savingNotes}
+            className={`${styles.saveDatesBtn} ${notesSaved ? styles.saved : ''}`}
+          >
+            {savingNotes ? (
+              'Salvando...'
+            ) : notesSaved ? (
+              <>
+                <Check size={16} />
+                Salvo!
+              </>
+            ) : (
+              'Salvar Anotacoes'
             )}
           </button>
         </Card>

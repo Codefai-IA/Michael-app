@@ -32,6 +32,7 @@ export interface Profile {
   fats_goal: number | null;
   calories_goal: number | null;
   fiber_goal: number | null;
+  admin_notes: string | null;
 }
 
 export interface Anamnesis {
