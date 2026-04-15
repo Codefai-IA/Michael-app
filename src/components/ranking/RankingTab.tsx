@@ -160,13 +160,15 @@ export function RankingTab() {
   return (
     <div className={styles.container}>
       {/* Prize Banner - Top */}
-      <div className={styles.prizeBanner}>
-        <span className={styles.prizeBannerIcon}>🏆</span>
-        <div className={styles.prizeBannerText}>
-          <strong>1° lugar ganha:</strong>
-          <span>WHEY PROTEIN + CREATINA</span>
+      {monthlyGift && (
+        <div className={styles.prizeBanner}>
+          <span className={styles.prizeBannerIcon}>🏆</span>
+          <div className={styles.prizeBannerText}>
+            <strong>1° lugar ganha:</strong>
+            <span>{monthlyGift}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Last Month Winner Banner - only from April 2026 onwards */}
       {showLastMonthWinner && lastMonthWinners.length > 0 && lastMonthWinners[0] && (
