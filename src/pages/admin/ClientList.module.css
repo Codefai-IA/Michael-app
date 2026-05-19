@@ -214,3 +214,63 @@
   background: var(--accent-hover);
   transform: translateY(-2px);
 }
+
+/* Birthday banner */
+.birthdayBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px -2px rgba(251, 191, 36, 0.25);
+}
+
+.birthdayIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.birthdayContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.birthdayTitle {
+  font-size: 13px;
+  color: #78350f;
+  font-weight: 700;
+}
+
+.birthdayList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.birthdayName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.birthdayName:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+

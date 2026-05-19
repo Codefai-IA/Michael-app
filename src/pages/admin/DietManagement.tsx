@@ -135,6 +135,9 @@ export function DietManagement() {
   const [templates, setTemplates] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
+  // Cache de nutricao por nome (alimentado em fetchDiet) - usado para mostrar macros de substituicoes
+  const [nutritionByName, setNutritionByName] = useState<Map<string, TabelaTacoWithMetadata>>(new Map());
+
   // Substitutions state
   const [substitutions, setSubstitutions] = useState<LocalSubstitution[]>([]);
   const [showSubstitutionModal, setShowSubstitutionModal] = useState(false);
@@ -227,6 +230,10 @@ export function DietManagement() {
               }
             });
           });
+          // Inclui tambem nomes dos substitutos para mostrar macros no modal
+          (substitutionsData || []).forEach(sub => {
+            if (sub.substitute_food) allFoodNames.add(sub.substitute_food);
+          });
 
           // OTIMIZADO: Busca todos os dados nutricionais em uma única query (com metadata)
           let nutritionMap = new Map<string, TabelaTacoWithMetadata>();
@@ -242,6 +249,7 @@ export function DietManagement() {
               });
             }
           }
+          setNutritionByName(nutritionMap);
 
           // Processa os dados usando o mapa de nutrição
           const mealsWithFoods: MealWithFoods[] = mealsData.map(meal => {
@@ -972,6 +980,13 @@ export function DietManagement() {
 
   function handleSubstituteFoodSelect(selectedFood: TabelaTaco) {
     setNewSubstituteFood(selectedFood.alimento);
+    // Cacheia a nutricao do novo substituto para exibir macros imediatamente
+    setNutritionByName(prev => {
+      if (prev.has(selectedFood.alimento)) return prev;
+      const next = new Map(prev);
+      next.set(selectedFood.alimento, selectedFood as TabelaTacoWithMetadata);
+      return next;
+    });
   }
 
   // Meal Substitution functions
@@ -986,7 +1001,7 @@ export function DietManagement() {
     } else {
       // Nova substituicao
       const existingCount = meals[mealIndex].meal_substitutions.length;
-      setMealSubName(`Opcao ${existingCount + 2}`);
+      setMealSubName(`Opção ${existingCount + 2}`);
       setMealSubFoods([]);
     }
     setShowMealSubModal(true);
@@ -1011,20 +1026,38 @@ export function DietManagement() {
     const updated = [...mealSubFoods];
     const food = { ...updated[index], [field]: value };
 
-    // Recalculate macros when quantity or unit_type changes
-    if ((field === 'quantity' || field === 'unit_type') && food.calories_per_100g !== undefined) {
-      const inputNum = parseBrazilianNumber(String(field === 'quantity' ? value : food.quantity)) || 0;
+    // Recalcular macros quando quantidade, unidade ou peso por unidade mudam
+    const triggers: (keyof MealSubstitutionItem)[] = ['quantity', 'unit_type', 'peso_por_unidade'];
+    if (triggers.includes(field) && food.calories_per_100g !== undefined) {
+      const inputNum = parseBrazilianNumber(
+        String(field === 'quantity' ? value : food.quantity_units ?? food.quantity)
+      ) || 0;
       const unitType = field === 'unit_type' ? String(value) : food.unit_type;
+      const pesoPorUnidade = field === 'peso_por_unidade'
+        ? (typeof value === 'number' ? value : parseBrazilianNumber(String(value ?? '')))
+        : food.peso_por_unidade;
 
       let gramsQty: number;
-      if (unitType !== 'gramas' && food.peso_por_unidade && food.peso_por_unidade > 0) {
+      if (unitType !== 'gramas' && pesoPorUnidade && pesoPorUnidade > 0) {
         food.quantity_units = inputNum;
-        gramsQty = calculateGramsFromUnits(inputNum, food.peso_por_unidade);
+        gramsQty = calculateGramsFromUnits(inputNum, pesoPorUnidade);
         food.quantity = String(Math.round(gramsQty));
-      } else {
+        food.peso_por_unidade = pesoPorUnidade;
+      } else if (unitType === 'gramas') {
         gramsQty = inputNum;
         food.quantity_units = null;
         if (field === 'quantity') food.quantity = String(value);
+      } else {
+        // Unidade selecionada mas peso por unidade ainda nao definido: aguarda admin informar
+        gramsQty = 0;
+        food.quantity_units = inputNum;
+        food.calories = 0;
+        food.protein = 0;
+        food.carbs = 0;
+        food.fats = 0;
+        updated[index] = food;
+        setMealSubFoods(updated);
+        return;
       }
 
       const multiplier = gramsQty / 100;
@@ -1422,7 +1455,7 @@ export function DietManagement() {
                       {/* Warning when unit has no peso_por_unidade defined */}
                       {food.unit_type !== 'gramas' && !food.peso_por_unidade && food.food_name && (
                         <div className={styles.unitWarning}>
-                          Este alimento nao tem peso por {getUnitLabel(food.unit_type)} definido
+                          Este alimento não tem peso por {getUnitLabel(food.unit_type)} definido
                         </div>
                       )}
                       {food.calories !== undefined && food.calories > 0 && (
@@ -1456,7 +1489,7 @@ export function DietManagement() {
                   <div className={styles.mealSubHeader}>
                     <span className={styles.mealSubLabel}>
                       <Layers size={16} />
-                      Opcoes de Refeicao ({meal.meal_substitutions.length + 1})
+                      Opções de Refeição ({meal.meal_substitutions.length + 1})
                     </span>
                     <button
                       type="button"
@@ -1464,7 +1497,7 @@ export function DietManagement() {
                       onClick={() => openMealSubModal(mealIndex)}
                     >
                       <Plus size={14} />
-                      Adicionar Opcao
+                      Adicionar Opção
                     </button>
                   </div>
 
@@ -1571,7 +1604,7 @@ export function DietManagement() {
         <div className={styles.modalOverlay} onClick={closeSubstitutionModal}>
           <div className={styles.substitutionModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Substituicoes para: {editingFoodName}</h3>
+              <h3>Substituições para: {editingFoodName}</h3>
               <button onClick={closeSubstitutionModal} className={styles.modalCloseBtn}>
                 <X size={20} />
               </button>
@@ -1581,21 +1614,41 @@ export function DietManagement() {
               <div className={styles.substitutionList}>
                 <p className={styles.substitutionListLabel}>Substitutos cadastrados:</p>
                 {getSubstitutionsForFood(editingFoodName).length === 0 ? (
-                  <p className={styles.noSubstitutions}>Nenhuma substituicao cadastrada.</p>
+                  <p className={styles.noSubstitutions}>Nenhuma substituição cadastrada.</p>
                 ) : (
-                  getSubstitutionsForFood(editingFoodName).map((sub) => (
-                    <div key={sub.id} className={styles.substitutionItem}>
-                      <span className={styles.substitutionItemText}>
-                        {sub.substitute_food} ({sub.substitute_quantity} {sub.substitute_unit_type === 'gramas' ? 'g' : sub.substitute_unit_type === 'ml' ? 'ml' : getUnitLabel(sub.substitute_unit_type, parseFloat(sub.substitute_quantity) || 1)})
-                      </span>
-                      <button
-                        className={styles.substitutionItemDelete}
-                        onClick={() => removeSubstitution(sub.id)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))
+                  getSubstitutionsForFood(editingFoodName).map((sub) => {
+                    const nutri = nutritionByName.get(sub.substitute_food);
+                    const qty = parseBrazilianNumber(sub.substitute_quantity) || 0;
+                    const grams = sub.substitute_unit_type === 'gramas' || sub.substitute_unit_type === 'ml'
+                      ? qty
+                      : (nutri?.food_metadata?.peso_por_unidade ? qty * nutri.food_metadata.peso_por_unidade : 0);
+                    const multiplier = grams / 100;
+                    const kcal = nutri ? parseBrazilianNumber(nutri.caloria) * multiplier : 0;
+                    const prot = nutri ? parseBrazilianNumber(nutri.proteina) * multiplier : 0;
+                    const carb = nutri ? parseBrazilianNumber(nutri.carboidrato) * multiplier : 0;
+                    const fat  = nutri ? parseBrazilianNumber(nutri.gordura)    * multiplier : 0;
+
+                    return (
+                      <div key={sub.id} className={styles.substitutionItem}>
+                        <div className={styles.substitutionItemBody}>
+                          <span className={styles.substitutionItemText}>
+                            {sub.substitute_food} ({sub.substitute_quantity} {sub.substitute_unit_type === 'gramas' ? 'g' : sub.substitute_unit_type === 'ml' ? 'ml' : getUnitLabel(sub.substitute_unit_type, parseFloat(sub.substitute_quantity) || 1)})
+                          </span>
+                          {kcal > 0 && (
+                            <span className={styles.substitutionItemMacros}>
+                              {Math.round(kcal)} kcal • P: {Math.round(prot)}g • C: {Math.round(carb)}g • G: {Math.round(fat)}g
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          className={styles.substitutionItemDelete}
+                          onClick={() => removeSubstitution(sub.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
@@ -1651,7 +1704,7 @@ export function DietManagement() {
           <div className={styles.mealSubModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>
-                {editingMealSubIndex !== null ? 'Editar' : 'Nova'} Opcao de Refeicao
+                {editingMealSubIndex !== null ? 'Editar' : 'Nova'} Opção de Refeição
               </h3>
               <button onClick={closeMealSubModal} className={styles.modalCloseBtn}>
                 <X size={20} />
@@ -1659,18 +1712,18 @@ export function DietManagement() {
             </div>
             <div className={styles.modalContent}>
               <div className={styles.mealSubNameField}>
-                <label>Nome da opcao</label>
+                <label>Nome da opção</label>
                 <Input
                   type="text"
                   value={mealSubName}
                   onChange={(e) => setMealSubName(e.target.value)}
-                  placeholder="Ex: Opcao 2, Alternativa..."
+                  placeholder="Ex: Opção 2, Alternativa..."
                 />
               </div>
 
               <div className={styles.mealSubFoodsSection}>
                 <div className={styles.mealSubFoodsHeader}>
-                  <label>Alimentos desta opcao</label>
+                  <label>Alimentos desta opção</label>
                   <button
                     type="button"
                     className={styles.addMealSubFoodBtn}
@@ -1707,7 +1760,7 @@ export function DietManagement() {
                         <div className={styles.mealSubFoodQty}>
                           <Input
                             type="number"
-                            value={food.quantity}
+                            value={food.unit_type !== 'gramas' ? (food.quantity_units ?? '') : food.quantity}
                             onChange={(e) => updateMealSubFood(idx, 'quantity', e.target.value)}
                             placeholder={food.unit_type === 'gramas' ? 'g' : food.unit_type === 'ml' ? 'ml' : 'qtd'}
                           />
@@ -1719,6 +1772,22 @@ export function DietManagement() {
                         >
                           <Trash2 size={14} />
                         </button>
+                        {food.unit_type !== 'gramas' && food.unit_type !== 'ml' && food.food_name && (
+                          <div className={styles.mealSubFoodPeso}>
+                            <label>Peso por {food.unit_type === 'unidade' ? 'unidade' : food.unit_type} (g):</label>
+                            <Input
+                              type="number"
+                              value={food.peso_por_unidade ?? ''}
+                              onChange={(e) => updateMealSubFood(idx, 'peso_por_unidade', e.target.value === '' ? null : Number(e.target.value))}
+                              placeholder="Ex: 50"
+                            />
+                            {(!food.peso_por_unidade || food.peso_por_unidade <= 0) && (
+                              <span className={styles.mealSubFoodWarn}>
+                                Informe o peso para calcular as calorias
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {food.calories !== undefined && food.calories > 0 && (
                           <div className={styles.mealSubFoodMacros}>
                             <span>{Math.round(food.calories)} kcal</span>
@@ -1734,7 +1803,7 @@ export function DietManagement() {
 
                 {mealSubFoods.some(f => f.calories && f.calories > 0) && (
                   <div className={styles.mealSubTotals}>
-                    <span className={styles.mealTotalLabel}>Total da opcao:</span>
+                    <span className={styles.mealTotalLabel}>Total da opção:</span>
                     <span className={styles.mealTotalValue}>
                       {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.calories || 0), 0))} kcal |{' '}
                       P: {Math.round(mealSubFoods.reduce((sum, f) => sum + (f.protein || 0), 0))}g |{' '}

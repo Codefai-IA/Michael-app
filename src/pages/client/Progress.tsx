@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
-import { TrendingDown, TrendingUp, Droplets, Plus, Minus, CalendarDays, CheckCircle2, Clock, Scale } from 'lucide-react';
+import { TrendingDown, TrendingUp, Droplets, Plus, Minus, CalendarDays, CheckCircle2, Clock, Scale, Target, Dumbbell, Utensils } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { maybeAwardWaterPoints } from '../../lib/points';
@@ -120,9 +120,14 @@ export function Progress() {
   const [weeklyProgress, setWeeklyProgress] = useState<DailyProgress[]>([]);
   const [todayWater, setTodayWater] = useState(0);
   const [profileReady, setProfileReady] = useState(false);
+  const [trainingDaysInPlan, setTrainingDaysInPlan] = useState<number | null>(null);
   const [newWeight, setNewWeight] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
-  const waterGoal = 3000; // 3L meta diária
+  const waterGoal = profile?.water_goal_ml ?? 3000; // ml/dia configurado pelo admin
+  // Meta de treino derivada automaticamente do plano de treino do aluno
+  const weeklyWorkoutGoal = trainingDaysInPlan ?? profile?.weekly_workout_goal ?? 5;
+  const weeklyDietGoal = profile?.weekly_diet_goal ?? 7;
+  const weeklyWeightGoal = profile?.weekly_weight_goal_kg ?? null;
 
   // Garantir que profile existe no banco
   useEffect(() => {
@@ -161,7 +166,7 @@ export function Progress() {
     weekStart.setDate(weekStart.getDate() - 6);
 
     // Buscar todos os dados em paralelo
-    const [weightResult, weeklyResult, waterResult] = await Promise.all([
+    const [weightResult, weeklyResult, waterResult, workoutPlanResult] = await Promise.all([
       supabase
         .from('weight_history')
         .select('*')
@@ -180,12 +185,34 @@ export function Progress() {
         .select('water_consumed_ml')
         .eq('client_id', clientId)
         .eq('date', today)
+        .maybeSingle(),
+      supabase
+        .from('workout_plans')
+        .select('id')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
     ]);
 
     if (weightResult.data) setWeightHistory(weightResult.data);
     if (weeklyResult.data) setWeeklyProgress(weeklyResult.data);
     if (waterResult.data) setTodayWater(waterResult.data.water_consumed_ml || 0);
+
+    // Contar dias de treino reais do plano (daily_workouts com pelo menos 1 exercicio)
+    if (workoutPlanResult.data?.id) {
+      const { data: dailyWorkouts } = await supabase
+        .from('daily_workouts')
+        .select('id, exercises(id)')
+        .eq('workout_plan_id', workoutPlanResult.data.id);
+
+      const trainingDays = (dailyWorkouts ?? []).filter(
+        (w: { exercises?: { id: string }[] | null }) => (w.exercises?.length ?? 0) > 0
+      ).length;
+      setTrainingDaysInPlan(trainingDays);
+    } else {
+      setTrainingDaysInPlan(0);
+    }
   }, [clientId, profileReady]);
 
   // Hook que gerencia refetch automático
@@ -338,6 +365,19 @@ export function Progress() {
   const isLosingWeight = weightDiff > 0;
   const progressToGoal = Math.abs(startingWeight - currentWeight) / Math.abs(startingWeight - goalWeight) * 100;
 
+  // Weekly goals calculations
+  const weeklyStats = useMemo(() => {
+    const waterDaysHit = weeklyProgress.filter(d => (d.water_consumed_ml ?? 0) >= waterGoal).length;
+    const workoutDaysHit = weeklyProgress.filter(d => (d.exercises_completed?.length ?? 0) > 0).length;
+    const dietDaysHit = weeklyProgress.filter(d => (d.meals_completed?.length ?? 0) > 0).length;
+
+    return {
+      water: { done: waterDaysHit, target: 7 },
+      workout: { done: workoutDaysHit, target: Math.max(1, weeklyWorkoutGoal) },
+      diet: { done: dietDaysHit, target: Math.max(1, weeklyDietGoal) },
+    };
+  }, [weeklyProgress, waterGoal, weeklyWorkoutGoal, weeklyDietGoal]);
+
   // Plan progress calculations
   const planProgress = useMemo(() => {
     const planStartDate = profile?.plan_start_date;
@@ -397,6 +437,101 @@ export function Progress() {
           </div>
         </Card>
 
+        {/* Metas da Semana */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Metas da Semana</h2>
+
+          <div className={styles.weeklyGoalsGrid}>
+            {/* Agua */}
+            <Card className={styles.weeklyGoalCard}>
+              <div className={`${styles.weeklyGoalIcon} ${styles.weeklyGoalWater}`}>
+                <Droplets size={20} />
+              </div>
+              <div className={styles.weeklyGoalContent}>
+                <span className={styles.weeklyGoalLabel}>Água</span>
+                <span className={styles.weeklyGoalValue}>
+                  {weeklyStats.water.done}/{weeklyStats.water.target} dias
+                </span>
+                <ProgressBar
+                  value={Math.min(100, (weeklyStats.water.done / weeklyStats.water.target) * 100)}
+                  variant="accent"
+                />
+                <span className={styles.weeklyGoalHint}>
+                  Meta: {(waterGoal / 1000).toFixed(1)}L/dia
+                </span>
+              </div>
+            </Card>
+
+            {/* Treino */}
+            <Card className={styles.weeklyGoalCard}>
+              <div className={`${styles.weeklyGoalIcon} ${styles.weeklyGoalWorkout}`}>
+                <Dumbbell size={20} />
+              </div>
+              <div className={styles.weeklyGoalContent}>
+                <span className={styles.weeklyGoalLabel}>Treino</span>
+                <span className={styles.weeklyGoalValue}>
+                  {weeklyStats.workout.done}/{weeklyStats.workout.target} dias
+                </span>
+                <ProgressBar
+                  value={Math.min(100, (weeklyStats.workout.done / weeklyStats.workout.target) * 100)}
+                  variant="success"
+                />
+                <span className={styles.weeklyGoalHint}>
+                  {trainingDaysInPlan === 0
+                    ? 'Plano de treino não configurado'
+                    : weeklyStats.workout.done >= weeklyStats.workout.target
+                    ? 'Meta batida!'
+                    : `${weeklyStats.workout.target} dias de treino no plano`}
+                </span>
+              </div>
+            </Card>
+
+            {/* Dieta */}
+            <Card className={styles.weeklyGoalCard}>
+              <div className={`${styles.weeklyGoalIcon} ${styles.weeklyGoalDiet}`}>
+                <Utensils size={20} />
+              </div>
+              <div className={styles.weeklyGoalContent}>
+                <span className={styles.weeklyGoalLabel}>Dieta</span>
+                <span className={styles.weeklyGoalValue}>
+                  {weeklyStats.diet.done}/{weeklyStats.diet.target} dias
+                </span>
+                <ProgressBar
+                  value={Math.min(100, (weeklyStats.diet.done / weeklyStats.diet.target) * 100)}
+                  variant="success"
+                />
+                <span className={styles.weeklyGoalHint}>
+                  {weeklyStats.diet.done >= weeklyStats.diet.target ? 'Meta batida!' : 'Mantenha o foco'}
+                </span>
+              </div>
+            </Card>
+
+            {/* Peso */}
+            <Card className={styles.weeklyGoalCard}>
+              <div className={`${styles.weeklyGoalIcon} ${styles.weeklyGoalWeight}`}>
+                <Target size={20} />
+              </div>
+              <div className={styles.weeklyGoalContent}>
+                <span className={styles.weeklyGoalLabel}>Peso da Semana</span>
+                {weeklyWeightGoal !== null ? (
+                  <>
+                    <span className={styles.weeklyGoalValue}>
+                      {currentWeight.toFixed(1)}kg <span className={styles.weeklyGoalArrow}>→</span> {Number(weeklyWeightGoal).toFixed(1)}kg
+                    </span>
+                    <span className={styles.weeklyGoalHint}>
+                      {Math.abs(currentWeight - Number(weeklyWeightGoal)).toFixed(1)}kg para a meta
+                    </span>
+                  </>
+                ) : (
+                  <span className={styles.weeklyGoalHint}>
+                    Aguardando o nutricionista definir
+                  </span>
+                )}
+              </div>
+            </Card>
+          </div>
+        </section>
+
         {/* Plan Progress Section */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Seu Plano</h2>
@@ -415,13 +550,13 @@ export function Progress() {
                   {planProgress.status === 'completed' && (
                     <>
                       <CheckCircle2 size={14} />
-                      Plano Concluido
+                      Plano Concluído
                     </>
                   )}
                   {planProgress.status === 'pending' && (
                     <>
                       <Clock size={14} />
-                      Plano Nao Iniciado
+                      Plano Não Iniciado
                     </>
                   )}
                 </div>
@@ -435,7 +570,7 @@ export function Progress() {
                     </span>
                   </div>
                   <div className={styles.planDateBox}>
-                    <span className={styles.planDateLabel}>Termino</span>
+                    <span className={styles.planDateLabel}>Término</span>
                     <span className={styles.planDateValue}>
                       {new Date(planProgress.endDate).toLocaleDateString('pt-BR')}
                     </span>
@@ -477,25 +612,25 @@ export function Progress() {
                 {planProgress.status === 'active' && (
                   <div className={styles.motivationalMessage}>
                     {planProgress.daysRemaining <= 7 ? (
-                      <p>Reta final! Voce esta quase la, continue firme!</p>
+                      <p>Reta final! Você está quase lá, continue firme!</p>
                     ) : planProgress.percentComplete >= 50 ? (
-                      <p>Mais da metade concluida! Continue assim!</p>
+                      <p>Mais da metade concluída! Continue assim!</p>
                     ) : (
-                      <p>Voce esta no caminho certo! Mantenha o foco!</p>
+                      <p>Você está no caminho certo! Mantenha o foco!</p>
                     )}
                   </div>
                 )}
 
                 {planProgress.status === 'completed' && (
                   <div className={`${styles.motivationalMessage} ${styles.completed}`}>
-                    <p>Parabens! Voce completou seu plano! Fale com seu nutricionista sobre os proximos passos.</p>
+                    <p>Parabéns! Você completou seu plano! Fale com seu nutricionista sobre os próximos passos.</p>
                   </div>
                 )}
               </>
             ) : (
               <div className={styles.planNotSet}>
                 <CalendarDays size={32} className={styles.planNotSetIcon} />
-                <p>Periodo do plano ainda nao definido pelo nutricionista.</p>
+                <p>Período do plano ainda não definido pelo nutricionista.</p>
               </div>
             )}
           </Card>
@@ -503,7 +638,7 @@ export function Progress() {
 
         {/* Seção de Água */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Agua de Hoje</h2>
+          <h2 className={styles.sectionTitle}>Água de Hoje</h2>
 
           <Card className={styles.waterCard}>
             <div className={styles.waterHeader}>

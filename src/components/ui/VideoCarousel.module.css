@@ -24,7 +24,7 @@
 }
 
 .videoCard {
-  flex: 0 0 280px;
+  flex: 0 0 220px;
   scroll-snap-align: start;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -35,7 +35,8 @@
 .videoWrapper {
   position: relative;
   width: 100%;
-  padding-bottom: 56.25%;
+  /* 9:16 aspect ratio (YouTube Shorts vertical) */
+  padding-bottom: 177.78%;
   background: #000;
 }
 

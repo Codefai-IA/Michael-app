@@ -18,6 +18,7 @@ export interface Profile {
   starting_weight_kg: number | null;
   goal_weight_kg: number | null;
   age: number | null;
+  birth_date: string | null;
   coaching_start_date: string | null;
   plan_start_date: string | null;
   plan_end_date: string | null;
@@ -33,6 +34,10 @@ export interface Profile {
   calories_goal: number | null;
   fiber_goal: number | null;
   admin_notes: string | null;
+  water_goal_ml: number | null;
+  weekly_workout_goal: number | null;
+  weekly_diet_goal: number | null;
+  weekly_weight_goal_kg: number | null;
 }
 
 export interface Anamnesis {

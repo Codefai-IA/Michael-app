@@ -1,7 +1,19 @@
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .container {
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--bg-main);
+  animation: pageFadeIn 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    animation: none;
+  }
 }
 
 .withNav {

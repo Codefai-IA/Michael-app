@@ -14,7 +14,7 @@ interface FormData {
   email: string;
   password: string;
   phone: string;
-  age: string;
+  birthDate: string;
   heightCm: string;
   currentWeightKg: string;
   goalWeightKg: string;
@@ -26,12 +26,24 @@ const initialFormData: FormData = {
   email: '',
   password: '',
   phone: '',
-  age: '',
+  birthDate: '',
   heightCm: '',
   currentWeightKg: '',
   goalWeightKg: '',
   goals: '',
 };
+
+function calcAgeFromBirthDate(birthDate: string): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+}
 
 export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -98,7 +110,8 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         full_name: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
-        age: formData.age ? parseInt(formData.age) : null,
+        birth_date: formData.birthDate || null,
+        age: calcAgeFromBirthDate(formData.birthDate),
         height_cm: formData.heightCm ? parseFloat(formData.heightCm) : null,
         current_weight_kg: formData.currentWeightKg ? parseFloat(formData.currentWeightKg) : null,
         starting_weight_kg: formData.currentWeightKg ? parseFloat(formData.currentWeightKg) : null,
@@ -192,12 +205,12 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
             disabled={loading}
           />
           <Input
-            label="Idade"
-            type="number"
-            name="age"
-            value={formData.age}
+            label="Data de Nascimento"
+            type="date"
+            name="birthDate"
+            value={formData.birthDate}
+            max={new Date().toISOString().split('T')[0]}
             onChange={handleChange}
-            placeholder="Ex: 25"
             disabled={loading}
           />
         </div>

@@ -8,7 +8,7 @@ const navItems = [
   { to: '/app/progresso', icon: TrendingUp, label: 'Progresso' },
   { to: '/app/dieta', icon: Utensils, label: 'Dieta' },
   { to: '/app/treino', icon: Dumbbell, label: 'Treino' },
-  { to: '/app/ranking', icon: Trophy, label: 'Ranking' },
+  // { to: '/app/ranking', icon: Trophy, label: 'Ranking' }, // oculto temporariamente
   { to: '/app/perfil', icon: User, label: 'Perfil' },
 ];
 

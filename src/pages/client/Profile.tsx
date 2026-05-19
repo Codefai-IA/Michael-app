@@ -346,8 +346,8 @@ export function Profile() {
                 {weightDiff > 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
                 <span>
                   {weightDiff > 0
-                    ? `Voce ja perdeu ${weightDiff.toFixed(1)} kg!`
-                    : `Voce ganhou ${Math.abs(weightDiff).toFixed(1)} kg`
+                    ? `Você já perdeu ${weightDiff.toFixed(1)} kg!`
+                    : `Você ganhou ${Math.abs(weightDiff).toFixed(1)} kg`
                   }
                 </span>
               </div>

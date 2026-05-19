@@ -836,3 +836,37 @@
 .notesTextarea::placeholder {
   color: var(--text-muted);
 }
+
+/* Weekly Goals (admin) */
+.weeklyGoalsCard {
+  margin-bottom: 16px;
+}
+
+.weeklyGoalsTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.weeklyGoalsHint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.weeklyGoalsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .weeklyGoalsGrid {
+    grid-template-columns: 1fr;
+  }
+}

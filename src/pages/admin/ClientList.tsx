@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ChevronRight, Plus, LogOut, Utensils, Dumbbell, BookOpen } from 'lucide-react';
+import { Search, ChevronRight, Plus, LogOut, Utensils, Dumbbell, BookOpen, Cake } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { PageContainer } from '../../components/layout';
@@ -86,6 +86,24 @@ export function ClientList() {
     client.full_name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Aniversariantes do dia (timezone Brasilia)
+  const todaysBirthdays = (() => {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = fmt.formatToParts(new Date());
+    const todayMonth = Number(parts.find((p) => p.type === 'month')?.value ?? '0');
+    const todayDay = Number(parts.find((p) => p.type === 'day')?.value ?? '0');
+
+    return clients.filter((c) => {
+      if (!c.birth_date) return false;
+      const [, m, d] = c.birth_date.split('-').map(Number);
+      return m === todayMonth && d === todayDay;
+    });
+  })();
+
   function formatDate(dateStr: string | null): string {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('pt-BR', {
@@ -143,6 +161,32 @@ export function ClientList() {
       </header>
 
       <main className={styles.content}>
+        {todaysBirthdays.length > 0 && (
+          <div className={styles.birthdayBanner}>
+            <div className={styles.birthdayIcon}>
+              <Cake size={22} />
+            </div>
+            <div className={styles.birthdayContent}>
+              <strong className={styles.birthdayTitle}>
+                {todaysBirthdays.length === 1
+                  ? 'Hoje é aniversário de:'
+                  : `Hoje é aniversário de ${todaysBirthdays.length} alunos:`}
+              </strong>
+              <div className={styles.birthdayList}>
+                {todaysBirthdays.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/admin/aluno/${c.id}`}
+                    className={styles.birthdayName}
+                  >
+                    🎉 {c.full_name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={styles.searchWrapper}>
           <Input
             type="search"

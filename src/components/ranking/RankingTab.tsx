@@ -228,7 +228,7 @@ export function RankingTab() {
       ) : (
         <Card className={styles.myStatsCard}>
           <p className={styles.noPointsYet}>
-            Voce ainda nao pontuou este mes. Complete treinos e refeicoes para ganhar pontos!
+            Você ainda não pontuou este mês. Complete treinos e refeições para ganhar pontos!
           </p>
         </Card>
       )}
@@ -236,7 +236,7 @@ export function RankingTab() {
       {/* Remaining Leaderboard (4th place and below) */}
       {restRanking.length > 0 && (
         <div className={styles.leaderboard}>
-          <h3 className={styles.leaderboardTitle}>Classificacao Geral</h3>
+          <h3 className={styles.leaderboardTitle}>Classificação Geral</h3>
           <div className={styles.rankingList}>
             {restRanking.map((entry, index) => {
               const actualPosition = index + 4;

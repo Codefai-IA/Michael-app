@@ -249,7 +249,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
   const handleSave = () => {
     const extraMeal: ExtraMeal = {
       id: crypto.randomUUID(),
-      meal_name: mealName || 'Refeicao Extra',
+      meal_name: mealName || 'Refeição Extra',
       foods,
       total_calories: mealTotals.calories,
       total_protein: mealTotals.protein,
@@ -274,7 +274,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Adicionar Refeicao Extra">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Adicionar Refeição Extra">
       <div className={styles.content}>
         <Input
           label="Nome da refeicao"
@@ -375,7 +375,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                   </span>
                 ) : (
                   <span className={styles.unitWarning}>
-                    Peso por unidade nao cadastrado - usando 100g por unidade
+                    Peso por unidade não cadastrado — usando 100g por unidade
                   </span>
                 )}
               </div>
@@ -438,7 +438,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={foods.length === 0}>
-            Salvar Refeicao
+            Salvar Refeição
           </Button>
         </div>
       </div>

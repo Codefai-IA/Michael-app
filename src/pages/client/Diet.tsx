@@ -466,19 +466,9 @@ export function Diet() {
             const nutrition = item.food_name ? nutritionMap.get(item.food_name) : null;
 
             if (nutrition) {
-              const qtyValue = parseBrazilianNumber(item.quantity);
-              const unitType = item.unit_type || 'gramas';
-
-              // For unit-based items (not grams/ml), convert to grams using peso_por_unidade
-              let gramsForCalculation: number;
-              if (unitType === 'gramas' || unitType === 'ml') {
-                gramsForCalculation = qtyValue;
-              } else {
-                // quantity is the number of units, multiply by peso_por_unidade to get grams
-                const pesoUnidade = nutrition.peso_por_unidade || 100; // fallback to 100g if not set
-                gramsForCalculation = qtyValue * pesoUnidade;
-              }
-
+              // item.quantity ja vem em gramas (o admin armazena a conversao na hora de salvar).
+              // Portanto, calculamos o multiplier diretamente sobre quantity, independente do unit_type.
+              const gramsForCalculation = parseBrazilianNumber(item.quantity) || 0;
               const multiplier = gramsForCalculation / 100;
 
               return {
@@ -805,19 +795,8 @@ export function Diet() {
             const nutrition = item.food_name ? nutritionMap.get(item.food_name) : null;
 
             if (nutrition) {
-              const qtyValue = parseBrazilianNumber(item.quantity);
-              const unitType = item.unit_type || 'gramas';
-
-              // For unit-based items (not grams/ml), convert to grams using peso_por_unidade
-              let gramsForCalculation: number;
-              if (unitType === 'gramas' || unitType === 'ml') {
-                gramsForCalculation = qtyValue;
-              } else {
-                // quantity is the number of units, multiply by peso_por_unidade to get grams
-                const pesoUnidade = nutrition.peso_por_unidade || 100; // fallback to 100g if not set
-                gramsForCalculation = qtyValue * pesoUnidade;
-              }
-
+              // item.quantity ja vem em gramas (admin converte na hora de salvar)
+              const gramsForCalculation = parseBrazilianNumber(item.quantity) || 0;
               const multiplier = gramsForCalculation / 100;
 
               return {
@@ -1168,7 +1147,7 @@ export function Diet() {
             {/* Refeições Extras */}
             {extraMeals.length > 0 && (
               <div className={styles.extraMealsSection}>
-                <h3 className={styles.extraMealsTitle}>Refeicoes Extras</h3>
+                <h3 className={styles.extraMealsTitle}>Refeições Extras</h3>
                 {extraMeals.map((meal) => (
                   <Card key={meal.id} className={styles.extraMealCard}>
                     <div className={styles.extraMealContent}>
@@ -1201,7 +1180,7 @@ export function Diet() {
               onClick={() => setShowAddExtraMeal(true)}
             >
               <Plus size={18} />
-              Adicionar Refeicao Extra
+              Adicionar Refeição Extra
             </Button>
           </>
         ) : (
@@ -1310,7 +1289,7 @@ export function Diet() {
                       onClick={() => toggleFoodExpansion(food.id)}
                     >
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      <span>Ver substituicoes ({foodSubs.length})</span>
+                      <span>Ver substituições ({foodSubs.length})</span>
                     </button>
                   )}
 
@@ -1335,7 +1314,7 @@ export function Diet() {
                     >
                       <RefreshCw size={16} />
                       {isEquivalenceExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      <span>Ver equivalencias ({equivalenceData.equivalents.length})</span>
+                      <span>Ver equivalências ({equivalenceData.equivalents.length})</span>
                     </button>
                   )}
 
@@ -1373,8 +1352,6 @@ export function Diet() {
           {selectedMeal && (selectedMealOptions[selectedMeal.id] || 0) > 0 && selectedMeal.meal_substitutions_with_nutrition && (
             <ul className={styles.foodList}>
               {selectedMeal.meal_substitutions_with_nutrition[(selectedMealOptions[selectedMeal.id] || 0) - 1]?.items.map((item, idx) => {
-                // For substitution items, quantity contains the value in the selected unit
-                // If unit_type is not 'gramas'/'ml', treat quantity as units count
                 const unitType = item.unit_type || 'gramas';
                 const qtyValue = parseBrazilianNumber(item.quantity);
 
@@ -1384,16 +1361,24 @@ export function Diet() {
                 } else if (unitType === 'ml') {
                   quantityDisplay = `${qtyValue}ml`;
                 } else {
-                  // For units (unidade, fatia, colher, etc.), quantity is the count
-                  // Show as "2 unidades" without grams since we don't have accurate gram conversion
                   const unitsCount = item.quantity_units ?? qtyValue;
                   const unitInfo = UNIT_TYPES[unitType] || { singular: unitType, plural: unitType };
                   const label = unitsCount === 1 ? unitInfo.singular : unitInfo.plural;
                   quantityDisplay = `${unitsCount} ${label}`;
                 }
 
+                // Reuso de substituicoes e equivalencias pelo food_name do item
+                const subItemId = `${selectedMeal.id}-sub-${(selectedMealOptions[selectedMeal.id] || 0)}-${idx}`;
+                const itemSubs = getSubstitutionsForFood(item.food_name);
+                const hasSubs = itemSubs.length > 0;
+                const isExpanded = expandedFoods.has(subItemId);
+
+                const equivData = getEquivalencesForFood(item.food_name, item.display_name);
+                const hasEquivs = equivData && equivData.equivalents.length > 0;
+                const isEquivExpanded = expandedEquivalences.has(subItemId);
+
                 return (
-                  <li key={idx} className={styles.foodItemWrapper}>
+                  <li key={subItemId} className={styles.foodItemWrapper}>
                     <div className={styles.foodItem}>
                       <span className={styles.foodBullet} />
                       <div className={styles.foodInfo}>
@@ -1408,6 +1393,61 @@ export function Diet() {
                         </span>
                       </div>
                     </div>
+
+                    {hasSubs && (
+                      <button
+                        className={styles.substitutionToggle}
+                        onClick={() => toggleFoodExpansion(subItemId)}
+                      >
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <span>Ver substituições ({itemSubs.length})</span>
+                      </button>
+                    )}
+
+                    {isExpanded && hasSubs && (
+                      <div className={styles.inlineSubstitutions}>
+                        <span className={styles.substitutionHint}>Troque por:</span>
+                        {itemSubs.map((sub) => (
+                          <div key={sub.id} className={styles.substitutionRow}>
+                            <span className={styles.substitutionArrow}>→</span>
+                            <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}g)</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {hasEquivs && (
+                      <button
+                        className={styles.equivalenceToggle}
+                        onClick={() => toggleEquivalenceExpansion(subItemId)}
+                      >
+                        <RefreshCw size={16} />
+                        {isEquivExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <span>Ver equivalências ({equivData!.equivalents.length})</span>
+                      </button>
+                    )}
+
+                    {isEquivExpanded && hasEquivs && equivData && (() => {
+                      const actualQuantity = parseBrazilianNumber(item.quantity);
+                      const baseQuantity = equivData.currentFood.quantity_grams;
+                      const ratio = baseQuantity > 0 ? actualQuantity / baseQuantity : 1;
+                      return (
+                        <div className={styles.inlineEquivalences}>
+                          <span className={styles.equivalenceGroupName}>
+                            {equivData.group.name}
+                          </span>
+                          <span className={styles.equivalenceHint}>
+                            Troque {Math.round(actualQuantity)}g por:
+                          </span>
+                          {equivData.equivalents.map((eq) => (
+                            <div key={eq.id} className={styles.equivalenceRow}>
+                              <span className={styles.equivalenceArrow}>→</span>
+                              <span>{eq.food_name} ({Math.round(eq.quantity_grams * ratio)}g)</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </li>
                 );
               })}

@@ -30,7 +30,18 @@
       "Bash(gh run list:*)",
       "Bash(cmd /c start \"\" \"http://localhost:5174\")",
       "Bash(cat:*)",
-      "Bash(npm run preview:*)"
+      "Bash(npm run preview:*)",
+      "Bash(cd:*)",
+      "Bash(tail:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx web-push:*)",
+      "Bash(sed:*)",
+      "Bash(touch:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(wc -l src/pages/client/*.tsx src/pages/admin/*.tsx src/components/ui/*.tsx)",
+      "Bash(xargs -I {} basename {})"
     ],
     "deny": [],
     "ask": []

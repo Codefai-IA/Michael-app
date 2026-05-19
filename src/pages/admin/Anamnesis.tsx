@@ -165,7 +165,21 @@ export function Anamnesis() {
 
   function updateMacroGoal(field: keyof MacroGoals, value: string) {
     const numValue = value === '' ? null : Number(value);
-    setMacroGoals((prev) => ({ ...prev, [field]: numValue }));
+    setMacroGoals((prev) => {
+      const next = { ...prev, [field]: numValue };
+      // Calorias = P*4 + C*4 + G*9 (auto-calculado)
+      if (field === 'protein_goal' || field === 'carbs_goal' || field === 'fats_goal') {
+        const p = field === 'protein_goal' ? numValue : prev.protein_goal;
+        const c = field === 'carbs_goal' ? numValue : prev.carbs_goal;
+        const f = field === 'fats_goal' ? numValue : prev.fats_goal;
+        if (p === null && c === null && f === null) {
+          next.calories_goal = null;
+        } else {
+          next.calories_goal = Math.round((p ?? 0) * 4 + (c ?? 0) * 4 + (f ?? 0) * 9);
+        }
+      }
+      return next;
+    });
   }
 
   if (loading) {
@@ -233,12 +247,15 @@ export function Anamnesis() {
             </div>
 
             <div className={styles.goalField}>
-              <label>Calorias (kcal)</label>
+              <label>
+                Calorias (kcal) <span className={styles.optionalLabel}>(auto: P×4 + C×4 + G×9)</span>
+              </label>
               <Input
                 type="number"
                 value={macroGoals.calories_goal ?? ''}
-                onChange={(e) => updateMacroGoal('calories_goal', e.target.value)}
-                placeholder="Ex: 2000"
+                readOnly
+                tabIndex={-1}
+                placeholder="Calculado automaticamente"
               />
             </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote } from 'lucide-react';
+import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote, Droplets, Cake } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
@@ -115,6 +115,18 @@ export function ClientProfile() {
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
 
+  // Birth date state
+  const [birthDate, setBirthDate] = useState('');
+  const [savingBirthDate, setSavingBirthDate] = useState(false);
+  const [birthDateSaved, setBirthDateSaved] = useState(false);
+
+  // Weekly goals state
+  const [waterGoalMl, setWaterGoalMl] = useState('');
+  const [weeklyDietGoal, setWeeklyDietGoal] = useState('');
+  const [weeklyWeightGoal, setWeeklyWeightGoal] = useState('');
+  const [savingGoals, setSavingGoals] = useState(false);
+  const [goalsSaved, setGoalsSaved] = useState(false);
+
   // New diet modal state
   const [showNewDietModal, setShowNewDietModal] = useState(false);
   const [newDietName, setNewDietName] = useState('');
@@ -165,6 +177,10 @@ export function ClientProfile() {
       setPlanEndDate(clientResult.data.plan_end_date || '');
       setGoalWeightInput(clientResult.data.goal_weight_kg?.toString() || '');
       setAdminNotes(clientResult.data.admin_notes || '');
+      setBirthDate(clientResult.data.birth_date || '');
+      setWaterGoalMl(clientResult.data.water_goal_ml?.toString() || '');
+      setWeeklyDietGoal(clientResult.data.weekly_diet_goal?.toString() || '');
+      setWeeklyWeightGoal(clientResult.data.weekly_weight_goal_kg?.toString() || '');
     }
 
     if (dietResult.data) {
@@ -243,6 +259,85 @@ export function ClientProfile() {
     }
   }
 
+  async function handleSaveBirthDate() {
+    if (!id) return;
+
+    setSavingBirthDate(true);
+
+    try {
+      const value = birthDate || null;
+      // Calcular idade a partir da data de nascimento
+      let age: number | null = null;
+      if (value) {
+        const birth = new Date(value);
+        const today = new Date();
+        age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+      }
+
+      await supabase
+        .from('profiles')
+        .update({
+          birth_date: value,
+          age,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (client) {
+        setClient({ ...client, birth_date: value, age });
+      }
+
+      setBirthDateSaved(true);
+      setTimeout(() => setBirthDateSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving birth date:', error);
+    } finally {
+      setSavingBirthDate(false);
+    }
+  }
+
+  async function handleSaveWeeklyGoals() {
+    if (!id) return;
+
+    setSavingGoals(true);
+
+    try {
+      const water = waterGoalMl ? Math.max(0, Math.round(Number(waterGoalMl))) : null;
+      const diets = weeklyDietGoal ? Math.max(0, Math.min(7, Math.round(Number(weeklyDietGoal)))) : null;
+      const weight = weeklyWeightGoal ? Number(weeklyWeightGoal) : null;
+
+      await supabase
+        .from('profiles')
+        .update({
+          water_goal_ml: water,
+          weekly_diet_goal: diets,
+          weekly_weight_goal_kg: weight,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (client) {
+        setClient({
+          ...client,
+          water_goal_ml: water,
+          weekly_diet_goal: diets,
+          weekly_weight_goal_kg: weight,
+        });
+      }
+
+      setGoalsSaved(true);
+      setTimeout(() => setGoalsSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving weekly goals:', error);
+    } finally {
+      setSavingGoals(false);
+    }
+  }
+
   async function handleSaveNotes() {
     if (!id) return;
 
@@ -301,7 +396,7 @@ export function ClientProfile() {
 
   async function handleSendPasswordReset() {
     if (!client?.email) {
-      alert('Este usuario nao tem email cadastrado.');
+      alert('Este usuário não tem email cadastrado.');
       return;
     }
 
@@ -362,7 +457,7 @@ export function ClientProfile() {
   }
 
   async function handleDeleteDiet(dietId: string) {
-    if (!confirm('Tem certeza que deseja excluir esta dieta? Todas as refeicoes serao perdidas.')) {
+    if (!confirm('Tem certeza que deseja excluir esta dieta? Todas as refeições serão perdidas.')) {
       return;
     }
 
@@ -548,6 +643,52 @@ export function ClientProfile() {
         </Card>
 
 
+        {/* Birth Date Section */}
+        <Card className={styles.planDatesCard}>
+          <h3 className={styles.planDatesTitle}>
+            <Cake size={20} />
+            Data de Nascimento
+          </h3>
+
+          <div className={styles.goalWeightEdit}>
+            <div className={styles.goalWeightField}>
+              <label className={styles.dateLabel}>
+                <CalendarDays size={16} />
+                Nascimento
+              </label>
+              <input
+                type="date"
+                value={birthDate}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setBirthDate(e.target.value)}
+                className={styles.dateInput}
+              />
+            </div>
+            <button
+              onClick={handleSaveBirthDate}
+              disabled={savingBirthDate}
+              className={`${styles.saveDatesBtn} ${birthDateSaved ? styles.saved : ''}`}
+            >
+              {savingBirthDate ? (
+                'Salvando...'
+              ) : birthDateSaved ? (
+                <>
+                  <Check size={16} />
+                  Salvo!
+                </>
+              ) : (
+                'Salvar'
+              )}
+            </button>
+          </div>
+
+          {client.age !== null && client.age !== undefined && (
+            <p className={styles.weeklyGoalsHint}>
+              Idade atual: <strong>{client.age} anos</strong> (calculada automaticamente)
+            </p>
+          )}
+        </Card>
+
         {/* Weight Evolution Section */}
         <Card className={styles.weightEvolutionCard}>
           <h3 className={styles.weightEvolutionTitle}>
@@ -680,12 +821,12 @@ export function ClientProfile() {
         <Card className={styles.planDatesCard}>
           <h3 className={styles.planDatesTitle}>
             <CalendarDays size={20} />
-            Periodo do Plano
+            Período do Plano
           </h3>
 
           <div className={styles.planDatesGrid}>
             <div className={styles.dateField}>
-              <label className={styles.dateLabel}>Data de Inicio</label>
+              <label className={styles.dateLabel}>Data de Início</label>
               <input
                 type="date"
                 value={planStartDate}
@@ -694,7 +835,7 @@ export function ClientProfile() {
               />
             </div>
             <div className={styles.dateField}>
-              <label className={styles.dateLabel}>Data de Termino</label>
+              <label className={styles.dateLabel}>Data de Término</label>
               <input
                 type="date"
                 value={planEndDate}
@@ -728,11 +869,96 @@ export function ClientProfile() {
           </button>
         </Card>
 
+        {/* Weekly Goals Section */}
+        <Card className={styles.weeklyGoalsCard}>
+          <h3 className={styles.weeklyGoalsTitle}>
+            <Target size={20} />
+            Metas Semanais
+          </h3>
+          <p className={styles.weeklyGoalsHint}>
+            Configure as metas que o aluno verá na aba de Progresso.
+            A meta de treino é calculada automaticamente pelo número de dias no plano de treino.
+          </p>
+
+          <div className={styles.weeklyGoalsGrid}>
+            <div className={styles.dateField}>
+              <label className={styles.dateLabel}>
+                <Droplets size={14} />
+                Meta de Água (ml/dia)
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                max="10000"
+                step="100"
+                value={waterGoalMl}
+                onChange={(e) => setWaterGoalMl(e.target.value)}
+                placeholder="Ex: 3000"
+                className={styles.dateInput}
+              />
+            </div>
+
+            <div className={styles.dateField}>
+              <label className={styles.dateLabel}>
+                <Utensils size={14} />
+                Dieta por Semana (dias)
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                max="7"
+                step="1"
+                value={weeklyDietGoal}
+                onChange={(e) => setWeeklyDietGoal(e.target.value)}
+                placeholder="Ex: 7"
+                className={styles.dateInput}
+              />
+            </div>
+
+            <div className={styles.dateField}>
+              <label className={styles.dateLabel}>
+                <Scale size={14} />
+                Meta de Peso da Semana (kg)
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="30"
+                max="300"
+                step="0.1"
+                value={weeklyWeightGoal}
+                onChange={(e) => setWeeklyWeightGoal(e.target.value)}
+                placeholder="Opcional"
+                className={styles.dateInput}
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveWeeklyGoals}
+            disabled={savingGoals}
+            className={`${styles.saveDatesBtn} ${goalsSaved ? styles.saved : ''}`}
+          >
+            {savingGoals ? (
+              'Salvando...'
+            ) : goalsSaved ? (
+              <>
+                <Check size={16} />
+                Salvo!
+              </>
+            ) : (
+              'Salvar Metas'
+            )}
+          </button>
+        </Card>
+
         {/* Admin Notes Section */}
         <Card className={styles.notesCard}>
           <h3 className={styles.notesTitle}>
             <StickyNote size={20} />
-            Anotacoes do Admin
+            Anotações do Admin
           </h3>
           <textarea
             className={styles.notesTextarea}
@@ -754,7 +980,7 @@ export function ClientProfile() {
                 Salvo!
               </>
             ) : (
-              'Salvar Anotacoes'
+              'Salvar Anotações'
             )}
           </button>
         </Card>
@@ -818,7 +1044,7 @@ export function ClientProfile() {
                           ) : (
                             <>
                               <AlertCircle size={12} />
-                              Nao configurado
+                              Não configurado
                             </>
                           )}
                         </span>
@@ -945,7 +1171,7 @@ export function ClientProfile() {
         <div className={styles.passwordModal}>
           <p className={styles.passwordEmail}>
             <Mail size={16} />
-            {client.email || 'Email nao cadastrado'}
+            {client.email || 'Email não cadastrado'}
           </p>
 
           {passwordSuccess ? (

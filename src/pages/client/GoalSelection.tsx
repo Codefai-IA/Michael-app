@@ -10,17 +10,17 @@ import styles from './GoalSelection.module.css';
 const GOAL_OPTIONS: { value: GoalType; label: string; icon: React.ReactNode }[] = [
   { value: 'perder_peso', label: 'Perder Peso', icon: <TrendingDown size={28} /> },
   { value: 'ganhar_massa', label: 'Ganhar Massa Muscular', icon: <TrendingUp size={28} /> },
-  { value: 'definicao', label: 'Definicao Muscular', icon: <Dumbbell size={28} /> },
+  { value: 'definicao', label: 'Definição Muscular', icon: <Dumbbell size={28} /> },
   { value: 'manter_peso', label: 'Manter Peso', icon: <Scale size={28} /> },
-  { value: 'melhorar_saude', label: 'Melhorar Saude', icon: <Heart size={28} /> },
+  { value: 'melhorar_saude', label: 'Melhorar Saúde', icon: <Heart size={28} /> },
 ];
 
 const GOAL_LABELS: Record<GoalType, string> = {
   perder_peso: 'Perder Peso',
   ganhar_massa: 'Ganhar Massa Muscular',
-  definicao: 'Definicao Muscular',
+  definicao: 'Definição Muscular',
   manter_peso: 'Manter Peso',
-  melhorar_saude: 'Melhorar Saude',
+  melhorar_saude: 'Melhorar Saúde',
 };
 
 export function GoalSelection() {

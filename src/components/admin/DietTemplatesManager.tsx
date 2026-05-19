@@ -655,7 +655,7 @@ export function DietTemplatesManager() {
       setMealSubFoods([...sub.items]);
     } else {
       const existingCount = templateMeals[mealIndex].meal_substitutions.length;
-      setMealSubName(`Opcao ${existingCount + 2}`);
+      setMealSubName(`Opção ${existingCount + 2}`);
       setMealSubFoods([]);
     }
     setShowMealSubModal(true);
@@ -857,10 +857,10 @@ export function DietTemplatesManager() {
 
               <div className={styles.mealsSection}>
                 <div className={styles.mealsSectionHeader}>
-                  <h4>Refeicoes</h4>
+                  <h4>Refeições</h4>
                   <Button type="button" size="sm" variant="outline" onClick={addMeal}>
                     <Plus size={16} />
-                    Refeicao
+                    Refeição
                   </Button>
                 </div>
 
@@ -960,7 +960,7 @@ export function DietTemplatesManager() {
                       <div className={styles.mealSubHeader}>
                         <span className={styles.mealSubLabel}>
                           <Layers size={16} />
-                          Opcoes de Refeicao ({meal.meal_substitutions.length + 1})
+                          Opções de Refeição ({meal.meal_substitutions.length + 1})
                         </span>
                         <button
                           type="button"
@@ -968,7 +968,7 @@ export function DietTemplatesManager() {
                           onClick={() => openMealSubModal(mealIndex)}
                         >
                           <Plus size={14} />
-                          Adicionar Opcao
+                          Adicionar Opção
                         </button>
                       </div>
 
@@ -1011,7 +1011,7 @@ export function DietTemplatesManager() {
                 ))}
 
                 {templateMeals.length === 0 && (
-                  <p className={styles.noMealsMsg}>Clique em "Refeicao" para adicionar</p>
+                  <p className={styles.noMealsMsg}>Clique em "Refeição" para adicionar</p>
                 )}
               </div>
 
@@ -1033,7 +1033,7 @@ export function DietTemplatesManager() {
         <div className={styles.modalOverlay} onClick={closeSubstitutionModal}>
           <div className={styles.substitutionModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Substituicoes: {editingFood.foodName}</h3>
+              <h3>Substituições: {editingFood.foodName}</h3>
               <button onClick={closeSubstitutionModal} className={styles.closeBtn}>
                 <X size={20} />
               </button>
@@ -1043,7 +1043,7 @@ export function DietTemplatesManager() {
               <div className={styles.substitutionList}>
                 <p className={styles.substitutionListLabel}>Substitutos cadastrados:</p>
                 {getSubstitutionsForFood(editingFood.mealIndex, editingFood.foodIndex).length === 0 ? (
-                  <p className={styles.noSubstitutions}>Nenhuma substituicao cadastrada.</p>
+                  <p className={styles.noSubstitutions}>Nenhuma substituição cadastrada.</p>
                 ) : (
                   getSubstitutionsForFood(editingFood.mealIndex, editingFood.foodIndex).map((sub) => (
                     <div key={sub.id} className={styles.substitutionItem}>
@@ -1108,7 +1108,7 @@ export function DietTemplatesManager() {
           <div className={styles.mealSubModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>
-                {editingMealSubIndex !== null ? 'Editar' : 'Nova'} Opcao de Refeicao
+                {editingMealSubIndex !== null ? 'Editar' : 'Nova'} Opção de Refeição
               </h3>
               <button onClick={closeMealSubModal} className={styles.closeBtn}>
                 <X size={20} />
@@ -1116,18 +1116,18 @@ export function DietTemplatesManager() {
             </div>
             <div className={styles.modalContent}>
               <div className={styles.mealSubNameField}>
-                <label>Nome da opcao</label>
+                <label>Nome da opção</label>
                 <Input
                   type="text"
                   value={mealSubName}
                   onChange={(e) => setMealSubName(e.target.value)}
-                  placeholder="Ex: Opcao 2, Alternativa..."
+                  placeholder="Ex: Opção 2, Alternativa..."
                 />
               </div>
 
               <div className={styles.mealSubFoodsSection}>
                 <div className={styles.mealSubFoodsHeader}>
-                  <label>Alimentos desta opcao</label>
+                  <label>Alimentos desta opção</label>
                   <button
                     type="button"
                     className={styles.addMealSubFoodBtn}

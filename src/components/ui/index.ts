@@ -17,4 +17,5 @@ export { YouTubeEmbed } from './YouTubeEmbed';
 export { TechniqueBadge } from './TechniqueBadge';
 export { InstallPWA } from './InstallPWA';
 export { NotificationPrompt } from './NotificationPrompt';
+export { BirthdayModal } from './BirthdayModal';
 export { VideoCarousel } from './VideoCarousel';

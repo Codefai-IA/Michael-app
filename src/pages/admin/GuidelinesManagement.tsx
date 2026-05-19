@@ -183,19 +183,19 @@ export function GuidelinesManagement() {
   if (!client) {
     return (
       <PageContainer hasBottomNav={false}>
-        <Header title="Aluno nao encontrado" showBack />
-        <div className={styles.loading}>Aluno nao encontrado</div>
+        <Header title="Aluno não encontrado" showBack />
+        <div className={styles.loading}>Aluno não encontrado</div>
       </PageContainer>
     );
   }
 
   return (
     <PageContainer hasBottomNav={false}>
-      <Header title="Orientacoes" subtitle={client.full_name} showBack />
+      <Header title="Orientações" subtitle={client.full_name} showBack />
 
       <main className={styles.content}>
         <p className={styles.description}>
-          Essas informacoes aparecerao na aba "Orientacoes" do app do paciente.
+          Essas informações aparecerão na aba "Orientações" do app do paciente.
         </p>
 
         {/* Suplementos Recomendados */}
@@ -210,7 +210,7 @@ export function GuidelinesManagement() {
             value={formData.recommended_supplements}
             onChange={(e) => handleChange('recommended_supplements', e.target.value)}
             className={styles.textarea}
-            placeholder="Ex:&#10;- Whey Protein Isolado - 30g apos treino&#10;- Creatina - 5g por dia&#10;- Omega 3 - 2 capsulas no almoco"
+            placeholder="Ex:&#10;- Whey Protein Isolado - 30g após treino&#10;- Creatina - 5g por dia&#10;- Ômega 3 - 2 cápsulas no almoço"
             rows={5}
           />
         </Card>
@@ -227,7 +227,7 @@ export function GuidelinesManagement() {
             value={formData.manipulated_supplements}
             onChange={(e) => handleChange('manipulated_supplements', e.target.value)}
             className={styles.textarea}
-            placeholder="Ex:&#10;- Vitamina D3 10.000UI - 1x ao dia pela manha&#10;- Magnesio Quelato 400mg - 1x a noite"
+            placeholder="Ex:&#10;- Vitamina D3 10.000UI - 1x ao dia pela manhã&#10;- Magnésio Quelato 400mg - 1x à noite"
             rows={5}
           />
         </Card>
@@ -238,7 +238,7 @@ export function GuidelinesManagement() {
             <div className={`${styles.fieldIcon} ${styles.freeMeal}`}>
               <Utensils size={20} />
             </div>
-            <label className={styles.fieldLabel}>Video da Refeicao Livre</label>
+            <label className={styles.fieldLabel}>Vídeo da Refeição Livre</label>
           </div>
           <input
             type="url"
@@ -280,7 +280,7 @@ export function GuidelinesManagement() {
             value={formData.general_notes}
             onChange={(e) => handleChange('general_notes', e.target.value)}
             className={styles.textarea}
-            placeholder="Outras orientacoes, lembretes ou informacoes importantes..."
+            placeholder="Outras orientações, lembretes ou informações importantes..."
             rows={5}
           />
         </Card>
