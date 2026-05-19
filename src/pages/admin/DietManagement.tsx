@@ -490,7 +490,6 @@ export function DietManagement() {
           original_food: sub.original_food,
           substitute_food: sub.substitute_food,
           substitute_quantity: sub.substitute_quantity,
-          substitute_unit_type: sub.substitute_unit_type,
         });
         if (insertError) {
           console.error('Substitution insert error:', insertError);
