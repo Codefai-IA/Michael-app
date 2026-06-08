@@ -1,13 +1,24 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Plus, Minus, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Minus, Check, ChevronDown, ChevronUp, Play, Square, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
-import { Card, Checkbox, YouTubeEmbed, TechniqueBadge } from '../../components/ui';
+import { Card, Checkbox, YouTubeEmbed, TechniqueBadge, WorkoutSummaryModal } from '../../components/ui';
 import type { DailyWorkout, Exercise } from '../../types/database';
 import { maybeAwardWorkoutPoints } from '../../lib/points';
+import {
+  computeWorkoutHighlights,
+  formatTimer,
+  type LoggedSet,
+  type WorkoutHighlight,
+} from '../../lib/workoutProgress';
 import styles from './Workout.module.css';
+
+// Chave do localStorage para a sessão de treino em andamento (sobrevive a reload/fechar o app)
+function sessionStorageKey(dailyWorkoutId: string, date: string): string {
+  return `workout_session_${dailyWorkoutId}_${date}`;
+}
 
 // Retorna a data atual no fuso horário de Brasília
 function getBrasiliaDate(): string {
@@ -72,6 +83,11 @@ export function Workout() {
   const [currentDate, setCurrentDate] = useState(getBrasiliaDate());
   const currentDateRef = useRef(currentDate);
   const fetchAllDataRef = useRef<(() => Promise<void>) | undefined>(undefined);
+
+  // Acompanhamento de treino: cronômetro e resumo de conclusão
+  const [sessionStart, setSessionStart] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [summary, setSummary] = useState<{ durationMs: number; highlights: WorkoutHighlight[] } | null>(null);
 
   // Manter ref sincronizado com o estado
   useEffect(() => {
@@ -460,6 +476,105 @@ export function Workout() {
     };
   }, []);
 
+  // Restaurar sessão ativa ao montar / trocar de treino (cronômetro continua do início salvo)
+  useEffect(() => {
+    if (!workout?.id) {
+      setSessionStart(null);
+      return;
+    }
+    const raw = localStorage.getItem(sessionStorageKey(workout.id, currentDate));
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.startedAt) {
+          setSessionStart(new Date(parsed.startedAt).getTime());
+          return;
+        }
+      } catch {
+        // ignora sessão corrompida
+      }
+    }
+    setSessionStart(null);
+  }, [workout?.id, currentDate]);
+
+  // Cronômetro ao vivo enquanto a sessão estiver rodando
+  useEffect(() => {
+    if (sessionStart === null) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const tick = () => setElapsedSeconds(Math.floor((Date.now() - sessionStart) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [sessionStart]);
+
+  function startWorkout() {
+    if (!workout) return;
+    const startedAt = new Date().toISOString();
+    localStorage.setItem(
+      sessionStorageKey(workout.id, currentDateRef.current),
+      JSON.stringify({ startedAt })
+    );
+    setSessionStart(new Date(startedAt).getTime());
+
+    // Abrir todos os exercícios para os campos de carga/reps já aparecerem prontos
+    setExerciseLogs(prev => {
+      const next = { ...prev };
+      for (const id of Object.keys(next)) {
+        next[id] = { ...next[id], expanded: true };
+      }
+      return next;
+    });
+  }
+
+  async function finishWorkout() {
+    if (sessionStart === null || !workout) return;
+    const durationMs = Date.now() - sessionStart;
+    const today = currentDateRef.current;
+
+    // Buscar a última sessão anterior (date < hoje) de cada exercício para comparação
+    const previousByExercise = new Map<string, LoggedSet[]>();
+    const exerciseIds = exercises.map((e) => e.id);
+    if (exerciseIds.length > 0) {
+      const { data: prevLogs } = await supabase
+        .from('exercise_logs')
+        .select('exercise_id, sets_completed, date')
+        .eq('client_id', profile!.id)
+        .in('exercise_id', exerciseIds)
+        .lt('date', today)
+        .order('date', { ascending: false });
+
+      (prevLogs || []).forEach((log) => {
+        if (!previousByExercise.has(log.exercise_id)) {
+          previousByExercise.set(log.exercise_id, (log.sets_completed as LoggedSet[]) || []);
+        }
+      });
+    }
+
+    // Dados de hoje a partir do estado atual (ref evita stale closure)
+    const todaySessions = exercises.map((e) => ({
+      id: e.id,
+      name: e.name,
+      sets: (exerciseLogsRef.current[e.id]?.sets || []).map((s) => ({
+        set: s.set,
+        weight: parseFloat(s.weight) || 0,
+        reps: parseFloat(s.reps) || 0,
+      })),
+    }));
+
+    const highlights = computeWorkoutHighlights(todaySessions, previousByExercise);
+
+    // Encerrar sessão e exibir resumo
+    localStorage.removeItem(sessionStorageKey(workout.id, today));
+    setSessionStart(null);
+    setSummary({ durationMs, highlights });
+  }
+
+  function closeSummary() {
+    setSummary(null);
+  }
+
   const selectedWeekday = WEEKDAYS[selectedDay];
 
   return (
@@ -502,6 +617,24 @@ export function Workout() {
               </div>
             </Card>
 
+            <div className={styles.sessionBar}>
+              {sessionStart === null ? (
+                <button className={styles.startBtn} onClick={startWorkout}>
+                  <Play size={18} fill="currentColor" /> Iniciar treino
+                </button>
+              ) : (
+                <>
+                  <div className={styles.timerDisplay}>
+                    <Clock size={18} />
+                    <span>{formatTimer(elapsedSeconds)}</span>
+                  </div>
+                  <button className={styles.finishBtn} onClick={finishWorkout}>
+                    <Square size={16} fill="currentColor" /> Finalizar
+                  </button>
+                </>
+              )}
+            </div>
+
             <div className={styles.exerciseList}>
               {exercises.map((exercise, index) => {
                 const isCompleted = completedExercises.includes(exercise.id);
@@ -535,19 +668,21 @@ export function Workout() {
                           effortParameterId={exercise.effort_parameter_id}
                         />
                       </div>
-                      {exercise.video_url ? (
-                        <YouTubeEmbed
-                          url={exercise.video_url}
-                          title={exercise.name}
-                        />
-                      ) : (
+                      <div className={styles.exerciseActions}>
+                        {exercise.video_url && (
+                          <YouTubeEmbed
+                            url={exercise.video_url}
+                            title={exercise.name}
+                          />
+                        )}
                         <button
                           className={styles.expandButton}
                           onClick={() => toggleExpand(exercise.id)}
+                          aria-label={isExpanded ? 'Recolher' : 'Registrar carga'}
                         >
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </button>
-                      )}
+                      </div>
                     </div>
 
                     {/* Seção de Log Expandida */}
@@ -629,6 +764,14 @@ export function Workout() {
       </main>
 
       <BottomNav />
+
+      {summary && (
+        <WorkoutSummaryModal
+          durationMs={summary.durationMs}
+          highlights={summary.highlights}
+          onClose={closeSummary}
+        />
+      )}
     </PageContainer>
   );
 }
