@@ -21,8 +21,10 @@
   --dark: #080d15;
 
   /* FUNDOS */
-  --bg-main: #f5f7fa;
+  --bg-main: #f4f6f9;
   --bg-card: #ffffff;
+  --card-bg: #ffffff;            /* alias usado por componentes */
+  --bg-secondary: #eef2f7;       /* fundo de seções/inputs alternativos */
 
   /* TEXTOS */
   --text-primary: #080d15;
@@ -31,21 +33,25 @@
   --text-light: #a0aec0;
 
   /* BORDAS */
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e0;
+  --border-light: #e8edf3;
+  --border-medium: #d4dbe5;
+  --border-color: #e8edf3;       /* alias usado por componentes */
 
   /* FEEDBACK */
   --success: #22c55e;
   --error: #ef4444;
   --warning: #f59e0b;
 
-  /* SOMBRAS */
-  --shadow-sm: 0 2px 8px rgba(8, 13, 21, 0.06);
-  --shadow-md: 0 4px 16px rgba(8, 13, 21, 0.08);
-  --shadow-lg: 0 8px 24px rgba(8, 13, 21, 0.12);
-  --shadow-up: 0 -4px 20px rgba(8, 13, 21, 0.08);
-  --shadow-primary: 0 4px 14px rgba(28, 76, 155, 0.25);
-  --shadow-accent: 0 4px 14px rgba(243, 152, 91, 0.3);
+  /* SOMBRAS — suaves e em camadas (estilo de app moderno) */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.04), 0 6px 16px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 4px 8px rgba(16, 24, 40, 0.04), 0 16px 32px rgba(16, 24, 40, 0.12);
+  --shadow-up: 0 -6px 24px rgba(16, 24, 40, 0.07);
+  --shadow-primary: 0 6px 18px rgba(28, 76, 155, 0.22);
+  --shadow-accent: 0 6px 18px rgba(243, 152, 91, 0.28);
+
+  /* TRANSICAO */
+  --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* BORDER RADIUS */
   --radius-sm: 8px;
@@ -104,6 +110,13 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+}
+
+/* Foco moderno e acessível (teclado) em todos os elementos interativos */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 input, textarea, select {
