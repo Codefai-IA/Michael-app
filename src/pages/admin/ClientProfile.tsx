@@ -4,8 +4,21 @@ import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCi
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
-import type { Profile, DietPlan, WorkoutPlan, WeightHistory } from '../../types/database';
+import type { Profile, DietPlan, WorkoutPlan, WeightHistory, GoalType } from '../../types/database';
 import styles from './ClientProfile.module.css';
+
+// Objetivos disponíveis + rótulo amigável
+const GOAL_OPTIONS: { value: GoalType; label: string }[] = [
+  { value: 'perder_peso', label: 'Perder peso' },
+  { value: 'ganhar_massa', label: 'Ganhar massa' },
+  { value: 'definicao', label: 'Definição' },
+  { value: 'manter_peso', label: 'Manter peso' },
+  { value: 'melhorar_saude', label: 'Melhorar saúde' },
+];
+
+// Objetivos em que GANHAR peso é o esperado / em que PERDER peso é o esperado
+const GAIN_GOALS: GoalType[] = ['ganhar_massa'];
+const LOSE_GOALS: GoalType[] = ['perder_peso', 'definicao'];
 
 
 function WeightChart({ weightHistory }: { weightHistory: WeightHistory[] }) {
@@ -94,8 +107,11 @@ export function ClientProfile() {
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Goal weight state
+  // Weight + objetivo state (peso inicial, atual, meta e objetivo)
+  const [startingWeightInput, setStartingWeightInput] = useState('');
+  const [currentWeightInput, setCurrentWeightInput] = useState('');
   const [goalWeightInput, setGoalWeightInput] = useState('');
+  const [goalTypeInput, setGoalTypeInput] = useState<GoalType | ''>('');
   const [savingGoalWeight, setSavingGoalWeight] = useState(false);
   const [goalWeightSaved, setGoalWeightSaved] = useState(false);
 
@@ -175,7 +191,10 @@ export function ClientProfile() {
       setClient(clientResult.data);
       setPlanStartDate(clientResult.data.plan_start_date || '');
       setPlanEndDate(clientResult.data.plan_end_date || '');
+      setStartingWeightInput(clientResult.data.starting_weight_kg?.toString() || '');
+      setCurrentWeightInput(clientResult.data.current_weight_kg?.toString() || '');
       setGoalWeightInput(clientResult.data.goal_weight_kg?.toString() || '');
+      setGoalTypeInput(clientResult.data.goal_type || '');
       setAdminNotes(clientResult.data.admin_notes || '');
       setBirthDate(clientResult.data.birth_date || '');
       setWaterGoalMl(clientResult.data.water_goal_ml?.toString() || '');
@@ -231,29 +250,42 @@ export function ClientProfile() {
     }
   }
 
-  async function handleSaveGoalWeight() {
+  async function handleSaveWeights() {
     if (!id) return;
 
     setSavingGoalWeight(true);
 
     try {
-      const value = goalWeightInput ? Number(goalWeightInput) : null;
+      const starting = startingWeightInput ? Number(startingWeightInput) : null;
+      const current = currentWeightInput ? Number(currentWeightInput) : null;
+      const goal = goalWeightInput ? Number(goalWeightInput) : null;
+      const goalType = goalTypeInput || null;
+
       await supabase
         .from('profiles')
         .update({
-          goal_weight_kg: value,
+          starting_weight_kg: starting,
+          current_weight_kg: current,
+          goal_weight_kg: goal,
+          goal_type: goalType,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
 
       if (client) {
-        setClient({ ...client, goal_weight_kg: value });
+        setClient({
+          ...client,
+          starting_weight_kg: starting,
+          current_weight_kg: current,
+          goal_weight_kg: goal,
+          goal_type: goalType,
+        });
       }
 
       setGoalWeightSaved(true);
       setTimeout(() => setGoalWeightSaved(false), 2000);
     } catch (error) {
-      console.error('Error saving goal weight:', error);
+      console.error('Error saving weights:', error);
     } finally {
       setSavingGoalWeight(false);
     }
@@ -596,6 +628,13 @@ export function ClientProfile() {
   const goalWeight = client.goal_weight_kg ?? 0;
   const weightDiff = startingWeight > 0 && currentWeight > 0 ? startingWeight - currentWeight : 0;
 
+  // Evolução relativa ao OBJETIVO: ganhar peso com meta de ganhar = no caminho certo.
+  const lostWeight = weightDiff > 0; // positivo => perdeu peso
+  const isGainGoal = client.goal_type ? GAIN_GOALS.includes(client.goal_type) : false;
+  const isLoseGoal = client.goal_type ? LOSE_GOALS.includes(client.goal_type) : false;
+  const evolutionAligned = (isGainGoal && weightDiff < 0) || (isLoseGoal && weightDiff > 0);
+  const evolutionAgainst = (isGainGoal && weightDiff > 0) || (isLoseGoal && weightDiff < 0);
+
   return (
     <PageContainer hasBottomNav={false}>
       <Header title={client.full_name} showBack />
@@ -717,27 +756,83 @@ export function ClientProfile() {
             </div>
           </div>
 
-          {/* Editar Peso Meta */}
-          <div className={styles.goalWeightEdit}>
-            <div className={styles.goalWeightField}>
-              <label className={styles.dateLabel}>
-                <Target size={16} />
-                Peso Meta (kg)
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min="30"
-                max="300"
-                value={goalWeightInput}
-                onChange={(e) => setGoalWeightInput(e.target.value)}
-                placeholder="Ex: 75.0"
-                className={styles.dateInput}
-              />
+          {/* Editar pesos e objetivo */}
+          <div className={styles.weightEditForm}>
+            <div className={styles.weightEditRow}>
+              <div className={styles.goalWeightField}>
+                <label className={styles.dateLabel}>
+                  <Scale size={16} />
+                  Peso inicial (kg)
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="30"
+                  max="400"
+                  value={startingWeightInput}
+                  onChange={(e) => setStartingWeightInput(e.target.value)}
+                  placeholder="Ex: 90.0"
+                  className={styles.dateInput}
+                />
+              </div>
+              <div className={styles.goalWeightField}>
+                <label className={styles.dateLabel}>
+                  <Scale size={16} />
+                  Peso atual (kg)
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="30"
+                  max="400"
+                  value={currentWeightInput}
+                  onChange={(e) => setCurrentWeightInput(e.target.value)}
+                  placeholder="Ex: 82.0"
+                  className={styles.dateInput}
+                />
+              </div>
             </div>
+
+            <div className={styles.weightEditRow}>
+              <div className={styles.goalWeightField}>
+                <label className={styles.dateLabel}>
+                  <Target size={16} />
+                  Peso meta (kg)
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="30"
+                  max="400"
+                  value={goalWeightInput}
+                  onChange={(e) => setGoalWeightInput(e.target.value)}
+                  placeholder="Ex: 75.0"
+                  className={styles.dateInput}
+                />
+              </div>
+              <div className={styles.goalWeightField}>
+                <label className={styles.dateLabel}>
+                  <Target size={16} />
+                  Objetivo
+                </label>
+                <select
+                  value={goalTypeInput}
+                  onChange={(e) => setGoalTypeInput(e.target.value as GoalType | '')}
+                  className={styles.dateInput}
+                >
+                  <option value="">Selecione…</option>
+                  {GOAL_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <button
-              onClick={handleSaveGoalWeight}
+              onClick={handleSaveWeights}
               disabled={savingGoalWeight}
               className={`${styles.saveDatesBtn} ${goalWeightSaved ? styles.saved : ''}`}
             >
@@ -749,19 +844,19 @@ export function ClientProfile() {
                   Salvo!
                 </>
               ) : (
-                'Salvar Meta'
+                'Salvar dados'
               )}
             </button>
           </div>
 
           {weightDiff !== 0 && currentWeight > 0 && (
-            <div className={`${styles.weightDiffBadge} ${weightDiff > 0 ? styles.weightLost : styles.weightGained}`}>
-              {weightDiff > 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
+            <div className={`${styles.weightDiffBadge} ${evolutionAgainst ? styles.weightGained : styles.weightLost}`}>
+              {lostWeight ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
               <span>
-                {weightDiff > 0
-                  ? `Perdeu ${weightDiff.toFixed(1)}kg desde o inicio`
-                  : `Ganhou ${Math.abs(weightDiff).toFixed(1)}kg desde o inicio`
-                }
+                {lostWeight
+                  ? `Perdeu ${weightDiff.toFixed(1)}kg desde o início`
+                  : `Ganhou ${Math.abs(weightDiff).toFixed(1)}kg desde o início`}
+                {evolutionAligned ? ' · no caminho da meta' : evolutionAgainst ? ' · atenção: contra a meta' : ''}
               </span>
             </div>
           )}

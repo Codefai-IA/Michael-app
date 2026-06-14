@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Trophy, Dumbbell, Utensils, Loader2, Award, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trophy, Dumbbell, Utensils, Loader2, Crown, Medal } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../ui';
@@ -36,9 +37,19 @@ function getPreviousYearMonth(yearMonth: string): string {
   return `${prevYear}-${prevMonth}`;
 }
 
-const MEDAL_EMOJIS = ['🥇', '🥈', '🥉'];
+// Ícones de pódio (1º coroa, 2º/3º medalha) com cores ouro/prata/bronze
+const MEDAL_ICONS = [Crown, Medal, Medal];
+const MEDAL_COLORS = ['#eab308', '#94a3b8', '#b45309'];
 
-function Podium({ entries, label }: { entries: RankingEntry[]; label?: string }) {
+function Podium({
+  entries,
+  label,
+  onSelect,
+}: {
+  entries: RankingEntry[];
+  label?: string;
+  onSelect: (clientId: string) => void;
+}) {
   if (entries.length === 0) return null;
 
   // Reorder: [2nd, 1st, 3rd] for visual layout
@@ -70,11 +81,19 @@ function Podium({ entries, label }: { entries: RankingEntry[]; label?: string })
                     <span>{entry.profiles.full_name?.charAt(0) || '?'}</span>
                   )}
                 </div>
-                <span className={styles.podiumMedal}>{MEDAL_EMOJIS[place]}</span>
+                <span className={styles.podiumMedal}>
+                  {(() => {
+                    const MedalIcon = MEDAL_ICONS[place];
+                    return <MedalIcon size={place === 0 ? 22 : 18} color={MEDAL_COLORS[place]} fill={MEDAL_COLORS[place]} />;
+                  })()}
+                </span>
               </div>
-              <span className={styles.podiumName}>
+              <button
+                className={styles.podiumNameBtn}
+                onClick={() => onSelect(entry.client_id)}
+              >
                 {entry.profiles.full_name?.split(' ')[0]}
-              </span>
+              </button>
               <span className={`${styles.podiumPoints} ${place === 0 ? styles.podiumPointsFirst : ''}`}>
                 {entry.total_points} pts
               </span>
@@ -88,6 +107,8 @@ function Podium({ entries, label }: { entries: RankingEntry[]; label?: string })
 
 export function RankingTab() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+  const openCalendar = (clientId: string) => navigate(`/app/aluno/${clientId}/calendario`);
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [lastMonthWinners, setLastMonthWinners] = useState<RankingEntry[]>([]);
   const [monthlyGift, setMonthlyGift] = useState<string | null>(null);
@@ -162,7 +183,7 @@ export function RankingTab() {
       {/* Prize Banner - Top */}
       {monthlyGift && (
         <div className={styles.prizeBanner}>
-          <span className={styles.prizeBannerIcon}>🏆</span>
+          <span className={styles.prizeBannerIcon}><Trophy size={22} /></span>
           <div className={styles.prizeBannerText}>
             <strong>1° lugar ganha:</strong>
             <span>{monthlyGift}</span>
@@ -188,7 +209,7 @@ export function RankingTab() {
               {lastMonthWinners[0].profiles.full_name} - {lastMonthWinners[0].total_points} pts
             </span>
           </div>
-          <span className={styles.winnerBannerTrophy}>🏆</span>
+          <span className={styles.winnerBannerTrophy}><Trophy size={24} /></span>
         </div>
       )}
 
@@ -200,7 +221,7 @@ export function RankingTab() {
 
       {/* Current Month Podium - Top 3 */}
       {top3.length > 0 && (
-        <Podium entries={top3} />
+        <Podium entries={top3} onSelect={openCalendar} />
       )}
 
       {/* My Stats Card */}
@@ -260,10 +281,13 @@ export function RankingTab() {
                   </div>
 
                   <div className={styles.rankInfo}>
-                    <span className={styles.rankName}>
+                    <button
+                      className={styles.rankNameBtn}
+                      onClick={() => openCalendar(entry.client_id)}
+                    >
                       {entry.profiles.full_name}
                       {isMe && <span className={styles.youBadge}>voce</span>}
-                    </span>
+                    </button>
                     <span className={styles.rankDetails}>
                       {entry.days_with_workout}d treino / {entry.days_with_diet}d dieta
                     </span>

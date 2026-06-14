@@ -5,6 +5,8 @@ import styles from './YouTubeEmbed.module.css';
 interface YouTubeEmbedProps {
   url: string;
   title?: string;
+  /** Player vertical 9:16 (YouTube Shorts) no modal. */
+  vertical?: boolean;
 }
 
 type VideoType = 'youtube' | 'drive' | 'other';
@@ -64,7 +66,7 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-export function YouTubeEmbed({ url, title }: YouTubeEmbedProps) {
+export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -134,7 +136,7 @@ export function YouTubeEmbed({ url, title }: YouTubeEmbedProps) {
           onClick={handleClose}
         >
           <div
-            className={styles.modalContent}
+            className={`${styles.modalContent} ${vertical ? styles.modalContentVertical : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -147,7 +149,7 @@ export function YouTubeEmbed({ url, title }: YouTubeEmbedProps) {
 
             {title && <h3 className={styles.title}>{title}</h3>}
 
-            <div className={styles.videoContainer}>
+            <div className={`${styles.videoContainer} ${vertical ? styles.videoContainerVertical : ''}`}>
               <iframe
                 src={embedUrl}
                 title={title || 'Video do exercicio'}

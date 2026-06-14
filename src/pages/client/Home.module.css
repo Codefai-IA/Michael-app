@@ -1,8 +1,8 @@
 .header {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: white;
-  padding: 24px 20px 60px;
-  border-radius: 0 0 var(--radius-3xl) var(--radius-3xl);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 18px 20px 56px;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -19,17 +19,20 @@
   width: auto;
   border-radius: var(--radius-sm);
   object-fit: contain;
+  background: var(--dark);
+  padding: 5px 7px;
 }
 
 .title {
   font-size: 24px;
   font-weight: 700;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .subtitle {
   font-size: 15px;
-  opacity: 0.9;
+  color: var(--text-muted);
   margin: 0;
 }
 

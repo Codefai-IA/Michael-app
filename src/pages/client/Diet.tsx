@@ -1,17 +1,18 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { Clock, ChevronRight, ChevronDown, ChevronUp, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Clock, ChevronRight, ChevronDown, ChevronUp, Plus, Trash2, RefreshCw, Camera, CheckCircle2, UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
-import { Card, Checkbox, Button, Modal, MacroPieChart, DailyMacrosSummary, AddExtraMealModal } from '../../components/ui';
+import { Card, Checkbox, Button, Modal, MacroPieChart, DailyMacrosSummary, AddExtraMealModal, CameraCapture, RecipePicker } from '../../components/ui';
 import type { ExtraMeal } from '../../components/ui';
 import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
 import { formatFoodName } from '../../utils/formatters';
 import { formatQuantityDisplay, getUnitLabel } from '../../utils/foodUnits';
 import { UNIT_TYPES } from '../../constants/foodUnits';
-import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem } from '../../types/database';
+import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem, CheckinPhoto, Recipe } from '../../types/database';
 import { maybeAwardDietPoints } from '../../lib/points';
+import { uploadCheckinPhoto, getDayCheckinPhotos } from '../../lib/checkinPhotos';
 import styles from './Diet.module.css';
 
 // Helper para salvar/carregar dieta selecionada do localStorage
@@ -96,6 +97,11 @@ export function Diet() {
   const { profile } = useAuth();
   const [meals, setMeals] = useState<MealWithNutrition[]>([]);
   const [completedMeals, setCompletedMeals] = useState<string[]>([]);
+  // Fotos de refeição do dia (antifraude). O dia só valida com >=1 foto.
+  const [dietPhotos, setDietPhotos] = useState<CheckinPhoto[]>([]);
+  // Refeição que está aguardando captura de foto (abre a câmera quando != null)
+  const [cameraMeal, setCameraMeal] = useState<MealWithNutrition | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealWithNutrition | null>(null);
   const [substitutions, setSubstitutions] = useState<FoodSubstitution[]>([]);
   const [expandedFoods, setExpandedFoods] = useState<Set<string>>(new Set());
@@ -103,6 +109,8 @@ export function Diet() {
   const currentDateRef = useRef(currentDate);
   const [extraMeals, setExtraMeals] = useState<ExtraMeal[]>([]);
   const [showAddExtraMeal, setShowAddExtraMeal] = useState(false);
+  const [showAddChoice, setShowAddChoice] = useState(false);
+  const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [equivalenceGroups, setEquivalenceGroups] = useState<EquivalenceGroupWithFoods[]>([]);
   const [expandedEquivalences, setExpandedEquivalences] = useState<Set<string>>(new Set());
   // Track which meal option (0 = original, 1+ = substitution index) is selected for each meal
@@ -143,6 +151,7 @@ export function Diet() {
         currentDateRef.current = newDate;
         setCurrentDate(newDate);
         setCompletedMeals([]);
+        setDietPhotos([]);
         setExtraMeals([]);
         // Buscar dados do novo dia
         await Promise.all([fetchProgress(), fetchExtraMeals()]);
@@ -257,6 +266,37 @@ export function Diet() {
     } catch (error) {
       console.error('[Diet] Error saving extra meal:', error);
     }
+  };
+
+  // Adicionar uma RECEITA como refeição extra (mesma lógica/soma de macros do dia)
+  const handleAddRecipe = async (recipe: Recipe) => {
+    const recipeMeal: ExtraMeal = {
+      id: crypto.randomUUID(),
+      meal_name: recipe.title,
+      foods: [
+        {
+          id: crypto.randomUUID(),
+          name: recipe.title,
+          quantity: 1,
+          quantity_units: 1,
+          unit_type: 'porcao' as UnitType,
+          peso_por_unidade: null,
+          calories: Math.round(recipe.calories),
+          protein: recipe.protein,
+          carbs: recipe.carbs,
+          fats: recipe.fat,
+          calories_100g: Math.round(recipe.calories),
+          protein_100g: recipe.protein,
+          carbs_100g: recipe.carbs,
+          fats_100g: recipe.fat,
+        },
+      ],
+      total_calories: Math.round(recipe.calories),
+      total_protein: recipe.protein,
+      total_carbs: recipe.carbs,
+      total_fats: recipe.fat,
+    };
+    await handleAddExtraMeal(recipeMeal);
   };
 
   // Remover refeição extra (deleta do banco de dados)
@@ -538,6 +578,11 @@ export function Diet() {
     } else {
       setCompletedMeals([]);
     }
+
+    // Carregar fotos de refeição do dia (antifraude / validação)
+    const photos = await getDayCheckinPhotos(profile.id, today);
+    setDietPhotos(photos.filter((p) => p.type === 'diet'));
+
     console.log('[Diet] fetchProgress COMPLETE');
   }
 
@@ -966,9 +1011,16 @@ export function Diet() {
         if (error) throw error;
       }
 
-      // Award points when first meal of the day is checked
-      if (!isCompleted && completedMeals.length === 0) {
-        maybeAwardDietPoints(profile!.id, today);
+      // Validação antifraude: o dia só pontua com >=1 foto de refeição.
+      if (!isCompleted) {
+        if (dietPhotos.length === 0) {
+          // Ainda sem foto hoje -> abrir câmera para validar a refeição marcada
+          const meal = meals.find((m) => m.id === mealId) || null;
+          setCameraMeal(meal);
+        } else {
+          // Já existe foto hoje -> pode pontuar (idempotente no backend)
+          maybeAwardDietPoints(profile!.id, today);
+        }
       }
     } catch (error) {
       console.error('Erro ao salvar progresso:', error);
@@ -976,6 +1028,39 @@ export function Diet() {
       setCompletedMeals(completedMeals);
     }
   }
+
+  // Captura de foto de refeição concluída (câmera in-app)
+  async function handleMealPhotoCapture(blob: Blob, takenAt: Date) {
+    if (!profile?.id || !cameraMeal) return;
+    setUploadingPhoto(true);
+    const today = getBrasiliaDate();
+    try {
+      const photo = await uploadCheckinPhoto({
+        clientId: profile.id,
+        date: today,
+        type: 'diet',
+        blob,
+        takenAt,
+        mealId: cameraMeal.id,
+      });
+      if (photo) {
+        setDietPhotos((prev) => [...prev, photo]);
+        // Foto registrada -> dia validado, concede pontos de dieta
+        maybeAwardDietPoints(profile.id, today);
+      } else {
+        alert('Não foi possível salvar a foto. Tente novamente.');
+      }
+    } finally {
+      setUploadingPhoto(false);
+      setCameraMeal(null);
+    }
+  }
+
+  // Conjunto de meal_ids que já têm foto hoje (indicador visual)
+  const mealsWithPhoto = useMemo(
+    () => new Set(dietPhotos.map((p) => p.meal_id).filter(Boolean) as string[]),
+    [dietPhotos]
+  );
 
   function formatTime(time: string | null): string {
     if (!time) return '';
@@ -1075,6 +1160,7 @@ export function Diet() {
           <>
             {meals.map((meal) => {
               const isCompleted = completedMeals.includes(meal.id);
+              const hasPhoto = mealsWithPhoto.has(meal.id);
               const hasMealOptions = meal.meal_substitutions_with_nutrition && meal.meal_substitutions_with_nutrition.length > 0;
               const selectedOption = selectedMealOptions[meal.id] || 0;
               const totalOptions = hasMealOptions ? meal.meal_substitutions_with_nutrition!.length + 1 : 1;
@@ -1137,6 +1223,16 @@ export function Diet() {
                     </div>
                     <p className={styles.mealHint}>Toque para ver detalhes</p>
                   </div>
+                  <button
+                    className={`${styles.mealPhotoButton} ${hasPhoto ? styles.mealPhotoButtonDone : ''}`}
+                    title={hasPhoto ? 'Foto registrada' : 'Tirar foto da refeição'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCameraMeal(meal);
+                    }}
+                  >
+                    {hasPhoto ? <CheckCircle2 size={20} /> : <Camera size={20} />}
+                  </button>
                   <button className={styles.arrowButton}>
                     <ChevronRight size={20} />
                   </button>
@@ -1177,10 +1273,10 @@ export function Diet() {
               variant="outline"
               fullWidth
               className={styles.addExtraButton}
-              onClick={() => setShowAddExtraMeal(true)}
+              onClick={() => setShowAddChoice(true)}
             >
               <Plus size={18} />
-              Adicionar Refeição Extra
+              Adicionar Refeição
             </Button>
           </>
         ) : (
@@ -1460,11 +1556,64 @@ export function Diet() {
         </div>
       </Modal>
 
-      {/* Modal Adicionar Refeição Extra */}
+      {/* Escolha: adicionar alimentos OU adicionar receita */}
+      <Modal
+        isOpen={showAddChoice}
+        onClose={() => setShowAddChoice(false)}
+        title="Adicionar refeição"
+      >
+        <div className={styles.addChoice}>
+          <button
+            className={styles.addChoiceOption}
+            onClick={() => {
+              setShowAddChoice(false);
+              setShowAddExtraMeal(true);
+            }}
+          >
+            <Plus size={22} />
+            <div>
+              <strong>Adicionar alimentos</strong>
+              <span>Monte a refeição buscando alimentos na tabela</span>
+            </div>
+          </button>
+          <button
+            className={styles.addChoiceOption}
+            onClick={() => {
+              setShowAddChoice(false);
+              setShowRecipePicker(true);
+            }}
+          >
+            <UtensilsCrossed size={22} />
+            <div>
+              <strong>Adicionar receita</strong>
+              <span>Escolha uma receita em vídeo com macros prontos</span>
+            </div>
+          </button>
+        </div>
+      </Modal>
+
+      {/* Modal Adicionar Refeição Extra (alimentos) */}
       <AddExtraMealModal
         isOpen={showAddExtraMeal}
         onClose={() => setShowAddExtraMeal(false)}
         onAdd={handleAddExtraMeal}
+      />
+
+      {/* Seletor de receitas */}
+      <RecipePicker
+        isOpen={showRecipePicker}
+        onClose={() => setShowRecipePicker(false)}
+        onAdd={handleAddRecipe}
+      />
+
+      {/* Câmera in-app para foto de refeição (antifraude) */}
+      <CameraCapture
+        isOpen={cameraMeal !== null}
+        title="Foto da refeição"
+        subtitle={cameraMeal ? cameraMeal.name : undefined}
+        uploading={uploadingPhoto}
+        onCapture={handleMealPhotoCapture}
+        onCancel={() => setCameraMeal(null)}
       />
 
       <BottomNav />

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { hasDietPhoto } from './checkinPhotos';
 
 /**
  * Award workout points for a day (fire-and-forget).
@@ -38,6 +39,10 @@ export async function maybeAwardWorkoutPoints(clientId: string, date: string) {
  */
 export async function maybeAwardDietPoints(clientId: string, date: string) {
   try {
+    // Gate antifraude: o dia só pontua se houver >=1 foto de refeição.
+    const photographed = await hasDietPhoto(clientId, date);
+    if (!photographed) return;
+
     const yearMonth = date.substring(0, 7);
 
     const { error } = await supabase

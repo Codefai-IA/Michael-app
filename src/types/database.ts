@@ -329,6 +329,52 @@ export interface RankingEntry extends MonthlyPoints {
   profiles: Pick<Profile, 'full_name' | 'photo_url'>;
 }
 
+export type CheckinPhotoType = 'diet' | 'workout';
+
+export interface CheckinPhoto {
+  id: string;
+  client_id: string;
+  date: string;
+  type: CheckinPhotoType;
+  storage_path: string;
+  taken_at: string;
+  meal_id: string | null;
+  activity_type: string | null;
+  created_at: string;
+}
+
+// Foto retornada pela RPC get_user_calendar (subconjunto serializado em JSONB)
+export interface CalendarPhoto {
+  id: string;
+  type: CheckinPhotoType;
+  taken_at: string;
+  storage_path: string;
+  meal_id: string | null;
+  activity_type: string | null;
+}
+
+// Um dia do calendário mensal de atividades
+export interface CalendarDay {
+  date: string;
+  has_diet: boolean;
+  has_workout: boolean;
+  activity_types: string[];
+  photos: CalendarPhoto[];
+}
+
+export interface Recipe {
+  id: string;
+  title: string;
+  youtube_url: string;
+  category: string | null;
+  servings: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  created_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -436,6 +482,16 @@ export interface Database {
         Row: PushSubscription;
         Insert: Omit<PushSubscription, 'id' | 'created_at'>;
         Update: Partial<Omit<PushSubscription, 'id'>>;
+      };
+      checkin_photos: {
+        Row: CheckinPhoto;
+        Insert: Omit<CheckinPhoto, 'id' | 'created_at'>;
+        Update: Partial<Omit<CheckinPhoto, 'id'>>;
+      };
+      recipes: {
+        Row: Recipe;
+        Insert: Omit<Recipe, 'id' | 'created_at'>;
+        Update: Partial<Omit<Recipe, 'id' | 'created_at'>>;
       };
     };
   };

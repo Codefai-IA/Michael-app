@@ -12,7 +12,7 @@ export function Ranking() {
           className={styles.logo}
         />
         <h1 className={styles.title}>Ranking</h1>
-        <p className={styles.subtitle}>Competicao mensal</p>
+        <p className={styles.subtitle}>Competição mensal</p>
       </header>
 
       <main className={styles.content}>

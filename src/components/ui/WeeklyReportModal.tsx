@@ -27,19 +27,37 @@ function getBrasiliaToday(): { weekday: number; date: string } {
   return { weekday: map[weekdayName] ?? new Date().getDay(), date };
 }
 
+// Data (YYYY-MM-DD) da sexta-feira mais recente em relação a hoje.
+// Hoje é sexta -> hoje; sáb..qui -> a sexta anterior.
+// Serve de âncora semanal: o relatório daquela semana é mostrado na primeira
+// abertura a partir da sexta e "expira" sozinho quando chega a próxima sexta.
+function getReportFridayDate(): string {
+  const { weekday, date } = getBrasiliaToday();
+  const daysSinceFriday = (weekday - FRIDAY + 7) % 7;
+  const [y, m, d] = date.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - daysSinceFriday);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
 export function WeeklyReportModal() {
   const { user, profile, isAdmin } = useAuth();
   const [show, setShow] = useState(false);
   const navigate = useNavigate();
 
+  // Hoje é realmente sexta? (só pra ajustar o título)
+  const isFridayToday = getBrasiliaToday().weekday === FRIDAY;
+
   useEffect(() => {
     if (!user || isAdmin || !profile) return;
 
-    const { weekday, date } = getBrasiliaToday();
-    if (weekday !== FRIDAY) return;
-
-    // Mostra uma vez por sexta-feira (chave usa a data da sexta)
-    const key = `weekly-report-shown-${user.id}-${date}`;
+    // Âncora na sexta mais recente: se o aluno não abriu na sexta, aparece
+    // na próxima abertura (sáb, dom...) — uma única vez por semana.
+    const reportFriday = getReportFridayDate();
+    const key = `weekly-report-shown-${user.id}-${reportFriday}`;
     if (localStorage.getItem(key)) return;
 
     localStorage.setItem(key, '1');
@@ -67,7 +85,7 @@ export function WeeklyReportModal() {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.icon}>📋</div>
 
-        <h2 className={styles.title}>É sexta-feira!</h2>
+        <h2 className={styles.title}>{isFridayToday ? 'É sexta-feira!' : 'Fechamento da semana'}</h2>
         <p className={styles.subtitle}>Hora de fechar a semana. Não esqueça de:</p>
 
         <ul className={styles.checklist}>

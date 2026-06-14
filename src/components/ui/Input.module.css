@@ -19,13 +19,17 @@
 
 .input {
   width: 100%;
-  padding: 14px 16px;
-  border: 2px solid var(--border-light);
+  padding: 13px 16px;
+  border: 1.5px solid var(--border-medium);
   border-radius: var(--radius-md);
   font-size: 16px;
   color: var(--text-primary);
   background: var(--bg-card);
-  transition: all 0.2s ease;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input:hover:not(:focus) {
+  border-color: var(--text-light);
 }
 
 .input::placeholder {
@@ -35,7 +39,7 @@
 .input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-light);
+  box-shadow: var(--ring);
 }
 
 .hasIcon {
@@ -57,7 +61,7 @@
 }
 
 .hasError .input:focus {
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
 }
 
 .error {

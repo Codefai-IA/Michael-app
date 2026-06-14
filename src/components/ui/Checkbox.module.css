@@ -22,7 +22,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background-color var(--transition), border-color var(--transition),
+    box-shadow var(--transition);
   flex-shrink: 0;
   color: white;
 }
@@ -42,5 +43,5 @@
 }
 
 .input:focus-visible + .checkbox {
-  box-shadow: 0 0 0 4px var(--accent-light);
+  box-shadow: var(--ring-accent);
 }
