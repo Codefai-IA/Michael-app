@@ -177,6 +177,20 @@
   background: #000;
 }
 
+/* Player vertical (YouTube Shorts 9:16) */
+.modalContentVertical {
+  max-width: 420px;
+}
+
+.videoContainerVertical {
+  padding-bottom: 0;
+  height: min(78vh, 720px);
+}
+
+.videoContainerVertical .iframe {
+  height: 100%;
+}
+
 .modal.fullscreen .videoContainer {
   flex: 1;
   padding-bottom: 0;

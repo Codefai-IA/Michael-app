@@ -1,15 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { Home, ClipboardList, TrendingUp, Utensils, Dumbbell, Trophy, User } from 'lucide-react';
+import { House, BookOpen, LineChart, Salad, Dumbbell, CircleUser, Trophy } from 'lucide-react';
 import styles from './BottomNav.module.css';
 
 const navItems = [
-  { to: '/app', icon: Home, label: 'Home' },
-  { to: '/app/orientacoes', icon: ClipboardList, label: 'Orientações' },
-  { to: '/app/progresso', icon: TrendingUp, label: 'Progresso' },
-  { to: '/app/dieta', icon: Utensils, label: 'Dieta' },
+  { to: '/app', icon: House, label: 'Home' },
+  { to: '/app/orientacoes', icon: BookOpen, label: 'Orientações' },
+  { to: '/app/progresso', icon: LineChart, label: 'Progresso' },
+  { to: '/app/dieta', icon: Salad, label: 'Dieta' },
   { to: '/app/treino', icon: Dumbbell, label: 'Treino' },
-  // { to: '/app/ranking', icon: Trophy, label: 'Ranking' }, // oculto temporariamente
-  { to: '/app/perfil', icon: User, label: 'Perfil' },
+  { to: '/app/ranking', icon: Trophy, label: 'Ranking' },
+  // Calendário acessível apenas via Ranking (clicando nos nomes); rota /app/calendario continua existindo
+  { to: '/app/perfil', icon: CircleUser, label: 'Perfil' },
 ];
 
 export function BottomNav() {

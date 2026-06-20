@@ -16,6 +16,7 @@ import { Progress } from './pages/client/Progress';
 import { Profile } from './pages/client/Profile';
 import { Ranking } from './pages/client/Ranking';
 import { OrientacoesGerais } from './pages/client/OrientacoesGerais';
+import { ActivityCalendar } from './pages/client/ActivityCalendar';
 
 // Admin pages
 import { ClientList } from './pages/admin/ClientList';
@@ -180,6 +181,12 @@ function KeyedLoadProgression() {
   return <LoadProgression key={id} />;
 }
 
+// Calendário de terceiro (fiscalização social) - remonta ao trocar de aluno
+function KeyedActivityCalendar() {
+  const { id } = useParams<{ id: string }>();
+  return <ActivityCalendar key={id} />;
+}
+
 function AppRoutes() {
   const { user, isAdmin, loading } = useAuth();
 
@@ -293,6 +300,23 @@ function AppRoutes() {
         element={
           <ClientRoute>
             <Profile />
+          </ClientRoute>
+        }
+      />
+      <Route
+        path="/app/calendario"
+        element={
+          <ClientRoute>
+            <ActivityCalendar />
+          </ClientRoute>
+        }
+      />
+      {/* Calendário público de outro participante do ranking (auditoria social) */}
+      <Route
+        path="/app/aluno/:id/calendario"
+        element={
+          <ClientRoute>
+            <KeyedActivityCalendar />
           </ClientRoute>
         }
       />

@@ -4,9 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
-import { Card, Checkbox, YouTubeEmbed, TechniqueBadge, WorkoutSummaryModal } from '../../components/ui';
+import { Card, Checkbox, YouTubeEmbed, TechniqueBadge, WorkoutSummaryModal, CameraCapture } from '../../components/ui';
 import type { DailyWorkout, Exercise } from '../../types/database';
 import { maybeAwardWorkoutPoints } from '../../lib/points';
+import { uploadCheckinPhoto } from '../../lib/checkinPhotos';
 import {
   computeWorkoutHighlights,
   formatTimer,
@@ -88,6 +89,10 @@ export function Workout() {
   const [sessionStart, setSessionStart] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [summary, setSummary] = useState<{ durationMs: number; highlights: WorkoutHighlight[] } | null>(null);
+  // Resumo aguardando a foto pós-treino obrigatória (antifraude)
+  const [pendingSummary, setPendingSummary] = useState<{ durationMs: number; highlights: WorkoutHighlight[] } | null>(null);
+  const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Manter ref sincronizado com o estado
   useEffect(() => {
@@ -565,10 +570,37 @@ export function Workout() {
 
     const highlights = computeWorkoutHighlights(todaySessions, previousByExercise);
 
-    // Encerrar sessão e exibir resumo
+    // Encerrar sessão. O resumo só aparece após a foto pós-treino obrigatória.
     localStorage.removeItem(sessionStorageKey(workout.id, today));
     setSessionStart(null);
-    setSummary({ durationMs, highlights });
+    setPendingSummary({ durationMs, highlights });
+    setShowWorkoutCamera(true);
+  }
+
+  // Foto pós-treino obrigatória (câmera in-app). Só libera o resumo após capturar.
+  async function handleWorkoutPhotoCapture(blob: Blob, takenAt: Date) {
+    if (!profile?.id) return;
+    setUploadingPhoto(true);
+    const today = currentDateRef.current;
+    try {
+      const photo = await uploadCheckinPhoto({
+        clientId: profile.id,
+        date: today,
+        type: 'workout',
+        blob,
+        takenAt,
+        activityType: workout?.workout_type ?? null,
+      });
+      if (photo) {
+        setShowWorkoutCamera(false);
+        setSummary(pendingSummary);
+        setPendingSummary(null);
+      } else {
+        alert('Não foi possível salvar a foto. Tente novamente.');
+      }
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   function closeSummary() {
@@ -764,6 +796,15 @@ export function Workout() {
       </main>
 
       <BottomNav />
+
+      {/* Câmera pós-treino OBRIGATÓRIA: sem onCancel, não fecha sem capturar */}
+      <CameraCapture
+        isOpen={showWorkoutCamera}
+        title="Foto pós-treino"
+        subtitle="Registre sua foto para validar o treino"
+        uploading={uploadingPhoto}
+        onCapture={handleWorkoutPhotoCapture}
+      />
 
       {summary && (
         <WorkoutSummaryModal

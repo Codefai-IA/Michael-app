@@ -21,3 +21,6 @@ export { BirthdayModal } from './BirthdayModal';
 export { VideoCarousel } from './VideoCarousel';
 export { WorkoutSummaryModal } from './WorkoutSummaryModal';
 export { WeeklyReportModal } from './WeeklyReportModal';
+export { CameraCapture } from './CameraCapture';
+export { StampedImage, formatStamp } from './StampedImage';
+export { RecipePicker } from './RecipePicker';

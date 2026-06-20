@@ -79,7 +79,7 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
           </div>
         </div>
 
-        <h2 className={styles.title}>Ativar Notificacoes</h2>
+        <h2 className={styles.title}>Ativar Notificações</h2>
 
         <p className={styles.description}>
           Receba avisos quando seu nutricionista atualizar sua dieta ou treino.
@@ -96,13 +96,13 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
           </div>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>&#10003;</span>
-            <span>Nunca perca uma atualizacao</span>
+            <span>Nunca perca uma atualização</span>
           </div>
         </div>
 
         <button onClick={handleEnable} className={styles.enableButton}>
           <Bell size={18} />
-          Ativar Notificacoes
+          Ativar Notificações
         </button>
 
         <div className={styles.secondaryActions}>
@@ -110,7 +110,7 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
             Depois
           </button>
           <button onClick={handleDismiss} className={styles.dismissButton}>
-            Nao mostrar
+            Não mostrar
           </button>
         </div>
       </div>

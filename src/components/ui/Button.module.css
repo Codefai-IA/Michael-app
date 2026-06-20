@@ -5,13 +5,19 @@
   gap: 8px;
   font-weight: 600;
   border-radius: var(--radius-md);
-  transition: all 0.2s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition),
+    background-color var(--transition), border-color var(--transition);
   position: relative;
   white-space: nowrap;
 }
 
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
 .button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -41,10 +47,12 @@
 .primary:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md), var(--shadow-primary);
 }
 
 .primary:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: var(--shadow-xs);
 }
 
 .secondary {
@@ -56,6 +64,19 @@
 .secondary:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md), var(--shadow-accent);
+}
+
+.secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-xs);
+}
+
+.secondary:focus-visible {
+  box-shadow: var(--ring-accent);
+}
+.outline:focus-visible {
+  box-shadow: var(--ring-accent);
 }
 
 .outline {

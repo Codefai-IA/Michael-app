@@ -23,3 +23,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+__ui_backup_*/
+
+# Artefatos temporários (lixo de sessão)
+tmpclaude-*
+nul
+_patch.js

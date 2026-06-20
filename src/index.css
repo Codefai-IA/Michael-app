@@ -23,43 +23,49 @@
   /* FUNDOS */
   --bg-main: #f4f6f9;
   --bg-card: #ffffff;
-  --card-bg: #ffffff;            /* alias usado por componentes */
-  --bg-secondary: #eef2f7;       /* fundo de seções/inputs alternativos */
+  --bg-subtle: #eef2f7;     /* superfícies suaves: chips, inputs, hovers */
 
   /* TEXTOS */
-  --text-primary: #080d15;
-  --text-secondary: #4a5568;
-  --text-muted: #718096;
-  --text-light: #a0aec0;
+  --text-primary: #0b1220;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
 
   /* BORDAS */
-  --border-light: #e8edf3;
-  --border-medium: #d4dbe5;
-  --border-color: #e8edf3;       /* alias usado por componentes */
+  --border-light: #e6eaf0;
+  --border-medium: #d2d9e3;
 
   /* FEEDBACK */
-  --success: #22c55e;
+  --success: #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.1);
   --error: #ef4444;
   --warning: #f59e0b;
 
-  /* SOMBRAS — suaves e em camadas (estilo de app moderno) */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.04), 0 6px 16px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 4px 8px rgba(16, 24, 40, 0.04), 0 16px 32px rgba(16, 24, 40, 0.12);
-  --shadow-up: 0 -6px 24px rgba(16, 24, 40, 0.07);
-  --shadow-primary: 0 6px 18px rgba(28, 76, 155, 0.22);
-  --shadow-accent: 0 6px 18px rgba(243, 152, 91, 0.28);
+  /* SOMBRAS — camadas suaves (estilo Linear/Stripe) */
+  --shadow-xs: 0 1px 2px rgba(11, 18, 32, 0.05);
+  --shadow-sm: 0 1px 2px rgba(11, 18, 32, 0.04), 0 1px 3px rgba(11, 18, 32, 0.06);
+  --shadow-md: 0 2px 4px rgba(11, 18, 32, 0.04), 0 6px 16px rgba(11, 18, 32, 0.08);
+  --shadow-lg: 0 4px 8px rgba(11, 18, 32, 0.04), 0 16px 32px rgba(11, 18, 32, 0.10);
+  --shadow-xl: 0 8px 16px rgba(11, 18, 32, 0.06), 0 28px 56px rgba(11, 18, 32, 0.16);
+  --shadow-up: 0 -2px 6px rgba(11, 18, 32, 0.03), 0 -10px 28px rgba(11, 18, 32, 0.07);
+  --shadow-primary: 0 4px 14px rgba(28, 76, 155, 0.22);
+  --shadow-accent: 0 4px 14px rgba(243, 152, 91, 0.26);
 
-  /* TRANSICAO */
-  --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  /* TRANSIÇÕES */
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* BORDER RADIUS */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
+  /* FOCO ACESSÍVEL (anel discreto da cor primária) */
+  --ring: 0 0 0 3px rgba(28, 76, 155, 0.28);
+  --ring-accent: 0 0 0 3px rgba(243, 152, 91, 0.30);
+
+  /* BORDER RADIUS — apertados (estilo Linear/Stripe, menos "bolha") */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
   --radius-full: 50%;
 
   /* ESPACAMENTO */
@@ -70,6 +76,23 @@
   --space-xl: 20px;
   --space-2xl: 24px;
   --space-3xl: 32px;
+
+  /* ALIASES — nomes alternativos usados pelos CSS Modules.
+     Centralizados aqui para nenhum token ficar indefinido. */
+  --bg-page: var(--bg-main);
+  --bg-primary: var(--bg-card);
+  --bg-secondary: var(--bg-subtle);
+  --background-secondary: var(--bg-subtle);
+  --card-bg: var(--bg-card);
+  --border: var(--border-light);
+  --border-color: var(--border-light);
+  --text: var(--text-primary);
+  --primary-dark: var(--primary-hover);
+  --primary-bg: var(--primary-light);
+  --accent-dark: var(--accent-hover);
+  --accent-primary: var(--accent);
+  --danger: var(--error);
+  --danger-bg: rgba(239, 68, 68, 0.1);
 }
 
 /* Reset e Base */
@@ -93,7 +116,18 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+
+/* Hierarquia tipográfica clara */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+  letter-spacing: -0.011em;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+h1 { letter-spacing: -0.02em; }
+h2 { letter-spacing: -0.016em; }
 
 #root {
   min-height: 100vh;
@@ -112,11 +146,19 @@ button {
   background: none;
 }
 
-/* Foco moderno e acessível (teclado) em todos os elementos interativos */
-:where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+/* Foco acessível global — só aparece em navegação por teclado */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
   border-radius: var(--radius-sm);
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 input, textarea, select {
@@ -225,4 +267,14 @@ img {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Respeita usuários que preferem menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

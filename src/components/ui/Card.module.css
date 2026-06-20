@@ -3,21 +3,33 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
-  transition: all 0.2s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition),
+    border-color var(--transition);
+}
+
+.hoverable {
+  cursor: pointer;
 }
 
 .hoverable:hover {
   box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
   transform: translateY(-2px);
 }
 
 .hoverable:active {
   transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.hoverable:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 /* Variants */
 .gradient {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  background: var(--primary);
   color: white;
   border: none;
 }

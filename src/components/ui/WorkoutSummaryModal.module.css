@@ -102,7 +102,7 @@
 .button {
   width: 100%;
   padding: 0.875rem 1.25rem;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+  background: var(--accent);
   color: white;
   font-weight: 700;
   font-size: 1rem;

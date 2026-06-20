@@ -159,6 +159,73 @@
   flex-shrink: 0;
 }
 
+.addChoice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.addChoiceOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  color: var(--primary);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition-fast);
+}
+
+.addChoiceOption:hover {
+  background: var(--primary-light);
+  border-color: var(--border-medium);
+}
+
+.addChoiceOption:active {
+  transform: scale(0.99);
+}
+
+.addChoiceOption div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.addChoiceOption strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.addChoiceOption span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.mealPhotoButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.mealPhotoButtonDone {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--success);
+  border-color: var(--success);
+}
+
 .emptyState {
   text-align: center;
   padding: 60px 20px;

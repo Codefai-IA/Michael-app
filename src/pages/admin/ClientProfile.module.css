@@ -234,7 +234,7 @@
   width: 100%;
   padding: 12px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+  background: var(--accent);
   color: white;
   font-weight: 600;
   font-size: 14px;
@@ -602,6 +602,29 @@
 
 .goalWeightField {
   margin-bottom: 12px;
+}
+
+/* Editor de pesos + objetivo (admin) */
+.weightEditForm {
+  padding: 16px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.weightEditRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.weightEditForm .goalWeightField {
+  min-width: 0;
+}
+
+.weightEditForm .saveDatesBtn {
+  width: 100%;
+  margin-top: 4px;
 }
 
 .goalWeightField label {
