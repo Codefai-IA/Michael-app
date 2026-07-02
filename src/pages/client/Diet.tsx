@@ -1420,6 +1420,9 @@ export function Diet() {
                     const actualQuantity = parseBrazilianNumber(food.quantity);
                     const baseQuantity = equivalenceData.currentFood.quantity_grams;
                     const ratio = baseQuantity > 0 ? actualQuantity / baseQuantity : 1;
+                    // Grupos com rótulo de porção (ex: chocolate) exibem o texto fixo e não escalam.
+                    const labelBased = !!equivalenceData.currentFood.portion_label ||
+                      equivalenceData.equivalents.some((eq) => !!eq.portion_label);
 
                     return (
                       <div className={styles.inlineEquivalences}>
@@ -1427,12 +1430,12 @@ export function Diet() {
                           {equivalenceData.group.name}
                         </span>
                         <span className={styles.equivalenceHint}>
-                          Troque {Math.round(actualQuantity)}g por:
+                          {labelBased ? 'Opções equivalentes:' : `Troque ${Math.round(actualQuantity)}g por:`}
                         </span>
                         {equivalenceData.equivalents.map((eq) => (
                           <div key={eq.id} className={styles.equivalenceRow}>
                             <span className={styles.equivalenceArrow}>→</span>
-                            <span>{eq.food_name} ({Math.round(eq.quantity_grams * ratio)}g)</span>
+                            <span>{eq.food_name} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
                           </div>
                         ))}
                       </div>
@@ -1527,18 +1530,21 @@ export function Diet() {
                       const actualQuantity = parseBrazilianNumber(item.quantity);
                       const baseQuantity = equivData.currentFood.quantity_grams;
                       const ratio = baseQuantity > 0 ? actualQuantity / baseQuantity : 1;
+                      // Grupos com rótulo de porção (ex: chocolate) exibem o texto fixo e não escalam.
+                      const labelBased = !!equivData.currentFood.portion_label ||
+                        equivData.equivalents.some((eq) => !!eq.portion_label);
                       return (
                         <div className={styles.inlineEquivalences}>
                           <span className={styles.equivalenceGroupName}>
                             {equivData.group.name}
                           </span>
                           <span className={styles.equivalenceHint}>
-                            Troque {Math.round(actualQuantity)}g por:
+                            {labelBased ? 'Opções equivalentes:' : `Troque ${Math.round(actualQuantity)}g por:`}
                           </span>
                           {equivData.equivalents.map((eq) => (
                             <div key={eq.id} className={styles.equivalenceRow}>
                               <span className={styles.equivalenceArrow}>→</span>
-                              <span>{eq.food_name} ({Math.round(eq.quantity_grams * ratio)}g)</span>
+                              <span>{eq.food_name} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
                             </div>
                           ))}
                         </div>

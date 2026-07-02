@@ -158,6 +158,9 @@ export interface FoodEquivalence {
   quantity_grams: number;
   order_index: number;
   created_at: string;
+  /** Rótulo textual da porção (ex: "3 unidades", "1 barrinha"). Quando presente,
+   *  é exibido no lugar da grama calculada e a equivalência não é escalada. */
+  portion_label?: string | null;
 }
 
 export interface WorkoutPlan {

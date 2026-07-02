@@ -27,7 +27,7 @@ const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
   { value: 'colher_cha', label: 'Colher de Cha' },
   { value: 'xicara', label: 'Xicara' },
   { value: 'copo', label: 'Copo' },
-  { value: 'porcao', label: 'Porcao' },
+  { value: 'porcao', label: 'Porção' },
 ];
 
 import type { Profile, DietPlan, Meal, TabelaTaco, FoodSubstitution, UnitType, TabelaTacoWithMetadata, MealSubstitution, MealSubstitutionItem } from '../../types/database';
@@ -826,23 +826,30 @@ export function DietManagement() {
       pesoPorUnidade = metadata.peso_por_unidade;
     }
 
+    // Itens sintéticos "Porção de X" (ex: chocolate, fruta) já entram como "1 porção",
+    // usando o peso_por_unidade como base — mais fácil que digitar gramas.
+    const isPortionItem =
+      /^porç[ãa]o de /i.test(selectedFood.alimento) && !!pesoPorUnidade && pesoPorUnidade > 0;
+    const portionMultiplier = isPortionItem ? Number(pesoPorUnidade) / 100 : multiplier;
+
     updated[mealIndex].foods[foodIndex] = {
       ...currentFood,
       food_name: selectedFood.alimento,
       peso_por_unidade: pesoPorUnidade,
-      // Reset to gramas when selecting new food
-      unit_type: 'gramas',
-      quantity_units: null,
+      // Porção de X entra como "1 porção"; demais alimentos entram como gramas
+      unit_type: isPortionItem ? 'porcao' : 'gramas',
+      quantity_units: isPortionItem ? 1 : null,
+      ...(isPortionItem ? { quantity: String(Math.round(Number(pesoPorUnidade))) } : {}),
       // Valores base por 100g
       calories_per_100g: caloriesPer100g,
       protein_per_100g: proteinPer100g,
       carbs_per_100g: carbsPer100g,
       fats_per_100g: fatsPer100g,
       // Valores calculados
-      calories: caloriesPer100g * multiplier,
-      protein: proteinPer100g * multiplier,
-      carbs: carbsPer100g * multiplier,
-      fats: fatsPer100g * multiplier,
+      calories: caloriesPer100g * portionMultiplier,
+      protein: proteinPer100g * portionMultiplier,
+      carbs: carbsPer100g * portionMultiplier,
+      fats: fatsPer100g * portionMultiplier,
     };
     setMeals(updated);
   }
@@ -1392,7 +1399,10 @@ export function DietManagement() {
                 </div>
 
                 <div className={styles.foodsList}>
-                  {meal.foods.map((food, foodIndex) => (
+                  {meal.foods.map((food, foodIndex) => {
+                    // Itens sintéticos "Porção de X" têm unidade travada (1 porção fixa)
+                    const isPortion = /^porç[ãa]o de /i.test(food.food_name);
+                    return (
                     <div key={food.id} className={styles.foodItem}>
                       <div className={styles.foodRow}>
                         <div className={styles.foodSelectWrapper}>
@@ -1408,11 +1418,19 @@ export function DietManagement() {
                           />
                         </div>
                         <div className={styles.unitTypeWrapper}>
-                          <Select
-                            value={food.unit_type}
-                            onChange={(e) => handleUnitTypeChange(mealIndex, foodIndex, e.target.value as UnitType)}
-                            options={UNIT_OPTIONS}
-                          />
+                          {isPortion ? (
+                            <Select
+                              value="porcao"
+                              options={[{ value: 'porcao', label: 'Porção' }]}
+                              disabled
+                            />
+                          ) : (
+                            <Select
+                              value={food.unit_type}
+                              onChange={(e) => handleUnitTypeChange(mealIndex, foodIndex, e.target.value as UnitType)}
+                              options={UNIT_OPTIONS}
+                            />
+                          )}
                         </div>
                         <div className={styles.quantityWrapper}>
                           <Input
@@ -1466,7 +1484,8 @@ export function DietManagement() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <button className={styles.addFoodButton} onClick={() => addFood(mealIndex)}>

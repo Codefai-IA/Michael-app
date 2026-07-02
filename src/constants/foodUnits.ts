@@ -9,7 +9,7 @@ export const UNIT_TYPES: Record<UnitType, { singular: string; plural: string; la
   colher_cha: { singular: 'colher de cha', plural: 'colheres de cha', label: 'Colher de Cha' },
   xicara: { singular: 'xicara', plural: 'xicaras', label: 'Xicara' },
   copo: { singular: 'copo', plural: 'copos', label: 'Copo' },
-  porcao: { singular: 'porcao', plural: 'porcoes', label: 'Porcao' },
+  porcao: { singular: 'porção', plural: 'porções', label: 'Porção' },
 };
 
 export const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
@@ -21,5 +21,5 @@ export const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
   { value: 'colher_cha', label: 'Colher de Cha' },
   { value: 'xicara', label: 'Xicara' },
   { value: 'copo', label: 'Copo' },
-  { value: 'porcao', label: 'Porcao' },
+  { value: 'porcao', label: 'Porção' },
 ];

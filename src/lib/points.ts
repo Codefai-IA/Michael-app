@@ -1,12 +1,17 @@
 import { supabase } from './supabase';
-import { hasDietPhoto } from './checkinPhotos';
+import { hasDietPhoto, hasWorkoutPhoto } from './checkinPhotos';
 
 /**
  * Award workout points for a day (fire-and-forget).
+ * Só pontua se houver foto de treino no dia (gate antifraude, espelha a dieta).
  * Only awards once per day due to UNIQUE constraint on points_log.
  */
 export async function maybeAwardWorkoutPoints(clientId: string, date: string) {
   try {
+    // Gate antifraude: o dia só pontua se houver >=1 foto de treino.
+    const photographed = await hasWorkoutPhoto(clientId, date);
+    if (!photographed) return;
+
     const yearMonth = date.substring(0, 7);
 
     // Try to insert - will fail silently if already awarded today

@@ -102,3 +102,19 @@ export async function hasDietPhoto(clientId: string, date: string): Promise<bool
   }
   return (count ?? 0) > 0;
 }
+
+/** Existe ao menos uma foto de treino no dia? (gate antifraude de pontos) */
+export async function hasWorkoutPhoto(clientId: string, date: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('checkin_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', clientId)
+    .eq('date', date)
+    .eq('type', 'workout');
+
+  if (error) {
+    console.error('Erro ao verificar foto de treino:', error);
+    return false;
+  }
+  return (count ?? 0) > 0;
+}

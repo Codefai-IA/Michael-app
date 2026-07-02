@@ -592,6 +592,10 @@ export function Workout() {
         activityType: workout?.workout_type ?? null,
       });
       if (photo) {
+        // Pontua só com a foto de treino registrada E ao menos um exercício marcado.
+        if (completedExercises.length > 0) {
+          maybeAwardWorkoutPoints(profile.id, today);
+        }
         setShowWorkoutCamera(false);
         setSummary(pendingSummary);
         setPendingSummary(null);
