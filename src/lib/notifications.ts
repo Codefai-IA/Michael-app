@@ -10,7 +10,7 @@ export async function notifyDietUpdated(clientId: string): Promise<void> {
         client_id: clientId,
         title: 'Dieta Atualizada!',
         body: 'Seu nutricionista atualizou sua dieta. Confira agora!',
-        url: '/dieta',
+        url: '/app/dieta',
       },
     });
   } catch (err) {
@@ -28,7 +28,7 @@ export async function notifyWorkoutUpdated(clientId: string): Promise<void> {
         client_id: clientId,
         title: 'Treino Atualizado!',
         body: 'Seu treinador atualizou seu treino. Confira agora!',
-        url: '/treino',
+        url: '/app/treino',
       },
     });
   } catch (err) {

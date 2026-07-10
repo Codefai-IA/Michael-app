@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal } from './components/ui';
+import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal, PlanUpdatedModal } from './components/ui';
 
 // Auth pages
 import { SplashScreen } from './pages/auth/SplashScreen';
@@ -201,6 +201,7 @@ function AppRoutes() {
     <NotificationPrompt isAuthenticated={!!user} isAdmin={isAdmin} userId={user?.id ?? null} />
     <BirthdayModal />
     <WeeklyReportModal />
+    <PlanUpdatedModal />
     <Routes>
       {/* Rota raiz - redireciona baseado no estado */}
       <Route

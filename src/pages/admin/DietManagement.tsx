@@ -380,6 +380,39 @@ export function DietManagement() {
     try {
       const now = new Date().toISOString();
 
+      // Snapshot do estado ANTERIOR (direto do banco) para o popup de
+      // "Dieta atualizada" do aluno mostrar o que mudou e os macros antes/depois.
+      // created_at = now garante que a revisão e o updated_at do plano casem.
+      try {
+        const { data: prevState } = await supabase
+          .from('diet_plans')
+          .select(
+            'name, daily_calories, protein_g, carbs_g, fat_g, meals(id, name, order_index, meal_foods(id, food_name, quantity, unit_type, quantity_units, order_index))'
+          )
+          .eq('id', dietPlan.id)
+          .single();
+
+        if (prevState) {
+          const { meals: prevMeals, ...prevPlan } = prevState;
+          await supabase.from('diet_plan_revisions').insert({
+            diet_plan_id: dietPlan.id,
+            client_id: id,
+            snapshot: { plan: prevPlan, meals: prevMeals || [] },
+            created_at: now,
+          });
+
+          // Revisões com mais de 90 dias não têm uso — limpa para não acumular
+          await supabase
+            .from('diet_plan_revisions')
+            .delete()
+            .eq('diet_plan_id', dietPlan.id)
+            .lt('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
+        }
+      } catch (revisionError) {
+        // Sem snapshot o popup só perde o diff — não bloqueia o salvamento
+        console.error('Diet revision snapshot error:', revisionError);
+      }
+
       // Salvar totais calculados no plano
       const planUpdateData = {
         name: dietPlan.name || 'Dieta',

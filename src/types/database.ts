@@ -115,6 +115,43 @@ export interface FoodSubstitution {
   substitute_unit_type?: UnitType;
 }
 
+/** Alimento dentro do snapshot de revisão de dieta (mesmos campos de meal_foods) */
+export interface DietRevisionSnapshotFood {
+  id: string;
+  food_name: string;
+  quantity: string;
+  unit_type: UnitType;
+  quantity_units: number | null;
+  order_index: number;
+}
+
+export interface DietRevisionSnapshotMeal {
+  id: string;
+  name: string;
+  order_index: number;
+  meal_foods: DietRevisionSnapshotFood[];
+}
+
+/** Estado da dieta ANTES de um salvamento do admin (usado no popup "Dieta atualizada") */
+export interface DietRevisionSnapshot {
+  plan: {
+    name: string | null;
+    daily_calories: number | null;
+    protein_g: number | null;
+    carbs_g: number | null;
+    fat_g: number | null;
+  };
+  meals: DietRevisionSnapshotMeal[];
+}
+
+export interface DietPlanRevision {
+  id: string;
+  diet_plan_id: string;
+  client_id: string;
+  snapshot: DietRevisionSnapshot;
+  created_at: string;
+}
+
 export interface TemplateFoodSubstitution {
   id: string;
   template_food_id: string;
@@ -410,6 +447,11 @@ export interface Database {
         Row: FoodSubstitution;
         Insert: Omit<FoodSubstitution, 'id'>;
         Update: Partial<Omit<FoodSubstitution, 'id'>>;
+      };
+      diet_plan_revisions: {
+        Row: DietPlanRevision;
+        Insert: Omit<DietPlanRevision, 'id'>;
+        Update: Partial<Omit<DietPlanRevision, 'id'>>;
       };
       workout_plans: {
         Row: WorkoutPlan;
