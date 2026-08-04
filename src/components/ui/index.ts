@@ -19,6 +19,7 @@ export { InstallPWA } from './InstallPWA';
 export { NotificationPrompt } from './NotificationPrompt';
 export { BirthdayModal } from './BirthdayModal';
 export { VideoCarousel } from './VideoCarousel';
+export { NoticeBoard } from './NoticeBoard';
 export { WorkoutSummaryModal } from './WorkoutSummaryModal';
 export { WeeklyReportModal } from './WeeklyReportModal';
 export { PlanUpdatedModal } from './PlanUpdatedModal';

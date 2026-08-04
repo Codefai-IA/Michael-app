@@ -8,10 +8,11 @@ import { DietTemplatesManager } from '../../components/admin/DietTemplatesManage
 import { WorkoutTemplatesManager } from '../../components/admin/WorkoutTemplatesManager';
 import { HomeVideosManager } from '../../components/admin/HomeVideosManager';
 import { RankingGiftManager } from '../../components/admin/RankingGiftManager';
+import { HomeNoticeManager } from '../../components/admin/HomeNoticeManager';
 import { RecipesManager } from '../../components/admin/RecipesManager';
 import styles from './LibraryManagement.module.css';
 
-type TabType = 'exercises' | 'foods' | 'recipes' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'ranking';
+type TabType = 'exercises' | 'foods' | 'recipes' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'notice' | 'ranking';
 
 export function LibraryManagement() {
   const navigate = useNavigate();
@@ -67,6 +68,12 @@ export function LibraryManagement() {
           Videos
         </button>
         <button
+          onClick={() => setActiveTab('notice')}
+          className={`${styles.tab} ${activeTab === 'notice' ? styles.tabActive : ''}`}
+        >
+          Avisos
+        </button>
+        <button
           onClick={() => setActiveTab('ranking')}
           className={`${styles.tab} ${activeTab === 'ranking' ? styles.tabActive : ''}`}
         >
@@ -92,6 +99,9 @@ export function LibraryManagement() {
         </div>
         <div style={{ display: activeTab === 'homeVideos' ? 'block' : 'none' }}>
           <HomeVideosManager />
+        </div>
+        <div style={{ display: activeTab === 'notice' ? 'block' : 'none' }}>
+          <HomeNoticeManager />
         </div>
         <div style={{ display: activeTab === 'ranking' ? 'block' : 'none' }}>
           <RankingGiftManager />

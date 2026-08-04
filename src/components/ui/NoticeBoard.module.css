@@ -1,0 +1,38 @@
+.notice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  background: rgba(243, 152, 91, 0.09);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.icon {
+  color: var(--accent);
+  flex-shrink: 0;
+  /* Alinha o icone com a primeira linha do texto */
+  transform: translateY(2px);
+}
+
+.message {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  min-width: 0;
+  /* Preserva as quebras de linha digitadas pelo admin */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.heading {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.separator {
+  margin: 0 5px;
+  color: var(--text-muted);
+}

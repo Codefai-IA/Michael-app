@@ -5,13 +5,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
 import { PageContainer, BottomNav } from '../../components/layout';
-import { Card, ProgressBar, VideoCarousel } from '../../components/ui';
+import { Card, ProgressBar, VideoCarousel, NoticeBoard } from '../../components/ui';
 import type { DailyProgress } from '../../types/database';
 import styles from './Home.module.css';
 
 interface VideoItem {
   url: string;
   title: string;
+}
+
+interface HomeNotice {
+  home_notice_title: string | null;
+  home_notice_text: string | null;
+  home_notice_active: boolean | null;
 }
 
 // Retorna a data atual no fuso horario de Brasilia
@@ -29,6 +35,7 @@ export function Home() {
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [weeklyStats, setWeeklyStats] = useState({ workouts: 0, meals: 0, totalWorkouts: 7, totalMeals: 7 });
   const [videoUrls, setVideoUrls] = useState<VideoItem[]>([]);
+  const [notice, setNotice] = useState<HomeNotice | null>(null);
 
   const fetchAllData = useCallback(async () => {
     if (!profile?.id) return;
@@ -53,7 +60,7 @@ export function Home() {
         .lte('date', today),
       supabase
         .from('app_settings')
-        .select('home_video_urls')
+        .select('home_video_urls, home_notice_title, home_notice_text, home_notice_active')
         .limit(1)
         .maybeSingle()
     ]);
@@ -73,6 +80,8 @@ export function Home() {
     if (settingsResult.data?.home_video_urls) {
       setVideoUrls(settingsResult.data.home_video_urls as VideoItem[]);
     }
+
+    setNotice(settingsResult.data ?? null);
   }, [profile?.id]);
 
   usePageData({
@@ -100,6 +109,12 @@ export function Home() {
       </header>
 
       <main className={styles.content}>
+        <NoticeBoard
+          title={notice?.home_notice_title}
+          text={notice?.home_notice_text}
+          active={notice?.home_notice_active}
+        />
+
         <Card variant="gradient" className={styles.progressCard}>
           <div className={styles.progressHeader}>
             <Flame size={20} />
