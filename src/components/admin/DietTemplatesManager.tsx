@@ -5,6 +5,12 @@ import { Input, Card, Button, FoodSelect, Select } from '../ui';
 import type { TabelaTaco, TemplateFoodSubstitution, UnitType, MealSubstitution, MealSubstitutionItem } from '../../types/database';
 import styles from './DietTemplatesManager.module.css';
 
+// Mostra a causa real na tela: mensagem generica ja escondeu erro de coluna inexistente
+function errorDetail(error: unknown): string {
+  const message = (error as { message?: string } | null)?.message;
+  return message ? `: ${message}` : '';
+}
+
 const UNIT_OPTIONS = [
   { value: 'gramas', label: 'Gramas (g)' },
   { value: 'ml', label: 'Mililitros (ml)' },
@@ -298,7 +304,7 @@ export function DietTemplatesManager() {
           .insert({
             template_id: templateId,
             name: meal.name,
-            suggested_time: meal.suggested_time,
+            suggested_time: meal.suggested_time || null,
             order_index: meal.order_index,
             meal_substitutions: meal.meal_substitutions || [],
           })
@@ -346,7 +352,7 @@ export function DietTemplatesManager() {
       await loadTemplates();
     } catch (error) {
       console.error('Error saving template:', error);
-      alert('Erro ao salvar template');
+      alert(`Erro ao salvar template${errorDetail(error)}`);
     } finally {
       setSaving(false);
     }
@@ -362,7 +368,7 @@ export function DietTemplatesManager() {
 
     if (error) {
       console.error('Error deleting template:', error);
-      alert('Erro ao excluir template');
+      alert(`Erro ao excluir template${errorDetail(error)}`);
     } else {
       loadTemplates();
     }
@@ -383,7 +389,7 @@ export function DietTemplatesManager() {
 
     if (error) {
       console.error('Error duplicating template:', error);
-      alert('Erro ao duplicar template');
+      alert(`Erro ao duplicar template${errorDetail(error)}`);
       return;
     }
 
@@ -393,8 +399,9 @@ export function DietTemplatesManager() {
         .insert({
           template_id: data.id,
           name: meal.name,
-          suggested_time: meal.suggested_time,
-          order_index: meal.order_index
+          suggested_time: meal.suggested_time || null,
+          order_index: meal.order_index,
+          meal_substitutions: meal.meal_substitutions || [],
         })
         .select('id')
         .single();

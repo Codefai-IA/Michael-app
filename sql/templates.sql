@@ -22,8 +22,13 @@ CREATE TABLE IF NOT EXISTS diet_template_meals (
   template_id UUID NOT NULL REFERENCES diet_templates(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   suggested_time TIME,
-  order_index INTEGER DEFAULT 0
+  order_index INTEGER DEFAULT 0,
+  meal_substitutions JSONB DEFAULT '[]'::jsonb
 );
+
+-- Opcoes alternativas da refeicao (para tabelas existentes) -- ver template_meal_substitutions.sql
+ALTER TABLE diet_template_meals
+ADD COLUMN IF NOT EXISTS meal_substitutions JSONB DEFAULT '[]'::jsonb;
 
 -- Alimentos das refeicoes do template
 CREATE TABLE IF NOT EXISTS diet_template_meal_foods (

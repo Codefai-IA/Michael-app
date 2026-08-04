@@ -5,6 +5,12 @@ import { Input, Card, Button, ExerciseSelect } from '../ui';
 import { TRAINING_TECHNIQUES, EFFORT_PARAMETERS } from '../../constants/trainingTechniques';
 import styles from './WorkoutTemplatesManager.module.css';
 
+// Mostra a causa real na tela: mensagem generica ja escondeu erro de coluna inexistente
+function errorDetail(error: unknown): string {
+  const message = (error as { message?: string } | null)?.message;
+  return message ? `: ${message}` : '';
+}
+
 const DAYS = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado'];
 
 const REST_TIME_OPTIONS = [
@@ -258,7 +264,7 @@ export function WorkoutTemplatesManager() {
       await loadTemplates();
     } catch (error) {
       console.error('Error saving template:', error);
-      alert('Erro ao salvar template');
+      alert(`Erro ao salvar template${errorDetail(error)}`);
     } finally {
       setSaving(false);
     }
@@ -274,7 +280,7 @@ export function WorkoutTemplatesManager() {
 
     if (error) {
       console.error('Error deleting template:', error);
-      alert('Erro ao excluir template');
+      alert(`Erro ao excluir template${errorDetail(error)}`);
     } else {
       loadTemplates();
     }
@@ -294,7 +300,7 @@ export function WorkoutTemplatesManager() {
 
     if (error) {
       console.error('Error duplicating template:', error);
-      alert('Erro ao duplicar template');
+      alert(`Erro ao duplicar template${errorDetail(error)}`);
       return;
     }
 
