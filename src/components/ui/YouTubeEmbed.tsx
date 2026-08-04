@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Play, X, ExternalLink } from 'lucide-react';
+import { getYoutubeId, getYoutubeThumbnail, getYoutubeEmbedUrl } from '../../lib/youtube';
 import styles from './YouTubeEmbed.module.css';
 
 interface YouTubeEmbedProps {
@@ -10,25 +11,6 @@ interface YouTubeEmbedProps {
 }
 
 type VideoType = 'youtube' | 'drive' | 'other';
-
-// Extract video ID from various YouTube URL formats
-function getYouTubeVideoId(url: string): string | null {
-  if (!url) return null;
-
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
-    /(?:youtu\.be\/)([^?\s]+)/,
-    /(?:youtube\.com\/embed\/)([^?\s]+)/,
-    /(?:youtube\.com\/shorts\/)([^?\s]+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-
-  return null;
-}
 
 // Extract Google Drive file ID
 function getGoogleDriveFileId(url: string): string | null {
@@ -71,7 +53,7 @@ export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const videoType = getVideoType(url);
-  const youtubeId = getYouTubeVideoId(url);
+  const youtubeId = getYoutubeId(url);
   const driveId = getGoogleDriveFileId(url);
 
   // If no valid video source, show external link button (only for valid URLs)
@@ -91,11 +73,11 @@ export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps
   }
 
   const thumbnailUrl = videoType === 'youtube'
-    ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`
+    ? getYoutubeThumbnail(url, 'mq')
     : null;
 
   const embedUrl = videoType === 'youtube'
-    ? `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1&autoplay=1`
+    ? getYoutubeEmbedUrl(url, true) || undefined
     : `https://drive.google.com/file/d/${driveId}/preview`;
 
   const handleClose = () => {

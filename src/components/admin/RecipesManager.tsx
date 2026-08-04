@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Check, Pencil, X, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Card, Button } from '../ui';
-import { getYoutubeId, getYoutubeThumbnail } from '../../lib/youtube';
+import { getYoutubeId, getYoutubeThumbnail , YOUTUBE_URL_ERROR } from '../../lib/youtube';
 import type { Recipe } from '../../types/database';
 import styles from './RecipesManager.module.css';
 
@@ -85,7 +85,7 @@ export function RecipesManager() {
       return;
     }
     if (!getYoutubeId(form.youtube_url)) {
-      alert('Cole um link válido do YouTube (vídeo ou Short)');
+      alert(YOUTUBE_URL_ERROR);
       return;
     }
 

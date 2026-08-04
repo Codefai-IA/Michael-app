@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Pill, FlaskConical, Utensils, FileText, Check, Play, Trash2, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getYoutubeId, YOUTUBE_URL_ERROR } from '../../lib/youtube';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button } from '../../components/ui';
 import type { Profile } from '../../types/database';
@@ -81,7 +82,7 @@ export function GuidelinesManagement() {
       // Auto-add pending video URL if user forgot to click "Adicionar"
       let videosToSave = [...videoUrls];
       if (newVideoUrl.trim()) {
-        const pendingId = getVideoId(newVideoUrl);
+        const pendingId = getYoutubeId(newVideoUrl);
         if (pendingId) {
           videosToSave.push({ url: newVideoUrl.trim(), title: newVideoTitle.trim() });
           setVideoUrls(videosToSave);
@@ -137,25 +138,12 @@ export function GuidelinesManagement() {
     }
   };
 
-  // Extract YouTube video ID for preview
-  const getVideoId = (url: string) => {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
-      /(?:youtu\.be\/)([^?\s]+)/,
-      /(?:youtube\.com\/embed\/)([^?\s]+)/
-    ];
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-    return '';
-  };
 
   const handleAddVideo = () => {
     if (!newVideoUrl.trim()) return;
-    const videoId = getVideoId(newVideoUrl);
+    const videoId = getYoutubeId(newVideoUrl);
     if (!videoId) {
-      alert('Cole um link valido do YouTube');
+      alert(YOUTUBE_URL_ERROR);
       return;
     }
     setVideoUrls(prev => [...prev, { url: newVideoUrl.trim(), title: newVideoTitle.trim() }]);
@@ -169,7 +157,7 @@ export function GuidelinesManagement() {
     setSaved(false);
   };
 
-  const videoId = getVideoId(formData.free_meal_video_url);
+  const videoId = getYoutubeId(formData.free_meal_video_url);
 
   if (loading) {
     return (
@@ -299,7 +287,7 @@ export function GuidelinesManagement() {
 
           {/* Current video list */}
           {videoUrls.map((video, index) => {
-            const vid = getVideoId(video.url);
+            const vid = getYoutubeId(video.url);
             return (
               <div key={index} className={styles.videoItem}>
                 <div className={styles.videoItemInfo}>

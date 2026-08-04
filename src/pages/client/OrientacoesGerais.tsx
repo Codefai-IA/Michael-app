@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Pill, FlaskConical, Utensils, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { getYoutubeId } from '../../lib/youtube';
 import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, VideoCarousel } from '../../components/ui';
@@ -44,23 +45,7 @@ export function OrientacoesGerais() {
     fetchData: loadGuidelines,
   });
 
-  // Extract YouTube video ID
-  const getYouTubeVideoId = (url: string | null) => {
-    if (!url) return null;
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
-      /(?:youtu\.be\/)([^?\s]+)/,
-      /(?:youtube\.com\/embed\/)([^?\s]+)/,
-      /(?:youtube\.com\/shorts\/)([^?\s]+)/
-    ];
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-    return null;
-  };
-
-  const videoId = getYouTubeVideoId(guidelines?.free_meal_video_url || null);
+  const videoId = getYoutubeId(guidelines?.free_meal_video_url || '');
 
   if (loading) {
     return (

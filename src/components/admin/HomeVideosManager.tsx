@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Play, Trash2, Plus, Check } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getYoutubeId, YOUTUBE_URL_ERROR } from '../../lib/youtube';
 import { Card, Button } from '../ui';
 import styles from './HomeVideosManager.module.css';
 
@@ -9,19 +10,6 @@ interface VideoItem {
   title: string;
 }
 
-const getVideoId = (url: string) => {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
-    /(?:youtu\.be\/)([^?\s]+)/,
-    /(?:youtube\.com\/embed\/)([^?\s]+)/,
-    /(?:youtube\.com\/shorts\/)([^?\s]+)/,
-  ];
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return '';
-};
 
 export function HomeVideosManager() {
   const [videoUrls, setVideoUrls] = useState<VideoItem[]>([]);
@@ -51,9 +39,9 @@ export function HomeVideosManager() {
 
   const handleAddVideo = () => {
     if (!newVideoUrl.trim()) return;
-    const videoId = getVideoId(newVideoUrl);
+    const videoId = getYoutubeId(newVideoUrl);
     if (!videoId) {
-      alert('Cole um link valido do YouTube');
+      alert(YOUTUBE_URL_ERROR);
       return;
     }
     setVideoUrls(prev => [...prev, { url: newVideoUrl.trim(), title: newVideoTitle.trim() }]);
@@ -126,7 +114,7 @@ export function HomeVideosManager() {
       {videoUrls.length > 0 && (
         <div className={styles.videoList}>
           {videoUrls.map((video, index) => {
-            const vid = getVideoId(video.url);
+            const vid = getYoutubeId(video.url);
             return (
               <div key={index} className={styles.videoItem}>
                 <div className={styles.videoItemInfo}>
