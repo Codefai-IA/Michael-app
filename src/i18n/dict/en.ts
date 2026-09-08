@@ -329,4 +329,17 @@ export const en: Record<TKey, string> = {
   'extra.unit': 'Unit',
   'extra.addedFoods': 'Added foods',
   'extra.mealTotal': 'Meal total:',
+  // --- Ranking tab ---
+  'rankingTab.loading': 'Loading ranking...',
+  'rankingTab.prizeLabel': '1st place wins:',
+  'rankingTab.championOfMonth': 'Champion of the month!',
+  'rankingTab.championOf': 'Champion - {month}',
+  'rankingTab.myPosition': 'Your position',
+  'rankingTab.points': 'points',
+  'rankingTab.pts': 'pts',
+  'rankingTab.noPointsYet': "You haven't scored yet this month. Complete workouts and meals to earn points!",
+  'rankingTab.leaderboard': 'Overall Standings',
+  'rankingTab.you': 'you',
+  'rankingTab.empty': 'No points logged this month.',
+  'rankingTab.emptyHint': 'Complete workouts and diets to show up on the ranking!',
 };

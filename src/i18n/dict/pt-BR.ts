@@ -330,6 +330,19 @@ export const ptBR = {
   'extra.unit': 'Unidade',
   'extra.addedFoods': 'Alimentos adicionados',
   'extra.mealTotal': 'Total da refeicao:',
+  // --- Ranking (aba) ---
+  'rankingTab.loading': 'Carregando ranking...',
+  'rankingTab.prizeLabel': '1° lugar ganha:',
+  'rankingTab.championOfMonth': 'Campeao do mes!',
+  'rankingTab.championOf': 'Campeao - {month}',
+  'rankingTab.myPosition': 'Sua posicao',
+  'rankingTab.points': 'pontos',
+  'rankingTab.pts': 'pts',
+  'rankingTab.noPointsYet': 'Você ainda não pontuou este mês. Complete treinos e refeições para ganhar pontos!',
+  'rankingTab.leaderboard': 'Classificação Geral',
+  'rankingTab.you': 'voce',
+  'rankingTab.empty': 'Nenhum ponto registrado este mes.',
+  'rankingTab.emptyHint': 'Complete treinos e dietas para aparecer no ranking!',
 } as const;
 
 export type TKey = keyof typeof ptBR;

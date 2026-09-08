@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../ui';
 import type { RankingEntry } from '../../types/database';
+import { useI18n } from '../../i18n';
+import type { Locale } from '../../types/database';
 import styles from './RankingTab.module.css';
 
 function getBrasiliaDate(): string {
@@ -23,10 +25,10 @@ function getBrasiliaDay(): number {
   }).format(new Date()));
 }
 
-function getMonthName(yearMonth: string): string {
+function getMonthName(yearMonth: string, locale: Locale): string {
   const [year, month] = yearMonth.split('-');
   const date = new Date(Number(year), Number(month) - 1);
-  return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
 function getPreviousYearMonth(yearMonth: string): string {
@@ -106,6 +108,7 @@ function Podium({
 }
 
 export function RankingTab() {
+  const { t, tc, locale } = useI18n();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const openCalendar = (clientId: string) => navigate(`/app/aluno/${clientId}/calendario`);
@@ -173,7 +176,7 @@ export function RankingTab() {
     return (
       <div className={styles.loadingState}>
         <Loader2 size={32} className={styles.spinning} />
-        <p>Carregando ranking...</p>
+        <p>{t('rankingTab.loading')}</p>
       </div>
     );
   }
@@ -185,8 +188,8 @@ export function RankingTab() {
         <div className={styles.prizeBanner}>
           <span className={styles.prizeBannerIcon}><Trophy size={22} /></span>
           <div className={styles.prizeBannerText}>
-            <strong>1° lugar ganha:</strong>
-            <span>{monthlyGift}</span>
+            <strong>{t('rankingTab.prizeLabel')}</strong>
+            <span>{tc('notice', monthlyGift)}</span>
           </div>
         </div>
       )}
@@ -203,7 +206,9 @@ export function RankingTab() {
           </div>
           <div className={styles.winnerBannerInfo}>
             <span className={styles.winnerBannerLabel}>
-              {isFirstDay ? 'Campeao do mes!' : `Campeao - ${getMonthName(previousYearMonth)}`}
+              {isFirstDay
+                ? t('rankingTab.championOfMonth')
+                : t('rankingTab.championOf', { month: getMonthName(previousYearMonth, locale) })}
             </span>
             <span className={styles.winnerBannerName}>
               {lastMonthWinners[0].profiles.full_name} - {lastMonthWinners[0].total_points} pts
@@ -216,7 +221,7 @@ export function RankingTab() {
       {/* Current Month Header */}
       <div className={styles.monthHeader}>
         <Trophy size={24} className={styles.trophyIcon} />
-        <h2 className={styles.monthTitle}>{getMonthName(yearMonth)}</h2>
+        <h2 className={styles.monthTitle}>{getMonthName(yearMonth, locale)}</h2>
       </div>
 
       {/* Current Month Podium - Top 3 */}
@@ -229,11 +234,11 @@ export function RankingTab() {
         <Card className={styles.myStatsCard}>
           <div className={styles.myPosition}>
             <span className={styles.positionNumber}>#{myPosition + 1}</span>
-            <span className={styles.positionLabel}>Sua posicao</span>
+            <span className={styles.positionLabel}>{t('rankingTab.myPosition')}</span>
           </div>
           <div className={styles.myPoints}>
             <span className={styles.pointsNumber}>{myEntry.total_points}</span>
-            <span className={styles.pointsLabel}>pontos</span>
+            <span className={styles.pointsLabel}>{t('rankingTab.points')}</span>
           </div>
           <div className={styles.myBreakdown}>
             <div className={styles.breakdownItem}>
@@ -249,7 +254,7 @@ export function RankingTab() {
       ) : (
         <Card className={styles.myStatsCard}>
           <p className={styles.noPointsYet}>
-            Você ainda não pontuou este mês. Complete treinos e refeições para ganhar pontos!
+            {t('rankingTab.noPointsYet')}
           </p>
         </Card>
       )}
@@ -257,7 +262,7 @@ export function RankingTab() {
       {/* Remaining Leaderboard (4th place and below) */}
       {restRanking.length > 0 && (
         <div className={styles.leaderboard}>
-          <h3 className={styles.leaderboardTitle}>Classificação Geral</h3>
+          <h3 className={styles.leaderboardTitle}>{t('rankingTab.leaderboard')}</h3>
           <div className={styles.rankingList}>
             {restRanking.map((entry, index) => {
               const actualPosition = index + 4;
@@ -286,7 +291,7 @@ export function RankingTab() {
                       onClick={() => openCalendar(entry.client_id)}
                     >
                       {entry.profiles.full_name}
-                      {isMe && <span className={styles.youBadge}>voce</span>}
+                      {isMe && <span className={styles.youBadge}>{t('rankingTab.you')}</span>}
                     </button>
                     <span className={styles.rankDetails}>
                       {entry.days_with_workout}d treino / {entry.days_with_diet}d dieta
@@ -295,7 +300,7 @@ export function RankingTab() {
 
                   <div className={styles.rankPoints}>
                     <span className={styles.rankPointsValue}>{entry.total_points}</span>
-                    <span className={styles.rankPointsLabel}>pts</span>
+                    <span className={styles.rankPointsLabel}>{t('rankingTab.pts')}</span>
                   </div>
                 </Card>
               );
@@ -308,8 +313,8 @@ export function RankingTab() {
       {ranking.length === 0 && (
         <Card className={styles.emptyState}>
           <Trophy size={40} className={styles.emptyIcon} />
-          <p>Nenhum ponto registrado este mes.</p>
-          <p className={styles.emptyHint}>Complete treinos e dietas para aparecer no ranking!</p>
+          <p>{t('rankingTab.empty')}</p>
+          <p className={styles.emptyHint}>{t('rankingTab.emptyHint')}</p>
         </Card>
       )}
     </div>

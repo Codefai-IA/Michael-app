@@ -33,7 +33,7 @@ function getBrasiliaDate(): string {
 
 export function Home() {
   const { profile } = useAuth();
-  const { t } = useI18n();
+  const { t, tc } = useI18n();
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [weeklyStats, setWeeklyStats] = useState({ workouts: 0, meals: 0, totalWorkouts: 7, totalMeals: 7 });
   const [videoUrls, setVideoUrls] = useState<VideoItem[]>([]);
@@ -112,8 +112,8 @@ export function Home() {
 
       <main className={styles.content}>
         <NoticeBoard
-          title={notice?.home_notice_title}
-          text={notice?.home_notice_text}
+          title={tc('notice', notice?.home_notice_title)}
+          text={tc('notice', notice?.home_notice_text)}
           active={notice?.home_notice_active}
         />
 
@@ -143,7 +143,9 @@ export function Home() {
           />
         </a>
 
-        <VideoCarousel videos={videoUrls} />
+        <VideoCarousel
+          videos={videoUrls.map((v) => ({ ...v, title: tc('notice', v.title) }))}
+        />
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t('home.today')}</h2>
