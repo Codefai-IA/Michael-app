@@ -342,4 +342,26 @@ export const en: Record<TKey, string> = {
   'rankingTab.you': 'you',
   'rankingTab.empty': 'No points logged this month.',
   'rankingTab.emptyHint': 'Complete workouts and diets to show up on the ranking!',
+  // --- Login (client) ---
+  'login.welcome': 'Welcome',
+  'login.subtitle': 'Sign in with your credentials to continue',
+  'login.emailPlaceholder': 'you@email.com',
+  'login.passwordPlaceholder': 'Your password',
+  'login.submit': 'Sign in',
+  'login.sending': 'Sending...',
+  'login.forgotPassword': 'Forgot my password',
+  'login.fillAllFields': 'Please fill in all fields',
+  'login.wrongCredentials': 'Wrong email or password',
+  'login.useAdminPanel': 'Use the admin panel to sign in',
+  'login.genericError': 'Could not sign in. Please try again.',
+  'login.typeEmailToReset': 'Enter your email to reset your password',
+  'login.resetError': 'Could not send the recovery email. Please try again.',
+  'login.resetSent': 'Recovery email sent! Check your inbox.',
+  'login.logoAlt': 'Logo',
+
+  // --- Exercise video ---
+  'video.watch': 'Watch video',
+  'video.close': 'Close',
+  'calendar.prevMonth': 'Previous month',
+  'calendar.nextMonth': 'Next month',
 };

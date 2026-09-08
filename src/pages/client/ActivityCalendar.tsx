@@ -142,7 +142,7 @@ export function ActivityCalendar() {
           <button
             className={styles.navBtn}
             onClick={() => setViewMonth((v) => shiftMonth(v, -1))}
-            aria-label="Mês anterior"
+            aria-label={t('calendar.prevMonth')}
           >
             <ChevronLeft size={20} />
           </button>
@@ -151,7 +151,7 @@ export function ActivityCalendar() {
             className={styles.navBtn}
             onClick={() => canGoNext && setViewMonth((v) => shiftMonth(v, 1))}
             disabled={!canGoNext}
-            aria-label="Próximo mês"
+            aria-label={t('calendar.nextMonth')}
           >
             <ChevronRight size={20} />
           </button>

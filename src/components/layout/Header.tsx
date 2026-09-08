@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useI18n } from '../../i18n';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -18,6 +19,7 @@ export function Header({
   rightAction,
   children,
 }: HeaderProps) {
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   return (
@@ -38,7 +40,7 @@ export function Header({
           {rightAction}
           <img
             src="/logo-icon.png"
-            alt="Logo"
+            alt={t('login.logoAlt')}
             className={styles.logo}
           />
         </div>

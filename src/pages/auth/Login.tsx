@@ -4,9 +4,11 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Button, Input } from '../../components/ui';
+import { useI18n } from '../../i18n';
 import styles from './Login.module.css';
 
 export function Login() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
@@ -24,7 +26,7 @@ export function Login() {
     setLoading(true);
 
     if (!email.trim() || !password.trim()) {
-      setError('Preencha todos os campos');
+      setError(t('login.fillAllFields'));
       setLoading(false);
       return;
     }
@@ -33,14 +35,14 @@ export function Login() {
       const { error: signInError, isAdmin } = await signIn(email, password);
 
       if (signInError) {
-        setError('Email ou senha incorretos');
+        setError(t('login.wrongCredentials'));
         setLoading(false);
         return;
       }
 
       // Se for admin, redireciona para login de admin
       if (isAdmin) {
-        setError('Use o painel administrativo para fazer login');
+        setError(t('login.useAdminPanel'));
         setLoading(false);
         return;
       }
@@ -48,7 +50,7 @@ export function Login() {
       // Aluno - redirecionar para app
       navigate('/app', { replace: true });
     } catch {
-      setError('Erro ao fazer login. Tente novamente.');
+      setError(t('login.genericError'));
       setLoading(false);
     }
   }
@@ -58,7 +60,7 @@ export function Login() {
     setSuccessMessage('');
 
     if (!email.trim()) {
-      setError('Digite seu email para recuperar a senha');
+      setError(t('login.typeEmailToReset'));
       return;
     }
 
@@ -73,12 +75,12 @@ export function Login() {
       );
 
       if (resetError) {
-        setError('Erro ao enviar email de recuperacao. Tente novamente.');
+        setError(t('login.resetError'));
       } else {
-        setSuccessMessage('Email de recuperacao enviado! Verifique sua caixa de entrada.');
+        setSuccessMessage(t('login.resetSent'));
       }
     } catch {
-      setError('Erro ao enviar email de recuperacao. Tente novamente.');
+      setError(t('login.resetError'));
     } finally {
       setResetLoading(false);
     }
@@ -88,18 +90,18 @@ export function Login() {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.logo}>
-          <img src="/logo-icon.png" alt="Logo" className={styles.logoText} />
+          <img src="/logo-icon.png" alt={t('login.logoAlt')} className={styles.logoText} />
         </div>
       </div>
 
       <div className={styles.formCard}>
-        <h1 className={styles.title}>Bem-vindo</h1>
-        <p className={styles.subtitle}>Entre com suas credenciais para continuar</p>
+        <h1 className={styles.title}>{t('login.welcome')}</h1>
+        <p className={styles.subtitle}>{t('login.subtitle')}</p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <Input
             type="email"
-            placeholder="seu@email.com"
+            placeholder={t('login.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             icon={<Mail size={20} />}
@@ -110,7 +112,7 @@ export function Login() {
           <div className={styles.passwordWrapper}>
             <Input
               type={showPassword ? 'text' : 'password'}
-              placeholder="Sua senha"
+              placeholder={t('login.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               icon={<Lock size={20} />}
@@ -130,7 +132,7 @@ export function Login() {
           {successMessage && <p className={styles.success}>{successMessage}</p>}
 
           <Button type="submit" fullWidth loading={loading}>
-            Entrar
+            {t('login.submit')}
           </Button>
 
           <button
@@ -139,7 +141,7 @@ export function Login() {
             onClick={handleForgotPassword}
             disabled={resetLoading}
           >
-            {resetLoading ? 'Enviando...' : 'Esqueci minha senha'}
+            {resetLoading ? t('login.sending') : t('login.forgotPassword')}
           </button>
         </form>
       </div>

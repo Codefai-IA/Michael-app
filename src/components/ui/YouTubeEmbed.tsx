@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Play, X, ExternalLink } from 'lucide-react';
 import { getYoutubeId, getYoutubeThumbnail, getYoutubeEmbedUrl } from '../../lib/youtube';
+import { useI18n } from '../../i18n';
 import styles from './YouTubeEmbed.module.css';
 
 interface YouTubeEmbedProps {
@@ -49,6 +50,7 @@ function isValidUrl(url: string): boolean {
 }
 
 export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps) {
+  const { t } = useI18n();
   const [showVideo, setShowVideo] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -67,7 +69,7 @@ export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps
         className={styles.externalLink}
       >
         <ExternalLink size={16} />
-        <span>Ver video</span>
+        <span>{t('video.watch')}</span>
       </a>
     );
   }
@@ -124,7 +126,7 @@ export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps
             <button
               className={styles.closeButton}
               onClick={handleClose}
-              aria-label="Fechar"
+              aria-label={t('video.close')}
             >
               <X size={24} />
             </button>

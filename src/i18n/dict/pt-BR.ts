@@ -343,6 +343,28 @@ export const ptBR = {
   'rankingTab.you': 'voce',
   'rankingTab.empty': 'Nenhum ponto registrado este mes.',
   'rankingTab.emptyHint': 'Complete treinos e dietas para aparecer no ranking!',
+  // --- Login (aluno) ---
+  'login.welcome': 'Bem-vindo',
+  'login.subtitle': 'Entre com suas credenciais para continuar',
+  'login.emailPlaceholder': 'seu@email.com',
+  'login.passwordPlaceholder': 'Sua senha',
+  'login.submit': 'Entrar',
+  'login.sending': 'Enviando...',
+  'login.forgotPassword': 'Esqueci minha senha',
+  'login.fillAllFields': 'Preencha todos os campos',
+  'login.wrongCredentials': 'Email ou senha incorretos',
+  'login.useAdminPanel': 'Use o painel administrativo para fazer login',
+  'login.genericError': 'Erro ao fazer login. Tente novamente.',
+  'login.typeEmailToReset': 'Digite seu email para recuperar a senha',
+  'login.resetError': 'Erro ao enviar email de recuperacao. Tente novamente.',
+  'login.resetSent': 'Email de recuperacao enviado! Verifique sua caixa de entrada.',
+  'login.logoAlt': 'Logo',
+
+  // --- Video do exercicio ---
+  'video.watch': 'Ver video',
+  'video.close': 'Fechar',
+  'calendar.prevMonth': 'Mês anterior',
+  'calendar.nextMonth': 'Próximo mês',
 } as const;
 
 export type TKey = keyof typeof ptBR;

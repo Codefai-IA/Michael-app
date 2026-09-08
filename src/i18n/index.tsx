@@ -117,6 +117,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // Cache local: o primeiro paint acontece antes do profile chegar. Sem isso, um aluno em
   // ingles veria a tela piscar em portugues a cada refresh.
+  //
+  // E' tambem o que faz a TELA DE LOGIN sair no idioma certo, ja que ali ainda nao ha
+  // profile. De proposito NAO usamos navigator.language como palpite: um aluno brasileiro
+  // com o navegador em ingles passaria a ver o login em ingles, o que seria uma regressao
+  // para os alunos atuais. O custo e que, no primeiro acesso de um aluno novo em ingles, o
+  // login aparece em portugues uma unica vez — depois do primeiro login fica correto.
   const cachedLocale = getCachedLocale();
   const cachedUnits = getCachedUnitSystem();
 
