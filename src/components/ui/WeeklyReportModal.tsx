@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Camera, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../i18n';
 import styles from './WeeklyReportModal.module.css';
 
 // Número de WhatsApp do nutricionista (formato wa.me: DDI + DDD + número)
@@ -13,12 +14,15 @@ const FRIDAY = 5;
 // Retorna { weekday, date } no fuso horário de Brasília
 function getBrasiliaToday(): { weekday: number; date: string } {
   const now = new Date();
+  // CHAVE — NAO LOCALIZAR: 'en-CA' produz YYYY-MM-DD, usado como chave do localStorage
+  // que controla se o modal ja foi mostrado nesta semana.
   const date = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   }).format(now);
+  // CHAVE — NAO LOCALIZAR: o nome do dia em 'en-US' e comparado com string fixa no codigo.
   const weekdayName = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo',
     weekday: 'short',
@@ -45,6 +49,7 @@ function getReportFridayDate(): string {
 
 export function WeeklyReportModal() {
   const { user, profile, isAdmin } = useAuth();
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
   const navigate = useNavigate();
 
@@ -85,21 +90,21 @@ export function WeeklyReportModal() {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.icon}>📋</div>
 
-        <h2 className={styles.title}>{isFridayToday ? 'É sexta-feira!' : 'Fechamento da semana'}</h2>
-        <p className={styles.subtitle}>Hora de fechar a semana. Não esqueça de:</p>
+        <h2 className={styles.title}>{isFridayToday ? t('weekly.titleFriday') : t('weekly.titleOther')}</h2>
+        <p className={styles.subtitle}>{t('weekly.subtitle')}</p>
 
         <ul className={styles.checklist}>
           <li className={styles.item}>
             <TrendingUp size={20} className={styles.itemIcon} />
-            <span>Atualizar suas informações na aba <strong>Progresso</strong> (peso e medidas)</span>
+            <span>{t('weekly.itemProgress')}</span>
           </li>
           <li className={styles.item}>
             <Camera size={20} className={styles.itemIcon} />
-            <span>Enviar suas <strong>fotos</strong> no WhatsApp</span>
+            <span>{t('weekly.itemPhotos')}</span>
           </li>
           <li className={styles.item}>
             <FileText size={20} className={styles.itemIcon} />
-            <span>Mandar o <strong>relatório semanal</strong></span>
+            <span>{t('weekly.itemReport')}</span>
           </li>
         </ul>
 

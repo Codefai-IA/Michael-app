@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { useI18n } from '../../i18n';
 import styles from './PlanExpiringBanner.module.css';
 
 interface PlanExpiringBannerProps {
@@ -7,6 +8,7 @@ interface PlanExpiringBannerProps {
 }
 
 export function PlanExpiringBanner({ daysRemaining }: PlanExpiringBannerProps) {
+  const { t } = useI18n();
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
@@ -20,7 +22,7 @@ export function PlanExpiringBanner({ daysRemaining }: PlanExpiringBannerProps) {
       <button
         onClick={() => setDismissed(true)}
         className={styles.closeButton}
-        aria-label="Fechar"
+        aria-label={t('banner.close')}
       >
         <X size={16} />
       </button>

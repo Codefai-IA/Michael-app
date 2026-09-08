@@ -1,4 +1,8 @@
 export type UserRole = 'client' | 'admin';
+/** Idioma em que o app do ALUNO e exibido. O painel admin e sempre pt-BR. */
+export type Locale = 'pt-BR' | 'en';
+/** Sistema de unidades de EXIBICAO. O banco guarda sempre kg/cm. */
+export type UnitSystem = 'metric' | 'imperial';
 export type GoalType = 'perder_peso' | 'ganhar_massa' | 'manter_peso' | 'melhorar_saude' | 'definicao';
 export type HealthRating = 'excellent' | 'good' | 'regular' | 'poor';
 export type UnitType = 'gramas' | 'ml' | 'unidade' | 'fatia' | 'colher_sopa' | 'colher_cha' | 'xicara' | 'copo' | 'porcao';
@@ -38,6 +42,8 @@ export interface Profile {
   weekly_workout_goal: number | null;
   weekly_diet_goal: number | null;
   weekly_weight_goal_kg: number | null;
+  locale: Locale;
+  unit_system: UnitSystem;
 }
 
 export interface Anamnesis {
@@ -402,6 +408,23 @@ export interface CalendarDay {
   photos: CalendarPhoto[];
 }
 
+/**
+ * Orientacoes gerais escritas pelo treinador para um aluno.
+ * A tabela existe em producao desde antes; o tipo faltava aqui.
+ * Conteudo e texto livre — nao e traduzido automaticamente: quando o aluno le em ingles,
+ * o admin escreve em ingles (ver ClientLocaleBadge).
+ */
+export interface PatientGuidelines {
+  id: string;
+  client_id: string;
+  recommended_supplements: string | null;
+  manipulated_supplements: string | null;
+  free_meal_video_url: string | null;
+  general_notes: string | null;
+  video_urls: Array<{ url: string; title: string }> | null;
+  updated_at: string;
+}
+
 export interface Recipe {
   id: string;
   title: string;
@@ -532,6 +555,11 @@ export interface Database {
         Row: CheckinPhoto;
         Insert: Omit<CheckinPhoto, 'id' | 'created_at'>;
         Update: Partial<Omit<CheckinPhoto, 'id'>>;
+      };
+      patient_guidelines: {
+        Row: PatientGuidelines;
+        Insert: Omit<PatientGuidelines, 'id' | 'updated_at'>;
+        Update: Partial<Omit<PatientGuidelines, 'id'>>;
       };
       recipes: {
         Row: Recipe;

@@ -15,12 +15,16 @@ import { supabase } from '../../lib/supabase';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Modal, StampedImage, formatStamp } from '../../components/ui';
 import { getCheckinPhotoUrl } from '../../lib/checkinPhotos';
-import type { CalendarDay, CalendarPhoto } from '../../types/database';
+import type { CalendarDay, CalendarPhoto, Locale } from '../../types/database';
+import { useI18n, type TKey } from '../../i18n';
 import styles from './ActivityCalendar.module.css';
 
-const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+// Iniciais dos dias: vem do dicionario (weekday.N.initial), porque em ingles sao S M T W T F S.
+const WEEKDAY_INDEXES = [0, 1, 2, 3, 4, 5, 6];
 
 function getBrasiliaYearMonth(): string {
+  // CHAVE — NAO LOCALIZAR: 'en-CA' aqui produz o formato YYYY-MM, que e a chave usada para
+  // consultar o mes no banco. Trocar por locale dinamico quebraria o calendario.
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -28,9 +32,9 @@ function getBrasiliaYearMonth(): string {
   }).format(new Date());
 }
 
-function monthLabel(yearMonth: string): string {
+function monthLabel(yearMonth: string, locale: Locale): string {
   const [y, m] = yearMonth.split('-').map(Number);
-  return new Date(y, m - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return new Date(y, m - 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
 function shiftMonth(yearMonth: string, delta: number): string {
@@ -56,6 +60,7 @@ function ActivityIcon({ type }: { type: string }) {
 
 export function ActivityCalendar() {
   const { profile } = useAuth();
+  const { t, locale } = useI18n();
   const { id } = useParams<{ id: string }>();
 
   // Modo terceiro: visualizando o calendário de outro participante do ranking
@@ -141,7 +146,7 @@ export function ActivityCalendar() {
           >
             <ChevronLeft size={20} />
           </button>
-          <span className={styles.monthTitle}>{monthLabel(viewMonth)}</span>
+          <span className={styles.monthTitle}>{monthLabel(viewMonth, locale)}</span>
           <button
             className={styles.navBtn}
             onClick={() => canGoNext && setViewMonth((v) => shiftMonth(v, 1))}
@@ -155,23 +160,23 @@ export function ActivityCalendar() {
         {/* Legenda */}
         <div className={styles.legend}>
           <span className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.legendWorkout}`} /> Treino
+            <span className={`${styles.legendDot} ${styles.legendWorkout}`} /> {t('calendar.legendWorkout')}
           </span>
           <span className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.legendDiet}`} /> Dieta
+            <span className={`${styles.legendDot} ${styles.legendDiet}`} /> {t('calendar.legendDiet')}
           </span>
         </div>
 
         {loading ? (
           <div className={styles.loadingState}>
             <Loader2 size={28} className={styles.spin} />
-            <p>Carregando…</p>
+            <p>{t('calendar.loading')}</p>
           </div>
         ) : (
           <div className={styles.grid}>
-            {WEEKDAY_LABELS.map((w, i) => (
+            {WEEKDAY_INDEXES.map((i) => (
               <div key={`h-${i}`} className={styles.weekdayHead}>
-                {w}
+                {t(`weekday.${i}.initial` as TKey)}
               </div>
             ))}
             {cells.map((date, i) => {
@@ -239,9 +244,9 @@ export function ActivityCalendar() {
   );
 }
 
-function dayHeading(date: string): string {
+function dayHeading(date: string, locale: Locale): string {
   const [y, m, d] = date.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('pt-BR', {
+  return new Date(y, m - 1, d).toLocaleDateString(locale, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -249,21 +254,23 @@ function dayHeading(date: string): string {
 }
 
 function DayDetailModal({ day, onClose }: { day: CalendarDay | null; onClose: () => void }) {
+  const { t, locale } = useI18n();
+
   if (!day) return null;
 
   const dietPhotos = day.photos.filter((p) => p.type === 'diet');
   const workoutPhotos = day.photos.filter((p) => p.type === 'workout');
 
   return (
-    <Modal isOpen={!!day} onClose={onClose} title={dayHeading(day.date)}>
+    <Modal isOpen={!!day} onClose={onClose} title={dayHeading(day.date, locale)}>
       <div className={styles.modalBody}>
         {/* Resumo do dia */}
         <div className={styles.summaryRow}>
           <span className={`${styles.badge} ${day.has_workout ? styles.badgeOn : ''}`}>
-            <Dumbbell size={14} /> {day.has_workout ? 'Treino feito' : 'Sem treino'}
+            <Dumbbell size={14} /> {day.has_workout ? t('calendar.workoutDone') : t('calendar.workoutMissing')}
           </span>
           <span className={`${styles.badge} ${day.has_diet ? styles.badgeOn : ''}`}>
-            <Utensils size={14} /> {day.has_diet ? 'Dieta cumprida' : 'Sem dieta'}
+            <Utensils size={14} /> {day.has_diet ? t('calendar.dietDone') : t('calendar.dietMissing')}
           </span>
         </div>
 
@@ -275,15 +282,15 @@ function DayDetailModal({ day, onClose }: { day: CalendarDay | null; onClose: ()
 
         {/* Fotos de treino */}
         {workoutPhotos.length > 0 && (
-          <PhotoSection label="Treino" photos={workoutPhotos} />
+          <PhotoSection label={t('calendar.photosWorkout')} photos={workoutPhotos} />
         )}
         {/* Fotos de dieta */}
         {dietPhotos.length > 0 && (
-          <PhotoSection label="Refeições" photos={dietPhotos} />
+          <PhotoSection label={t('calendar.photosDiet')} photos={dietPhotos} />
         )}
 
         {day.photos.length === 0 && (
-          <p className={styles.noPhotos}>Nenhuma foto registrada neste dia.</p>
+          <p className={styles.noPhotos}>{t('calendar.noPhotos')}</p>
         )}
       </div>
     </Modal>

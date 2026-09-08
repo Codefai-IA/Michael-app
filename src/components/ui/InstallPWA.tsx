@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useI18n } from '../../i18n';
 import styles from './InstallPWA.module.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -11,6 +12,7 @@ interface InstallPWAProps {
 }
 
 export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
+  const { t } = useI18n();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -104,7 +106,7 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
           <div className={styles.iconWrapper}>
             <img
               src="/logo.jpeg"
-              alt="MC Nutri"
+              alt={t('install.appName')}
               className={styles.icon}
             />
           </div>
@@ -124,15 +126,15 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
         <div className={styles.benefits}>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>✓</span>
-            <span>Acesso rápido pela tela inicial</span>
+            <span>{t('install.benefitQuick')}</span>
           </div>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>✓</span>
-            <span>Funciona mesmo offline</span>
+            <span>{t('install.benefitOffline')}</span>
           </div>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>✓</span>
-            <span>Experiência de app nativo</span>
+            <span>{t('install.benefitNative')}</span>
           </div>
         </div>
 
@@ -143,14 +145,14 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
               Para instalar no iPhone/iPad:
             </p>
             <div className={styles.iosStep}>
-              <span>1. Toque em</span>
+              <span>{t('install.step1')}</span>
               <svg className={styles.shareIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              <span>(Compartilhar)</span>
+              <span>{t('install.share')}</span>
             </div>
             <p className={styles.iosStep2}>
-              2. Role e toque em <strong>"Adicionar à Tela Inicial"</strong>
+              {t('install.step2')}
             </p>
           </div>
         ) : (

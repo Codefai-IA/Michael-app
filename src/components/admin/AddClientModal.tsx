@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Modal, Button, Input } from '../ui';
+import { Modal, Button, Input, Select } from '../ui';
 import { supabase } from '../../lib/supabase';
+import type { Locale, UnitSystem } from '../../types/database';
+import { parseWeightInput, parseHeightInput, weightUnitLabel, heightUnitLabel } from '../../utils/units';
 import styles from './AddClientModal.module.css';
 
 interface AddClientModalProps {
@@ -19,6 +21,8 @@ interface FormData {
   currentWeightKg: string;
   goalWeightKg: string;
   goals: string;
+  locale: Locale;
+  unitSystem: UnitSystem;
 }
 
 const initialFormData: FormData = {
@@ -31,7 +35,19 @@ const initialFormData: FormData = {
   currentWeightKg: '',
   goalWeightKg: '',
   goals: '',
+  locale: 'pt-BR',
+  unitSystem: 'metric',
 };
+
+const LOCALE_OPTIONS = [
+  { value: 'pt-BR', label: 'Português (Brasil)' },
+  { value: 'en', label: 'Inglês (English)' },
+];
+
+const UNIT_SYSTEM_OPTIONS = [
+  { value: 'metric', label: 'Métrico (kg / cm)' },
+  { value: 'imperial', label: 'Imperial (lb / in)' },
+];
 
 function calcAgeFromBirthDate(birthDate: string): number | null {
   if (!birthDate) return null;
@@ -50,7 +66,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
@@ -104,6 +120,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
       }
 
       // 2. Create/update profile in profiles table
+      const currentWeightKg = parseWeightInput(formData.currentWeightKg, formData.unitSystem);
       const profileData = {
         id: authData.user.id,
         role: 'client' as const,
@@ -112,13 +129,16 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         phone: formData.phone.trim() || null,
         birth_date: formData.birthDate || null,
         age: calcAgeFromBirthDate(formData.birthDate),
-        height_cm: formData.heightCm ? parseFloat(formData.heightCm) : null,
-        current_weight_kg: formData.currentWeightKg ? parseFloat(formData.currentWeightKg) : null,
-        starting_weight_kg: formData.currentWeightKg ? parseFloat(formData.currentWeightKg) : null,
-        goal_weight_kg: formData.goalWeightKg ? parseFloat(formData.goalWeightKg) : null,
+        // O banco guarda sempre metrico: o que o nutri digitou em lb/in vira kg/cm aqui.
+        height_cm: parseHeightInput(formData.heightCm, formData.unitSystem),
+        current_weight_kg: currentWeightKg,
+        starting_weight_kg: currentWeightKg,
+        goal_weight_kg: parseWeightInput(formData.goalWeightKg, formData.unitSystem),
         goals: formData.goals.trim() || null,
         is_active: true,
         coaching_start_date: new Date().toISOString().split('T')[0],
+        locale: formData.locale,
+        unit_system: formData.unitSystem,
       };
 
       const { error: profileError } = await supabase
@@ -185,6 +205,34 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         </div>
 
         <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Idioma e Unidades</h3>
+          <div className={styles.row}>
+            <Select
+              label="Idioma do app"
+              name="locale"
+              value={formData.locale}
+              onChange={handleChange}
+              options={LOCALE_OPTIONS}
+              disabled={loading}
+            />
+            <Select
+              label="Unidades"
+              name="unitSystem"
+              value={formData.unitSystem}
+              onChange={handleChange}
+              options={UNIT_SYSTEM_OPTIONS}
+              disabled={loading}
+            />
+          </div>
+          {formData.locale === 'en' && (
+            <p className={styles.hint}>
+              O app deste aluno aparecerá em inglês. Textos que você escreve (orientações,
+              observações, anamnese) não são traduzidos — escreva-os em inglês.
+            </p>
+          )}
+        </div>
+
+        <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Informações Pessoais</h3>
           <Input
             label="Nome Completo *"
@@ -219,31 +267,31 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
           <h3 className={styles.sectionTitle}>Dados Físicos</h3>
           <div className={styles.row}>
             <Input
-              label="Altura (cm)"
+              label={`Altura (${heightUnitLabel(formData.unitSystem)})`}
               type="number"
               name="heightCm"
               value={formData.heightCm}
               onChange={handleChange}
-              placeholder="Ex: 175"
+              placeholder={formData.unitSystem === 'imperial' ? 'Ex: 69' : 'Ex: 175'}
               disabled={loading}
             />
             <Input
-              label="Peso Atual (kg)"
+              label={`Peso Atual (${weightUnitLabel(formData.unitSystem)})`}
               type="number"
               name="currentWeightKg"
               value={formData.currentWeightKg}
               onChange={handleChange}
-              placeholder="Ex: 70"
+              placeholder={formData.unitSystem === 'imperial' ? 'Ex: 154' : 'Ex: 70'}
               disabled={loading}
             />
           </div>
           <Input
-            label="Peso Meta (kg)"
+            label={`Peso Meta (${weightUnitLabel(formData.unitSystem)})`}
             type="number"
             name="goalWeightKg"
             value={formData.goalWeightKg}
             onChange={handleChange}
-            placeholder="Ex: 65"
+            placeholder={formData.unitSystem === 'imperial' ? 'Ex: 143' : 'Ex: 65'}
             disabled={loading}
           />
         </div>

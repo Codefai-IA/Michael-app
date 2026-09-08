@@ -1,0 +1,17 @@
+.badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}

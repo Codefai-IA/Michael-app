@@ -2,6 +2,36 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'https://esm.sh/web-push@3.6.7';
 
+/**
+ * Textos das notificacoes por idioma.
+ *
+ * Duplicados aqui de proposito: esta funcao roda em Deno, sem acesso ao bundle do app, e o
+ * chamador manda apenas a CHAVE (message_key) — quem resolve o idioma e este arquivo, que e
+ * o unico ponto com acesso ao profiles.locale no momento do envio.
+ */
+const PUSH_MESSAGES: Record<string, Record<string, { title: string; body: string }>> = {
+  'pt-BR': {
+    diet_updated: {
+      title: 'Dieta Atualizada!',
+      body: 'Seu nutricionista atualizou sua dieta. Confira agora!',
+    },
+    workout_updated: {
+      title: 'Treino Atualizado!',
+      body: 'Seu treinador atualizou seu treino. Confira agora!',
+    },
+  },
+  en: {
+    diet_updated: {
+      title: 'Diet Updated!',
+      body: 'Your nutritionist updated your diet. Check it out!',
+    },
+    workout_updated: {
+      title: 'Workout Updated!',
+      body: 'Your coach updated your workout. Check it out!',
+    },
+  },
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -13,7 +43,7 @@ serve(async (req) => {
   }
 
   try {
-    const { client_id, title, body, url } = await req.json();
+    const { client_id, title, body, url, message_key } = await req.json();
 
     if (!client_id) {
       return new Response(
@@ -32,6 +62,20 @@ serve(async (req) => {
       .select('endpoint, p256dh, auth')
       .eq('client_id', client_id);
 
+    // O service worker nao tem como saber o idioma do aluno (roda fora do React e sem
+    // sessao), entao o payload precisa sair daqui ja traduzido.
+    let resolved: { title: string; body: string } | null = null;
+    if (message_key) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('locale')
+        .eq('id', client_id)
+        .maybeSingle();
+
+      const locale = profile?.locale === 'en' ? 'en' : 'pt-BR';
+      resolved = PUSH_MESSAGES[locale]?.[message_key] ?? PUSH_MESSAGES['pt-BR'][message_key] ?? null;
+    }
+
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(
         JSON.stringify({ sent: 0 }),
@@ -46,8 +90,8 @@ serve(async (req) => {
     );
 
     const payload = JSON.stringify({
-      title: title || 'MC Nutri',
-      body: body || 'Sua dieta foi atualizada!',
+      title: resolved?.title || title || 'MC Nutri',
+      body: resolved?.body || body || 'Sua dieta foi atualizada!',
       url: url || '/dieta',
     });
 

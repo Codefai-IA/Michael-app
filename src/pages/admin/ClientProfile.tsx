@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote, Droplets, Cake } from 'lucide-react';
+import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote, Droplets, Cake, Languages } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
-import type { Profile, DietPlan, WorkoutPlan, WeightHistory, GoalType } from '../../types/database';
+import type { Profile, DietPlan, WorkoutPlan, WeightHistory, GoalType, Locale, UnitSystem } from '../../types/database';
+import { ClientLocaleBadge } from '../../components/admin/ClientLocaleBadge';
 import styles from './ClientProfile.module.css';
 
 // Objetivos disponíveis + rótulo amigável
@@ -120,6 +121,10 @@ export function ClientProfile() {
   const [planEndDate, setPlanEndDate] = useState('');
   const [savingDates, setSavingDates] = useState(false);
   const [datesSaved, setDatesSaved] = useState(false);
+  const [localeInput, setLocaleInput] = useState<Locale>('pt-BR');
+  const [unitSystemInput, setUnitSystemInput] = useState<UnitSystem>('metric');
+  const [savingLocale, setSavingLocale] = useState(false);
+  const [localeSaved, setLocaleSaved] = useState(false);
 
   // Password reset state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -195,6 +200,9 @@ export function ClientProfile() {
       setCurrentWeightInput(clientResult.data.current_weight_kg?.toString() || '');
       setGoalWeightInput(clientResult.data.goal_weight_kg?.toString() || '');
       setGoalTypeInput(clientResult.data.goal_type || '');
+      // Alunos criados antes desta feature nao tem a coluna preenchida no objeto em cache
+      setLocaleInput(clientResult.data.locale ?? 'pt-BR');
+      setUnitSystemInput(clientResult.data.unit_system ?? 'metric');
       setAdminNotes(clientResult.data.admin_notes || '');
       setBirthDate(clientResult.data.birth_date || '');
       setWaterGoalMl(clientResult.data.water_goal_ml?.toString() || '');
@@ -288,6 +296,34 @@ export function ClientProfile() {
       console.error('Error saving weights:', error);
     } finally {
       setSavingGoalWeight(false);
+    }
+  }
+
+  async function handleSaveLocale() {
+    if (!id) return;
+
+    setSavingLocale(true);
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          locale: localeInput,
+          unit_system: unitSystemInput,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (client) {
+        setClient({ ...client, locale: localeInput, unit_system: unitSystemInput });
+      }
+
+      setLocaleSaved(true);
+      setTimeout(() => setLocaleSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving locale:', error);
+    } finally {
+      setSavingLocale(false);
     }
   }
 
@@ -913,6 +949,60 @@ export function ClientProfile() {
         </Card>
 
         {/* Plan Dates Section */}
+        <Card className={styles.planDatesCard}>
+          <h3 className={styles.planDatesTitle}>
+            <Languages size={20} />
+            Idioma e Unidades
+          </h3>
+
+          <ClientLocaleBadge
+            locale={client.locale}
+            hint="Orientações, anamnese e observações de exercício não são traduzidas — escreva-as em inglês."
+          />
+
+          <div className={styles.planDatesGrid}>
+            <div className={styles.dateField}>
+              <label className={styles.dateLabel}>Idioma do app</label>
+              <select
+                value={localeInput}
+                onChange={(e) => setLocaleInput(e.target.value as Locale)}
+                className={styles.dateInput}
+              >
+                <option value="pt-BR">Português (Brasil)</option>
+                <option value="en">Inglês (English)</option>
+              </select>
+            </div>
+            <div className={styles.dateField}>
+              <label className={styles.dateLabel}>Unidades</label>
+              <select
+                value={unitSystemInput}
+                onChange={(e) => setUnitSystemInput(e.target.value as UnitSystem)}
+                className={styles.dateInput}
+              >
+                <option value="metric">Métrico (kg / cm)</option>
+                <option value="imperial">Imperial (lb / in)</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveLocale}
+            disabled={savingLocale}
+            className={`${styles.saveDatesBtn} ${localeSaved ? styles.saved : ''}`}
+          >
+            {savingLocale ? (
+              'Salvando...'
+            ) : localeSaved ? (
+              <>
+                <Check size={16} />
+                Salvo!
+              </>
+            ) : (
+              'Salvar Idioma'
+            )}
+          </button>
+        </Card>
+
         <Card className={styles.planDatesCard}>
           <h3 className={styles.planDatesTitle}>
             <CalendarDays size={20} />

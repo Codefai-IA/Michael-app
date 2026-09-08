@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { getYoutubeId } from '../../lib/youtube';
 import { usePageData } from '../../hooks';
+import { useI18n } from '../../i18n';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, VideoCarousel } from '../../components/ui';
 import styles from './OrientacoesGerais.module.css';
@@ -18,6 +19,7 @@ interface Guidelines {
 
 export function OrientacoesGerais() {
   const { profile } = useAuth();
+  const { t } = useI18n();
   const [guidelines, setGuidelines] = useState<Guidelines | null>(null);
 
   const loadGuidelines = useCallback(async () => {
@@ -50,7 +52,7 @@ export function OrientacoesGerais() {
   if (loading) {
     return (
       <PageContainer>
-        <Header title="Orientações Gerais" subtitle="Recomendações do seu nutricionista" showBack />
+        <Header title={t('guidelines.title')} subtitle={t('guidelines.subtitle')} showBack />
         <main className={styles.content}>
           <div className={styles.skeleton} />
           <div className={styles.skeleton} />
@@ -72,7 +74,7 @@ export function OrientacoesGerais() {
 
   return (
     <PageContainer>
-      <Header title="Orientações Gerais" subtitle="Recomendações do seu nutricionista" showBack />
+      <Header title={t('guidelines.title')} subtitle={t('guidelines.subtitle')} showBack />
 
       <main className={styles.content}>
         {!hasContent ? (
@@ -80,9 +82,9 @@ export function OrientacoesGerais() {
             <div className={styles.emptyIcon}>
               <FileText size={48} />
             </div>
-            <p className={styles.emptyTitle}>Nenhuma orientação cadastrada</p>
+            <p className={styles.emptyTitle}>{t('guidelines.emptyTitle')}</p>
             <p className={styles.emptySubtitle}>
-              Aguarde seu nutricionista adicionar as recomendações
+              {t('guidelines.emptySubtitle')}
             </p>
           </div>
         ) : (
@@ -95,7 +97,7 @@ export function OrientacoesGerais() {
                   <div className={`${styles.cardIcon} ${styles.supplements}`}>
                     <Pill size={24} />
                   </div>
-                  <h2 className={styles.cardTitle}>Suplementos Recomendados</h2>
+                  <h2 className={styles.cardTitle}>{t('guidelines.supplements')}</h2>
                 </div>
                 <div className={`${styles.cardContent} ${styles.supplementsBg}`}>
                   <p className={styles.cardText}>
@@ -112,7 +114,7 @@ export function OrientacoesGerais() {
                   <div className={`${styles.cardIcon} ${styles.manipulated}`}>
                     <FlaskConical size={24} />
                   </div>
-                  <h2 className={styles.cardTitle}>Manipulados</h2>
+                  <h2 className={styles.cardTitle}>{t('guidelines.manipulated')}</h2>
                 </div>
                 <div className={`${styles.cardContent} ${styles.manipulatedBg}`}>
                   <p className={styles.cardText}>
@@ -129,7 +131,7 @@ export function OrientacoesGerais() {
                   <div className={`${styles.cardIcon} ${styles.freeMeal}`}>
                     <Utensils size={24} />
                   </div>
-                  <h2 className={styles.cardTitle}>Refeição Livre</h2>
+                  <h2 className={styles.cardTitle}>{t('guidelines.freeMeal')}</h2>
                 </div>
                 <p className={styles.videoDescription}>
                   Assista o vídeo para entender como funciona sua refeição livre
@@ -138,7 +140,7 @@ export function OrientacoesGerais() {
                   <iframe
                     className={styles.videoFrame}
                     src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-                    title="Vídeo Refeição Livre"
+                    title={t('guidelines.freeMealVideo')}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -159,7 +161,7 @@ export function OrientacoesGerais() {
                   <div className={`${styles.cardIcon} ${styles.notes}`}>
                     <FileText size={24} />
                   </div>
-                  <h2 className={styles.cardTitle}>Observações</h2>
+                  <h2 className={styles.cardTitle}>{t('guidelines.notes')}</h2>
                 </div>
                 <div className={`${styles.cardContent} ${styles.notesBg}`}>
                   <p className={styles.cardText}>

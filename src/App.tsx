@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { I18nProvider, useI18n } from './i18n';
 import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal, PlanUpdatedModal } from './components/ui';
 
 // Auth pages
@@ -29,6 +30,7 @@ import { GuidelinesManagement } from './pages/admin/GuidelinesManagement';
 import { LoadProgression } from './pages/admin/LoadProgression';
 
 // Helper function for Brasilia date
+// CHAVE — NAO LOCALIZAR (ver Intl abaixo): produz YYYY-MM-DD usado como chave de dia.
 function getBrasiliaDate(): string {
   const now = new Date();
   const brasiliaOffset = -3 * 60;
@@ -39,6 +41,7 @@ function getBrasiliaDate(): string {
 
 // Componente para rotas de ALUNO (não-admin)
 function ClientRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const { user, profile, loading, isAdmin } = useAuth();
   const location = useLocation();
 
@@ -103,7 +106,7 @@ function ClientRoute({ children }: { children: React.ReactNode }) {
           justifyContent: 'center',
           zIndex: 9999,
         }}>
-          <div style={{ color: 'var(--text-muted)' }}>Carregando...</div>
+          <div style={{ color: 'var(--text-muted)' }}>{t('common.loading')}</div>
         </div>
       )}
       {showExpiringBanner && <PlanExpiringBanner daysRemaining={planStatus.daysRemaining!} />}
@@ -142,6 +145,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
           justifyContent: 'center',
           zIndex: 9999,
         }}>
+          {/* Painel admin e sempre pt-BR por decisao de produto */}
           <div style={{ color: 'var(--text-muted)' }}>Carregando...</div>
         </div>
       )}
@@ -399,7 +403,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <I18nProvider>
+          <AppRoutes />
+        </I18nProvider>
       </AuthProvider>
     </BrowserRouter>
   );

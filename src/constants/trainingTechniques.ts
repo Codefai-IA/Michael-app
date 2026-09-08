@@ -1,9 +1,19 @@
 export interface TrainingTechnique {
   id: string;
+  /** Nome em pt-BR. Mantido para compatibilidade; a tela do aluno usa `nameKey` via i18n. */
   name: string;
   category: 'tecnica' | 'esforco';
+  /** Descricao em pt-BR. A tela do aluno usa `descriptionKey` via i18n. */
   description: string;
 }
+
+/**
+ * Chaves de traducao derivadas do id.
+ * O `technique_id` gravado em exercises ja e uma chave estavel ('drop_sets', 'top_set'...),
+ * entao nao ha migracao de dado: so os rotulos passam a vir do dicionario.
+ */
+export const techniqueNameKey = (id: string) => `technique.${id}` as const;
+export const techniqueDescriptionKey = (id: string) => `technique.${id}.desc` as const;
 
 export const TRAINING_TECHNIQUES: TrainingTechnique[] = [
   {

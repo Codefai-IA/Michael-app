@@ -4,6 +4,7 @@ import { Dumbbell, Utensils, ChevronRight, Flame } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
+import { useI18n } from '../../i18n';
 import { PageContainer, BottomNav } from '../../components/layout';
 import { Card, ProgressBar, VideoCarousel, NoticeBoard } from '../../components/ui';
 import type { DailyProgress } from '../../types/database';
@@ -32,6 +33,7 @@ function getBrasiliaDate(): string {
 
 export function Home() {
   const { profile } = useAuth();
+  const { t } = useI18n();
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [weeklyStats, setWeeklyStats] = useState({ workouts: 0, meals: 0, totalWorkouts: 7, totalMeals: 7 });
   const [videoUrls, setVideoUrls] = useState<VideoItem[]>([]);
@@ -89,7 +91,7 @@ export function Home() {
     fetchData: fetchAllData,
   });
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'Aluno';
+  const firstName = profile?.full_name?.split(' ')[0] || t('home.fallbackName');
   const weeklyPercentage = Math.round(
     ((weeklyStats.workouts + weeklyStats.meals) / (weeklyStats.totalWorkouts + weeklyStats.totalMeals)) * 100
   );
@@ -98,12 +100,12 @@ export function Home() {
     <PageContainer>
       <header className={styles.header}>
         <div className={styles.greeting}>
-          <h1 className={styles.title}>Olá, {firstName}!</h1>
-          <p className={styles.subtitle}>Vamos treinar hoje?</p>
+          <h1 className={styles.title}>{t('home.greeting', { name: firstName })}</h1>
+          <p className={styles.subtitle}>{t('home.subtitle')}</p>
         </div>
         <img
           src="/logo-icon.png"
-          alt="App Logo"
+          alt={t('home.logoAlt')}
           className={styles.logo}
         />
       </header>
@@ -118,20 +120,25 @@ export function Home() {
         <Card variant="gradient" className={styles.progressCard}>
           <div className={styles.progressHeader}>
             <Flame size={20} />
-            <span>Progresso Semanal</span>
+            <span>{t('home.weeklyProgress')}</span>
           </div>
           <div className={styles.progressBarWrapper}>
             <ProgressBar value={weeklyPercentage} showLabel />
           </div>
           <p className={styles.progressStats}>
-            {weeklyStats.workouts}/{weeklyStats.totalWorkouts} treinos • {weeklyStats.meals}/{weeklyStats.totalMeals} dieta
+            {t('home.weeklyStats', {
+              workouts: weeklyStats.workouts,
+              totalWorkouts: weeklyStats.totalWorkouts,
+              meals: weeklyStats.meals,
+              totalMeals: weeklyStats.totalMeals,
+            })}
           </p>
         </Card>
 
         <a href="https://www.instagram.com/michael.nutri/" target="_blank" rel="noopener noreferrer">
           <img
             src="/card4.png"
-            alt="Promocional"
+            alt={t('home.bannerAlt')}
             className={styles.bannerImage}
           />
         </a>
@@ -139,7 +146,7 @@ export function Home() {
         <VideoCarousel videos={videoUrls} />
 
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Hoje</h2>
+          <h2 className={styles.sectionTitle}>{t('home.today')}</h2>
 
           <Link to="/app/treino" className={styles.cardLink}>
             <Card hoverable className={styles.todayCard}>
@@ -147,9 +154,9 @@ export function Home() {
                 <Dumbbell size={24} />
               </div>
               <div className={styles.cardContent}>
-                <h3 className={styles.cardTitle}>Treino do Dia</h3>
+                <h3 className={styles.cardTitle}>{t('home.workoutCard')}</h3>
                 <p className={styles.cardSubtitle}>
-                  {progress?.exercises_completed.length || 0} exercícios concluídos
+                  {t('home.workoutDone', { count: progress?.exercises_completed.length || 0 })}
                 </p>
                 <div className={styles.cardProgress}>
                   <ProgressBar
@@ -169,9 +176,9 @@ export function Home() {
                 <Utensils size={24} />
               </div>
               <div className={styles.cardContent}>
-                <h3 className={styles.cardTitle}>Dieta do Dia</h3>
+                <h3 className={styles.cardTitle}>{t('home.dietCard')}</h3>
                 <p className={styles.cardSubtitle}>
-                  {progress?.meals_completed.length || 0} refeições concluídas
+                  {t('home.dietDone', { count: progress?.meals_completed.length || 0 })}
                 </p>
                 <div className={styles.cardProgress}>
                   <ProgressBar

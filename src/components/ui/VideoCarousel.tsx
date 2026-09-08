@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Play } from 'lucide-react';
 import { getYoutubeId, getYoutubeThumbnail, getYoutubeEmbedUrl } from '../../lib/youtube';
+import { useI18n } from '../../i18n';
 import styles from './VideoCarousel.module.css';
 
 interface VideoItem {
@@ -13,6 +14,7 @@ interface VideoCarouselProps {
 }
 
 export function VideoCarousel({ videos }: VideoCarouselProps) {
+  const { t } = useI18n();
   // Fachada: so o video clicado vira iframe, os demais ficam como thumbnail.
   // Evita o branding do YouTube (play vermelho + nome do canal) em todos os cards
   // e nao baixa o player inteiro em cada video do carrossel.
@@ -28,7 +30,7 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
 
   return (
     <section className={styles.carouselSection}>
-      <h3 className={styles.sectionTitle}>Videos</h3>
+      <h3 className={styles.sectionTitle}>{t('videos.title')}</h3>
       <div className={styles.carousel}>
         {validVideos.map((video, index) => (
           <div key={index} className={styles.videoCard}>

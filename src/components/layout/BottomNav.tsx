@@ -1,22 +1,25 @@
 import { NavLink } from 'react-router-dom';
 import { House, BookOpen, LineChart, Salad, Dumbbell, CircleUser, Trophy } from 'lucide-react';
+import { useI18n, type TKey } from '../../i18n';
 import styles from './BottomNav.module.css';
 
-const navItems = [
-  { to: '/app', icon: House, label: 'Home' },
-  { to: '/app/orientacoes', icon: BookOpen, label: 'Orientações' },
-  { to: '/app/progresso', icon: LineChart, label: 'Progresso' },
-  { to: '/app/dieta', icon: Salad, label: 'Dieta' },
-  { to: '/app/treino', icon: Dumbbell, label: 'Treino' },
-  { to: '/app/ranking', icon: Trophy, label: 'Ranking' },
+const navItems: { to: string; icon: typeof House; labelKey: TKey }[] = [
+  { to: '/app', icon: House, labelKey: 'nav.home' },
+  { to: '/app/orientacoes', icon: BookOpen, labelKey: 'nav.guidelines' },
+  { to: '/app/progresso', icon: LineChart, labelKey: 'nav.progress' },
+  { to: '/app/dieta', icon: Salad, labelKey: 'nav.diet' },
+  { to: '/app/treino', icon: Dumbbell, labelKey: 'nav.workout' },
+  { to: '/app/ranking', icon: Trophy, labelKey: 'nav.ranking' },
   // Calendário acessível apenas via Ranking (clicando nos nomes); rota /app/calendario continua existindo
-  { to: '/app/perfil', icon: CircleUser, label: 'Perfil' },
+  { to: '/app/perfil', icon: CircleUser, labelKey: 'nav.profile' },
 ];
 
 export function BottomNav() {
+  const { t } = useI18n();
+
   return (
     <nav className={styles.nav}>
-      {navItems.map(({ to, icon: Icon, label }) => (
+      {navItems.map(({ to, icon: Icon, labelKey }) => (
         <NavLink
           key={to}
           to={to}
@@ -26,7 +29,7 @@ export function BottomNav() {
           }
         >
           <Icon size={24} strokeWidth={1.5} />
-          <span className={styles.label}>{label}</span>
+          <span className={styles.label}>{t(labelKey)}</span>
         </NavLink>
       ))}
     </nav>

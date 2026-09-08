@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, ty
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../types/database';
+import { setCachedPreferences, clearCachedPreferences } from '../i18n/localeCache';
 
 // Timeout máximo para verificação de autenticação (5 segundos)
 const AUTH_TIMEOUT_MS = 5000;
@@ -49,7 +50,9 @@ function setCachedRole(role: string, userId: string): void {
   }
 }
 
+
 function clearCachedRole(): void {
+  clearCachedPreferences();
   try {
     localStorage.removeItem(ROLE_CACHE_KEY);
     localStorage.removeItem(USER_ID_CACHE_KEY);
@@ -140,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsAdmin(roleFromDb);
             // Atualizar cache com role do banco
             setCachedRole(userProfile.role, existingSession.user.id);
+            setCachedPreferences(userProfile.locale ?? 'pt-BR', userProfile.unit_system ?? 'metric');
             // Push notification subscription is now handled by NotificationPrompt component
           }
         } else {
@@ -237,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const roleFromDb = userProfile.role?.toLowerCase() === 'admin';
             setIsAdmin(roleFromDb);
             setCachedRole(userProfile.role, newSession.user.id);
+            setCachedPreferences(userProfile.locale ?? 'pt-BR', userProfile.unit_system ?? 'metric');
           }
         }
       }
@@ -286,6 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Salvar no cache
       if (userProfile) {
         setCachedRole(userProfile.role, data.user.id);
+        setCachedPreferences(userProfile.locale ?? 'pt-BR', userProfile.unit_system ?? 'metric');
       }
 
       // Push notification subscription is now handled by NotificationPrompt component

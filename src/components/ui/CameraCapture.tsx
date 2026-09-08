@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, X, RotateCcw, Check, Loader2, CameraOff } from 'lucide-react';
+import { useI18n } from '../../i18n';
 import styles from './CameraCapture.module.css';
 
 interface CameraCaptureProps {
@@ -29,6 +30,7 @@ export function CameraCapture({
   onCancel,
   uploading = false,
 }: CameraCaptureProps) {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<CamStatus>('starting');
@@ -148,7 +150,7 @@ export function CameraCapture({
             className={styles.closeBtn}
             onClick={onCancel}
             disabled={uploading}
-            aria-label="Fechar"
+            aria-label={t('camera.close')}
           >
             <X size={22} />
           </button>
@@ -158,7 +160,7 @@ export function CameraCapture({
       <div className={styles.stage}>
         {/* Preview da foto capturada */}
         {preview ? (
-          <img src={preview.url} alt="Foto capturada" className={styles.media} />
+          <img src={preview.url} alt={t('camera.capturedAlt')} className={styles.media} />
         ) : (
           <>
             <video
@@ -171,13 +173,13 @@ export function CameraCapture({
             {status === 'starting' && (
               <div className={styles.stateMsg}>
                 <Loader2 size={36} className={styles.spin} />
-                <p>Abrindo a câmera…</p>
+                <p>{t('camera.opening')}</p>
               </div>
             )}
             {status === 'denied' && (
               <div className={styles.stateMsg}>
                 <CameraOff size={40} />
-                <p className={styles.stateTitle}>Câmera bloqueada</p>
+                <p className={styles.stateTitle}>{t('camera.blocked')}</p>
                 <p className={styles.stateHint}>
                   Para registrar o check-in, habilite a permissão de câmera nas
                   configurações do navegador e tente novamente.
@@ -190,7 +192,7 @@ export function CameraCapture({
             {status === 'unavailable' && (
               <div className={styles.stateMsg}>
                 <CameraOff size={40} />
-                <p className={styles.stateTitle}>Sem câmera disponível</p>
+                <p className={styles.stateTitle}>{t('camera.unavailable')}</p>
                 <p className={styles.stateHint}>
                   Este check-in exige uma foto tirada na hora. Abra o app em um
                   celular com câmera para concluir.
@@ -213,7 +215,7 @@ export function CameraCapture({
               disabled={uploading}
             >
               <RotateCcw size={20} />
-              <span>Tirar outra</span>
+              <span>{t('camera.retake')}</span>
             </button>
             <button
               className={styles.primaryBtn}
@@ -229,7 +231,7 @@ export function CameraCapture({
             className={styles.shutterBtn}
             onClick={handleCapture}
             disabled={status !== 'ready'}
-            aria-label="Capturar foto"
+            aria-label={t('camera.capture')}
           >
             <Camera size={28} />
           </button>

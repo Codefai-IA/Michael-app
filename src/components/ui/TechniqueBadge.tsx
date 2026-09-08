@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { getTechniqueById, type TrainingTechnique } from '../../constants/trainingTechniques';
+import { getTechniqueById, techniqueNameKey, techniqueDescriptionKey, type TrainingTechnique } from '../../constants/trainingTechniques';
+import { useI18n, type TKey } from '../../i18n';
 import styles from './TechniqueBadge.module.css';
 
 interface TechniqueBadgeProps {
@@ -14,6 +15,8 @@ interface TechniquePopupProps {
 }
 
 function TechniquePopup({ technique, onClose }: TechniquePopupProps) {
+  const { t } = useI18n();
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -22,7 +25,7 @@ function TechniquePopup({ technique, onClose }: TechniquePopupProps) {
             <span className={styles.modalIcon}>
               {technique.category === 'tecnica' ? '🎯' : '💪'}
             </span>
-            <h3>{technique.name}</h3>
+            <h3>{t(techniqueNameKey(technique.id) as TKey)}</h3>
           </div>
           <button className={styles.closeButton} onClick={onClose}>
             <X size={20} />
@@ -31,16 +34,18 @@ function TechniquePopup({ technique, onClose }: TechniquePopupProps) {
 
         <div className={styles.categoryBadge}>
           <span className={technique.category === 'tecnica' ? styles.techCategory : styles.effortCategory}>
-            {technique.category === 'tecnica' ? 'Tecnica de Treino' : 'Parametro de Esforco'}
+            {technique.category === 'tecnica'
+              ? t('technique.categoryTechnique')
+              : t('technique.categoryEffort')}
           </span>
         </div>
 
         <div className={styles.descriptionBox}>
-          <p>{technique.description}</p>
+          <p>{t(techniqueDescriptionKey(technique.id) as TKey)}</p>
         </div>
 
         <button className={styles.confirmButton} onClick={onClose}>
-          Entendi
+          {t('common.understood')}
         </button>
       </div>
     </div>
@@ -48,6 +53,7 @@ function TechniquePopup({ technique, onClose }: TechniquePopupProps) {
 }
 
 export function TechniqueBadge({ techniqueId, effortParameterId }: TechniqueBadgeProps) {
+  const { t } = useI18n();
   const [showPopup, setShowPopup] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<TrainingTechnique | null>(null);
 
@@ -77,7 +83,7 @@ export function TechniqueBadge({ techniqueId, effortParameterId }: TechniqueBadg
               handleBadgeClick(technique);
             }}
           >
-            🎯 {technique.name}
+            🎯 {t(techniqueNameKey(technique.id) as TKey)}
           </button>
         )}
         {effort && (
@@ -88,7 +94,7 @@ export function TechniqueBadge({ techniqueId, effortParameterId }: TechniqueBadg
               handleBadgeClick(effort);
             }}
           >
-            💪 {effort.name}
+            💪 {t(techniqueNameKey(effort.id) as TKey)}
           </button>
         )}
       </div>

@@ -3,6 +3,8 @@ import { Plus, Minus, Check, ChevronDown, ChevronUp, Play, Square, Clock } from 
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
+import { useI18n, type TKey } from '../../i18n';
+import { formatLoad, weightUnitLabel } from '../../utils/units';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, Checkbox, YouTubeEmbed, TechniqueBadge, WorkoutSummaryModal, CameraCapture } from '../../components/ui';
 import type { DailyWorkout, Exercise } from '../../types/database';
@@ -31,16 +33,9 @@ function getBrasiliaDate(): string {
   }).format(new Date());
 }
 
-// Dias da semana
-const WEEKDAYS = [
-  { index: 0, short: 'Dom', full: 'Domingo' },
-  { index: 1, short: 'Seg', full: 'Segunda' },
-  { index: 2, short: 'Ter', full: 'Terca' },
-  { index: 3, short: 'Qua', full: 'Quarta' },
-  { index: 4, short: 'Qui', full: 'Quinta' },
-  { index: 5, short: 'Sex', full: 'Sexta' },
-  { index: 6, short: 'Sab', full: 'Sabado' },
-];
+// Dias da semana. Os rotulos vem do dicionario (weekday.N.short / weekday.N.full);
+// aqui fica so a ordem, que e a mesma do day_of_week do banco (0 = domingo).
+const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6].map((index) => ({ index }));
 
 // Formatar tempo de descanso para exibição
 const formatRestTime = (rest: string | null): string => {
@@ -72,6 +67,7 @@ interface ExerciseLog {
 
 export function Workout() {
   const { profile } = useAuth();
+  const { t, tc, locale, unitSystem } = useI18n();
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [workout, setWorkout] = useState<DailyWorkout | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -611,13 +607,12 @@ export function Workout() {
     setSummary(null);
   }
 
-  const selectedWeekday = WEEKDAYS[selectedDay];
 
   return (
     <PageContainer>
       <Header
-        title="Meus Treinos"
-        subtitle={selectedWeekday.full}
+        title={t('workout.title')}
+        subtitle={t(`weekday.${selectedDay}.full` as TKey)}
         showBack
       >
         <div className={styles.daysNav}>
@@ -628,7 +623,7 @@ export function Workout() {
                 className={`${styles.dayButton} ${selectedDay === day.index ? styles.active : ''}`}
                 onClick={() => setSelectedDay(day.index)}
               >
-                <span className={styles.dayName}>{day.short}</span>
+                <span className={styles.dayName}>{t(`weekday.${day.index}.short` as TKey)}</span>
                 {selectedDay === day.index && <span className={styles.dayIndicator} />}
               </button>
             ))}
@@ -638,7 +633,7 @@ export function Workout() {
 
       <main className={styles.content}>
         {loading ? (
-          <div className={styles.loading}>Carregando treino...</div>
+          <div className={styles.loading}>{t('workout.loading')}</div>
         ) : workout ? (
           <>
             <Card className={styles.workoutInfo}>
@@ -646,9 +641,16 @@ export function Workout() {
                 <span>💪</span>
               </div>
               <div className={styles.workoutDetails}>
-                <h2 className={styles.workoutTitle}>Treino de {selectedWeekday.full}</h2>
+                <h2 className={styles.workoutTitle}>
+                  {t('workout.dayTitle', { day: t(`weekday.${selectedDay}.full` as TKey) })}
+                </h2>
                 <p className={styles.workoutSubtitle}>
-                  {workout.workout_type || 'Treino'} • {completedExercises.length}/{exercises.length} exercicios
+                  {t('workout.summary', {
+                    // tc() so no render: o workout_type cru continua sendo o dado
+                    type: tc('workout_type', workout.workout_type || t('workout.fallbackType')),
+                    done: completedExercises.length,
+                    total: exercises.length,
+                  })}
                 </p>
               </div>
             </Card>
@@ -656,7 +658,7 @@ export function Workout() {
             <div className={styles.sessionBar}>
               {sessionStart === null ? (
                 <button className={styles.startBtn} onClick={startWorkout}>
-                  <Play size={18} fill="currentColor" /> Iniciar treino
+                  <Play size={18} fill="currentColor" /> {t('workout.start')}
                 </button>
               ) : (
                 <>
@@ -665,7 +667,7 @@ export function Workout() {
                     <span>{formatTimer(elapsedSeconds)}</span>
                   </div>
                   <button className={styles.finishBtn} onClick={finishWorkout}>
-                    <Square size={16} fill="currentColor" /> Finalizar
+                    <Square size={16} fill="currentColor" /> {t('workout.finish')}
                   </button>
                 </>
               )}
@@ -689,12 +691,12 @@ export function Workout() {
                       </div>
                       <div className={styles.exerciseContent} onClick={() => toggleExpand(exercise.id)}>
                         <h3 className={`${styles.exerciseName} ${isCompleted ? styles.completed : ''}`}>
-                          {exercise.name}
+                          {tc('exercise', exercise.name)}
                         </h3>
                         <p className={styles.exerciseDetails}>
-                          {exercise.sets} series • {exercise.reps} reps
-                          {exercise.rest && ` • ${formatRestTime(exercise.rest)} desc`}
-                          {exercise.weight_kg && ` • ${exercise.weight_kg}kg`}
+                          {t('workout.exerciseDetails', { sets: exercise.sets ?? 0, reps: exercise.reps ?? '' })}
+                          {exercise.rest && ` • ${formatRestTime(exercise.rest)} ${t('workout.restSuffix')}`}
+                          {exercise.weight_kg && ` • ${formatLoad(exercise.weight_kg, unitSystem, locale)}`}
                         </p>
                         {exercise.notes && (
                           <p className={styles.exerciseNotes}>{exercise.notes}</p>
@@ -714,7 +716,7 @@ export function Workout() {
                         <button
                           className={styles.expandButton}
                           onClick={() => toggleExpand(exercise.id)}
-                          aria-label={isExpanded ? 'Recolher' : 'Registrar carga'}
+                          aria-label={isExpanded ? t('workout.collapse') : t('workout.logLoad')}
                         >
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </button>
@@ -725,9 +727,9 @@ export function Workout() {
                     {isExpanded && log && (
                       <div className={styles.logSection}>
                         <div className={styles.logHeader}>
-                          <span>Serie</span>
-                          <span>Peso (kg)</span>
-                          <span>Reps</span>
+                          <span>{t('workout.logSet')}</span>
+                          <span>{t('workout.logWeight', { unit: weightUnitLabel(unitSystem) })}</span>
+                          <span>{t('workout.logReps')}</span>
                         </div>
 
                         {log.sets.map((set, setIndex) => (
@@ -774,14 +776,14 @@ export function Workout() {
                             disabled={savingExercise === exercise.id || autoSaving.has(exercise.id)}
                           >
                             {savingExercise === exercise.id || autoSaving.has(exercise.id) ? (
-                              'Salvando...'
+                              t('common.saving')
                             ) : log.saved ? (
                               <>
                                 <Check size={16} />
-                                Salvo
+                                {t('workout.savedShort')}
                               </>
                             ) : (
-                              'Salvar'
+                              t('common.save')
                             )}
                           </button>
                         </div>
@@ -794,7 +796,7 @@ export function Workout() {
           </>
         ) : (
           <div className={styles.emptyState}>
-            <p>Nenhum treino para este dia</p>
+            <p>{t('workout.empty')}</p>
           </div>
         )}
       </main>
@@ -804,8 +806,8 @@ export function Workout() {
       {/* Câmera pós-treino OBRIGATÓRIA: sem onCancel, não fecha sem capturar */}
       <CameraCapture
         isOpen={showWorkoutCamera}
-        title="Foto pós-treino"
-        subtitle="Registre sua foto para validar o treino"
+        title={t('workout.photoTitle')}
+        subtitle={t('workout.photoSubtitle')}
         uploading={uploadingPhoto}
         onCapture={handleWorkoutPhotoCapture}
       />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { subscribeToPush } from '../../lib/pushNotifications';
+import { useI18n } from '../../i18n';
 import styles from './NotificationPrompt.module.css';
 
 interface NotificationPromptProps {
@@ -10,6 +11,7 @@ interface NotificationPromptProps {
 }
 
 export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: NotificationPromptProps) {
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
           </div>
         </div>
 
-        <h2 className={styles.title}>Ativar Notificações</h2>
+        <h2 className={styles.title}>{t('notify.title')}</h2>
 
         <p className={styles.description}>
           Receba avisos quando seu nutricionista atualizar sua dieta ou treino.
@@ -88,15 +90,15 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
         <div className={styles.benefits}>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>&#10003;</span>
-            <span>Saiba quando sua dieta for atualizada</span>
+            <span>{t('notify.itemDiet')}</span>
           </div>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>&#10003;</span>
-            <span>Saiba quando seu treino for alterado</span>
+            <span>{t('notify.itemWorkout')}</span>
           </div>
           <div className={styles.benefitItem}>
             <span className={styles.checkIcon}>&#10003;</span>
-            <span>Nunca perca uma atualização</span>
+            <span>{t('notify.itemNever')}</span>
           </div>
         </div>
 

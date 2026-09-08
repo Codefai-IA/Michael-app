@@ -10,9 +10,10 @@ import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
 import { formatFoodName } from '../../utils/formatters';
 import { formatQuantityDisplay, getUnitLabel } from '../../utils/foodUnits';
 import { UNIT_TYPES } from '../../constants/foodUnits';
-import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem, CheckinPhoto, Recipe } from '../../types/database';
+import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem, CheckinPhoto, Recipe, Locale } from '../../types/database';
 import { maybeAwardDietPoints } from '../../lib/points';
 import { uploadCheckinPhoto, getDayCheckinPhotos } from '../../lib/checkinPhotos';
+import { useI18n } from '../../i18n';
 import styles from './Diet.module.css';
 
 // Helper para salvar/carregar dieta selecionada do localStorage
@@ -83,8 +84,8 @@ function getBrasiliaDate(): string {
 }
 
 // Retorna a data formatada para exibição no header
-function getBrasiliaDisplayDate(): string {
-  return new Intl.DateTimeFormat('pt-BR', {
+function getBrasiliaDisplayDate(locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, {
     timeZone: 'America/Sao_Paulo',
     weekday: 'long',
     day: 'numeric',
@@ -95,6 +96,7 @@ function getBrasiliaDisplayDate(): string {
 
 export function Diet() {
   const { profile } = useAuth();
+  const { t, tc, locale } = useI18n();
   const [meals, setMeals] = useState<MealWithNutrition[]>([]);
   const [completedMeals, setCompletedMeals] = useState<string[]>([]);
   // Fotos de refeição do dia (antifraude). O dia só valida com >=1 foto.
@@ -1116,17 +1118,17 @@ export function Diet() {
   console.log('[Diet] RENDERING - loading:', loading, 'meals.length:', meals.length);
 
   // Get current diet name for display
-  const currentDietName = availableDiets.find(d => d.id === selectedDietId)?.name || 'Dieta';
+  const currentDietName = availableDiets.find(d => d.id === selectedDietId)?.name || t('diet.fallbackName');
 
   return (
     <PageContainer>
-      <Header title="Dieta" subtitle={getBrasiliaDisplayDate()} showBack />
+      <Header title={t('diet.title')} subtitle={getBrasiliaDisplayDate(locale)} showBack />
 
       <main className={styles.content}>
         {/* Diet Selector - only show if more than one diet available */}
         {!loading && availableDiets.length > 1 && (
           <div className={styles.dietSelector}>
-            <label className={styles.dietSelectorLabel}>Dieta ativa:</label>
+            <label className={styles.dietSelectorLabel}>{t('diet.activeDiet')}</label>
             <select
               className={styles.dietSelectorSelect}
               value={selectedDietId || ''}
@@ -1184,7 +1186,7 @@ export function Diet() {
                   />
                   <div className={styles.mealContent}>
                     <h3 className={`${styles.mealName} ${isCompleted ? styles.completed : ''}`}>
-                      {meal.name}
+                      {tc('meal', meal.name)}
                     </h3>
 
                     {/* Meal Options Tabs/Pills */}
@@ -1202,7 +1204,9 @@ export function Diet() {
                               setSelectedMealOptions(prev => ({ ...prev, [meal.id]: idx }));
                             }}
                           >
-                            {idx === 0 ? 'Opção 1' : meal.meal_substitutions_with_nutrition![idx - 1].name || `Opção ${idx + 1}`}
+                            {idx === 0
+                              ? t('diet.option', { n: 1 })
+                              : tc('meal', meal.meal_substitutions_with_nutrition![idx - 1].name) || t('diet.option', { n: idx + 1 })}
                           </button>
                         ))}
                       </div>
@@ -1221,11 +1225,11 @@ export function Diet() {
                         </span>
                       )}
                     </div>
-                    <p className={styles.mealHint}>Toque para ver detalhes</p>
+                    <p className={styles.mealHint}>{t('diet.tapForDetails')}</p>
                   </div>
                   <button
                     className={`${styles.mealPhotoButton} ${hasPhoto ? styles.mealPhotoButtonDone : ''}`}
-                    title={hasPhoto ? 'Foto registrada' : 'Tirar foto da refeição'}
+                    title={hasPhoto ? t('diet.photoTaken') : t('diet.takeMealPhoto')}
                     onClick={(e) => {
                       e.stopPropagation();
                       setCameraMeal(meal);
@@ -1243,11 +1247,11 @@ export function Diet() {
             {/* Refeições Extras */}
             {extraMeals.length > 0 && (
               <div className={styles.extraMealsSection}>
-                <h3 className={styles.extraMealsTitle}>Refeições Extras</h3>
+                <h3 className={styles.extraMealsTitle}>{t('diet.extraMeals')}</h3>
                 {extraMeals.map((meal) => (
                   <Card key={meal.id} className={styles.extraMealCard}>
                     <div className={styles.extraMealContent}>
-                      <h4 className={styles.extraMealName}>{meal.meal_name}</h4>
+                      <h4 className={styles.extraMealName}>{tc('meal', meal.meal_name)}</h4>
                       <div className={styles.extraMealMacros}>
                         <span className={styles.extraMealCalories}>
                           {meal.total_calories} kcal
@@ -1276,12 +1280,12 @@ export function Diet() {
               onClick={() => setShowAddChoice(true)}
             >
               <Plus size={18} />
-              Adicionar Refeição
+              {t('diet.addMeal')}
             </Button>
           </>
         ) : (
           <div className={styles.emptyState}>
-            <p>Nenhuma dieta cadastrada</p>
+            <p>{t('diet.empty')}</p>
           </div>
         )}
       </main>
@@ -1289,7 +1293,7 @@ export function Diet() {
       <Modal
         isOpen={!!selectedMeal}
         onClose={handleCloseMeal}
-        title={selectedMeal?.name}
+        title={selectedMeal ? tc('meal', selectedMeal.name) : undefined}
         subtitle={selectedMeal?.suggested_time ? formatTime(selectedMeal.suggested_time) : undefined}
         showCheckbox
         checked={selectedMeal ? completedMeals.includes(selectedMeal.id) : false}
@@ -1339,7 +1343,7 @@ export function Diet() {
             ) : null;
           })()}
 
-          <h4 className={styles.modalLabel}>Alimentos:</h4>
+          <h4 className={styles.modalLabel}>{t('diet.foods')}</h4>
 
           {/* Show original foods (option 0) */}
           {selectedMeal && (selectedMealOptions[selectedMeal.id] || 0) === 0 && (
@@ -1367,7 +1371,7 @@ export function Diet() {
                     <span className={styles.foodBullet} />
                     <div className={styles.foodInfo}>
                       <span className={styles.foodName}>
-                        {food.display_name || formatFoodName(food.food_name)}
+                        {tc('food', food.display_name || formatFoodName(food.food_name))}
                       </span>
                       <span className={styles.foodDetails}>
                         {quantityDisplay}
@@ -1385,18 +1389,18 @@ export function Diet() {
                       onClick={() => toggleFoodExpansion(food.id)}
                     >
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      <span>Ver substituições ({foodSubs.length})</span>
+                      <span>{t('diet.viewSubstitutions', { count: foodSubs.length })}</span>
                     </button>
                   )}
 
                   {/* Lista de substituições inline */}
                   {isExpanded && hasSubstitutions && (
                     <div className={styles.inlineSubstitutions}>
-                      <span className={styles.substitutionHint}>Troque por:</span>
+                      <span className={styles.substitutionHint}>{t('diet.swapFor')}</span>
                       {foodSubs.map((sub) => (
                         <div key={sub.id} className={styles.substitutionRow}>
                           <span className={styles.substitutionArrow}>→</span>
-                          <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}g)</span>
+                          <span>{tc('food', formatFoodName(sub.substitute_food))} ({sub.substitute_quantity}g)</span>
                         </div>
                       ))}
                     </div>
@@ -1410,7 +1414,7 @@ export function Diet() {
                     >
                       <RefreshCw size={16} />
                       {isEquivalenceExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      <span>Ver equivalências ({equivalenceData.equivalents.length})</span>
+                      <span>{t('diet.viewEquivalences', { count: equivalenceData.equivalents.length })}</span>
                     </button>
                   )}
 
@@ -1427,15 +1431,17 @@ export function Diet() {
                     return (
                       <div className={styles.inlineEquivalences}>
                         <span className={styles.equivalenceGroupName}>
-                          {equivalenceData.group.name}
+                          {tc('food', equivalenceData.group.name)}
                         </span>
                         <span className={styles.equivalenceHint}>
-                          {labelBased ? 'Opções equivalentes:' : `Troque ${Math.round(actualQuantity)}g por:`}
+                          {labelBased
+                            ? t('diet.equivalentOptions')
+                            : t('diet.swapGramsFor', { grams: Math.round(actualQuantity) })}
                         </span>
                         {equivalenceData.equivalents.map((eq) => (
                           <div key={eq.id} className={styles.equivalenceRow}>
                             <span className={styles.equivalenceArrow}>→</span>
-                            <span>{eq.food_name} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
+                            <span>{tc('food', eq.food_name)} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
                           </div>
                         ))}
                       </div>
@@ -1482,7 +1488,7 @@ export function Diet() {
                       <span className={styles.foodBullet} />
                       <div className={styles.foodInfo}>
                         <span className={styles.foodName}>
-                          {item.display_name || formatFoodName(item.food_name)}
+                          {tc('food', item.display_name || formatFoodName(item.food_name))}
                         </span>
                         <span className={styles.foodDetails}>
                           {quantityDisplay}
@@ -1499,17 +1505,17 @@ export function Diet() {
                         onClick={() => toggleFoodExpansion(subItemId)}
                       >
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <span>Ver substituições ({itemSubs.length})</span>
+                        <span>{t('diet.viewSubstitutions', { count: itemSubs.length })}</span>
                       </button>
                     )}
 
                     {isExpanded && hasSubs && (
                       <div className={styles.inlineSubstitutions}>
-                        <span className={styles.substitutionHint}>Troque por:</span>
+                        <span className={styles.substitutionHint}>{t('diet.swapFor')}</span>
                         {itemSubs.map((sub) => (
                           <div key={sub.id} className={styles.substitutionRow}>
                             <span className={styles.substitutionArrow}>→</span>
-                            <span>{formatFoodName(sub.substitute_food)} ({sub.substitute_quantity}g)</span>
+                            <span>{tc('food', formatFoodName(sub.substitute_food))} ({sub.substitute_quantity}g)</span>
                           </div>
                         ))}
                       </div>
@@ -1522,7 +1528,7 @@ export function Diet() {
                       >
                         <RefreshCw size={16} />
                         {isEquivExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <span>Ver equivalências ({equivData!.equivalents.length})</span>
+                        <span>{t('diet.viewEquivalences', { count: equivData!.equivalents.length })}</span>
                       </button>
                     )}
 
@@ -1539,12 +1545,14 @@ export function Diet() {
                             {equivData.group.name}
                           </span>
                           <span className={styles.equivalenceHint}>
-                            {labelBased ? 'Opções equivalentes:' : `Troque ${Math.round(actualQuantity)}g por:`}
+                            {labelBased
+                            ? t('diet.equivalentOptions')
+                            : t('diet.swapGramsFor', { grams: Math.round(actualQuantity) })}
                           </span>
                           {equivData.equivalents.map((eq) => (
                             <div key={eq.id} className={styles.equivalenceRow}>
                               <span className={styles.equivalenceArrow}>→</span>
-                              <span>{eq.food_name} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
+                              <span>{tc('food', eq.food_name)} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
                             </div>
                           ))}
                         </div>
@@ -1557,7 +1565,7 @@ export function Diet() {
           )}
 
           <Button fullWidth onClick={handleCloseMeal}>
-            Fechar
+            {t('common.close')}
           </Button>
         </div>
       </Modal>
@@ -1566,7 +1574,7 @@ export function Diet() {
       <Modal
         isOpen={showAddChoice}
         onClose={() => setShowAddChoice(false)}
-        title="Adicionar refeição"
+        title={t('diet.addMealTitle')}
       >
         <div className={styles.addChoice}>
           <button
@@ -1578,8 +1586,8 @@ export function Diet() {
           >
             <Plus size={22} />
             <div>
-              <strong>Adicionar alimentos</strong>
-              <span>Monte a refeição buscando alimentos na tabela</span>
+              <strong>{t('diet.addFoods')}</strong>
+              <span>{t('diet.addFoodsHint')}</span>
             </div>
           </button>
           <button
@@ -1591,8 +1599,8 @@ export function Diet() {
           >
             <UtensilsCrossed size={22} />
             <div>
-              <strong>Adicionar receita</strong>
-              <span>Escolha uma receita em vídeo com macros prontos</span>
+              <strong>{t('diet.addRecipe')}</strong>
+              <span>{t('diet.addRecipeHint')}</span>
             </div>
           </button>
         </div>
@@ -1615,8 +1623,8 @@ export function Diet() {
       {/* Câmera in-app para foto de refeição (antifraude) */}
       <CameraCapture
         isOpen={cameraMeal !== null}
-        title="Foto da refeição"
-        subtitle={cameraMeal ? cameraMeal.name : undefined}
+        title={t('diet.mealPhoto')}
+        subtitle={cameraMeal ? tc('meal', cameraMeal.name) : undefined}
         uploading={uploadingPhoto}
         onCapture={handleMealPhotoCapture}
         onCancel={() => setCameraMeal(null)}

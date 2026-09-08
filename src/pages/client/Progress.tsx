@@ -7,10 +7,13 @@ import { usePageData } from '../../hooks';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, ProgressBar, Button, Input } from '../../components/ui';
 import type { WeightHistory, DailyProgress } from '../../types/database';
+import { useI18n, type TKey } from '../../i18n';
+import { formatWeight, formatNumber, weightUnitLabel, parseWeightInput, kgToLb } from '../../utils/units';
 import styles from './Progress.module.css';
 
 // Componente separado para o gráfico de peso com linhas conectoras precisas
 function WeightChart({ weightHistory, styles }: { weightHistory: WeightHistory[]; styles: Record<string, string> }) {
+  const { locale, unitSystem } = useI18n();
   const chartRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
   const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
@@ -84,7 +87,7 @@ function WeightChart({ weightHistory, styles }: { weightHistory: WeightHistory[]
 
         return (
           <div key={record.id} className={styles.chartBar}>
-            <span className={styles.barValue}>{record.weight_kg}kg</span>
+            <span className={styles.barValue}>{formatWeight(Number(record.weight_kg), unitSystem, locale)}</span>
             <div className={styles.barContainer} style={{ height: `${currentHeight}px` }}>
               <div
                 className={styles.barDot}
@@ -93,7 +96,7 @@ function WeightChart({ weightHistory, styles }: { weightHistory: WeightHistory[]
               <div className={styles.bar} />
             </div>
             <span className={styles.barLabel}>
-              {new Date(record.recorded_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              {new Date(record.recorded_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })}
             </span>
           </div>
         );
@@ -104,6 +107,8 @@ function WeightChart({ weightHistory, styles }: { weightHistory: WeightHistory[]
 
 // Retorna a data atual no fuso horário de Brasília
 function getBrasiliaDate(): string {
+  // CHAVE — NAO LOCALIZAR: 'en-CA' produz YYYY-MM-DD, usado para achar/gravar o registro do
+  // dia em weight_history e daily_progress. Nao e formatacao de exibicao.
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -114,6 +119,7 @@ function getBrasiliaDate(): string {
 
 export function Progress() {
   const { profile, user } = useAuth();
+  const { t, locale, unitSystem } = useI18n();
 
   const clientId = profile?.id || user?.id;
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
@@ -235,9 +241,10 @@ export function Progress() {
   async function handleAddWeight() {
     if (!clientId || !profileReady || !newWeight) return;
 
-    const weightValue = parseFloat(newWeight.replace(',', '.'));
-    if (isNaN(weightValue) || weightValue <= 0 || weightValue > 500) {
-      alert('Por favor, insira um peso válido');
+    // O aluno digita na unidade dele (lb no imperial); weight_history recebe SEMPRE kg.
+    const weightValue = parseWeightInput(newWeight, unitSystem);
+    if (weightValue === null || weightValue > 500) {
+      alert(t('progress.invalidWeight'));
       return;
     }
 
@@ -414,24 +421,26 @@ export function Progress() {
 
   return (
     <PageContainer>
-      <Header title="Meu Progresso" subtitle="Acompanhe sua evolução" showBack />
+      <Header title={t('progress.title')} subtitle={t('progress.subtitle')} showBack />
 
       <main className={styles.content}>
         <Card variant="gradient" className={styles.mainCard}>
           <div className={styles.weightSection}>
             <div className={styles.weightMain}>
-              <span className={styles.weightValue}>{currentWeight.toFixed(1)}</span>
-              <span className={styles.weightUnit}>kg</span>
+              <span className={styles.weightValue}>
+                {formatNumber(unitSystem === 'imperial' ? kgToLb(currentWeight) : currentWeight, locale, 1)}
+              </span>
+              <span className={styles.weightUnit}>{weightUnitLabel(unitSystem)}</span>
             </div>
             <div className={`${styles.weightChange} ${isLosingWeight ? styles.positive : styles.negative}`}>
               {isLosingWeight ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
-              <span>{Math.abs(weightDiff).toFixed(1)}kg</span>
+              <span>{formatWeight(Math.abs(weightDiff), unitSystem, locale)}</span>
             </div>
           </div>
           <div className={styles.goalProgress}>
             <div className={styles.goalLabels}>
-              <span>Início: {startingWeight.toFixed(1)}kg</span>
-              <span>Meta: {goalWeight.toFixed(1)}kg</span>
+              <span>{t('progress.start', { value: formatWeight(startingWeight, unitSystem, locale) })}</span>
+              <span>{t('progress.goal', { value: formatWeight(goalWeight, unitSystem, locale) })}</span>
             </div>
             <ProgressBar value={Math.min(progressToGoal, 100)} variant="accent" />
           </div>
@@ -439,7 +448,7 @@ export function Progress() {
 
         {/* Metas da Semana */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Metas da Semana</h2>
+          <h2 className={styles.sectionTitle}>{t('progress.weeklyGoals')}</h2>
 
           <div className={styles.weeklyGoalsGrid}>
             {/* Agua */}
@@ -448,16 +457,16 @@ export function Progress() {
                 <Droplets size={20} />
               </div>
               <div className={styles.weeklyGoalContent}>
-                <span className={styles.weeklyGoalLabel}>Água</span>
+                <span className={styles.weeklyGoalLabel}>{t('progress.water')}</span>
                 <span className={styles.weeklyGoalValue}>
-                  {weeklyStats.water.done}/{weeklyStats.water.target} dias
+                  {weeklyStats.water.done}/{weeklyStats.water.target} {t('progress.days')}
                 </span>
                 <ProgressBar
                   value={Math.min(100, (weeklyStats.water.done / weeklyStats.water.target) * 100)}
                   variant="accent"
                 />
                 <span className={styles.weeklyGoalHint}>
-                  Meta: {(waterGoal / 1000).toFixed(1)}L/dia
+                  {t('progress.waterTarget', { value: formatNumber(waterGoal / 1000, locale, 1) })}
                 </span>
               </div>
             </Card>
@@ -468,9 +477,9 @@ export function Progress() {
                 <Dumbbell size={20} />
               </div>
               <div className={styles.weeklyGoalContent}>
-                <span className={styles.weeklyGoalLabel}>Treino</span>
+                <span className={styles.weeklyGoalLabel}>{t('progress.workout')}</span>
                 <span className={styles.weeklyGoalValue}>
-                  {weeklyStats.workout.done}/{weeklyStats.workout.target} dias
+                  {weeklyStats.workout.done}/{weeklyStats.workout.target} {t('progress.days')}
                 </span>
                 <ProgressBar
                   value={Math.min(100, (weeklyStats.workout.done / weeklyStats.workout.target) * 100)}
@@ -478,10 +487,10 @@ export function Progress() {
                 />
                 <span className={styles.weeklyGoalHint}>
                   {trainingDaysInPlan === 0
-                    ? 'Plano de treino não configurado'
+                    ? t('progress.noWorkoutPlan')
                     : weeklyStats.workout.done >= weeklyStats.workout.target
-                    ? 'Meta batida!'
-                    : `${weeklyStats.workout.target} dias de treino no plano`}
+                    ? t('progress.goalHit')
+                    : t('progress.workoutDaysInPlan', { count: weeklyStats.workout.target })}
                 </span>
               </div>
             </Card>
@@ -492,16 +501,16 @@ export function Progress() {
                 <Utensils size={20} />
               </div>
               <div className={styles.weeklyGoalContent}>
-                <span className={styles.weeklyGoalLabel}>Dieta</span>
+                <span className={styles.weeklyGoalLabel}>{t('progress.diet')}</span>
                 <span className={styles.weeklyGoalValue}>
-                  {weeklyStats.diet.done}/{weeklyStats.diet.target} dias
+                  {weeklyStats.diet.done}/{weeklyStats.diet.target} {t('progress.days')}
                 </span>
                 <ProgressBar
                   value={Math.min(100, (weeklyStats.diet.done / weeklyStats.diet.target) * 100)}
                   variant="success"
                 />
                 <span className={styles.weeklyGoalHint}>
-                  {weeklyStats.diet.done >= weeklyStats.diet.target ? 'Meta batida!' : 'Mantenha o foco'}
+                  {weeklyStats.diet.done >= weeklyStats.diet.target ? t('progress.goalHit') : t('progress.keepFocus')}
                 </span>
               </div>
             </Card>
@@ -512,19 +521,21 @@ export function Progress() {
                 <Target size={20} />
               </div>
               <div className={styles.weeklyGoalContent}>
-                <span className={styles.weeklyGoalLabel}>Peso da Semana</span>
+                <span className={styles.weeklyGoalLabel}>{t('progress.weekWeight')}</span>
                 {weeklyWeightGoal !== null ? (
                   <>
                     <span className={styles.weeklyGoalValue}>
-                      {currentWeight.toFixed(1)}kg <span className={styles.weeklyGoalArrow}>→</span> {Number(weeklyWeightGoal).toFixed(1)}kg
+                      {formatWeight(currentWeight, unitSystem, locale)} <span className={styles.weeklyGoalArrow}>→</span> {formatWeight(Number(weeklyWeightGoal), unitSystem, locale)}
                     </span>
                     <span className={styles.weeklyGoalHint}>
-                      {Math.abs(currentWeight - Number(weeklyWeightGoal)).toFixed(1)}kg para a meta
+                      {t('progress.toGoal', {
+                        value: formatWeight(Math.abs(currentWeight - Number(weeklyWeightGoal)), unitSystem, locale),
+                      })}
                     </span>
                   </>
                 ) : (
                   <span className={styles.weeklyGoalHint}>
-                    Aguardando o nutricionista definir
+                    {t('progress.awaitingNutritionist')}
                   </span>
                 )}
               </div>
@@ -534,7 +545,7 @@ export function Progress() {
 
         {/* Plan Progress Section */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Seu Plano</h2>
+          <h2 className={styles.sectionTitle}>{t('progress.yourPlan')}</h2>
 
           <Card className={styles.planCard}>
             {planProgress ? (
@@ -544,19 +555,19 @@ export function Progress() {
                   {planProgress.status === 'active' && (
                     <>
                       <span className={styles.statusDot} />
-                      Plano Ativo
+                      {t('progress.planActive')}
                     </>
                   )}
                   {planProgress.status === 'completed' && (
                     <>
                       <CheckCircle2 size={14} />
-                      Plano Concluído
+                      {t('progress.planCompleted')}
                     </>
                   )}
                   {planProgress.status === 'pending' && (
                     <>
                       <Clock size={14} />
-                      Plano Não Iniciado
+                      {t('progress.planPending')}
                     </>
                   )}
                 </div>
@@ -564,15 +575,15 @@ export function Progress() {
                 {/* Dates Display */}
                 <div className={styles.planDatesDisplay}>
                   <div className={styles.planDateBox}>
-                    <span className={styles.planDateLabel}>Inicio</span>
+                    <span className={styles.planDateLabel}>{t('progress.planStart')}</span>
                     <span className={styles.planDateValue}>
-                      {new Date(planProgress.startDate).toLocaleDateString('pt-BR')}
+                      {new Date(planProgress.startDate).toLocaleDateString(locale)}
                     </span>
                   </div>
                   <div className={styles.planDateBox}>
-                    <span className={styles.planDateLabel}>Término</span>
+                    <span className={styles.planDateLabel}>{t('progress.planEnd')}</span>
                     <span className={styles.planDateValue}>
-                      {new Date(planProgress.endDate).toLocaleDateString('pt-BR')}
+                      {new Date(planProgress.endDate).toLocaleDateString(locale)}
                     </span>
                   </div>
                 </div>
@@ -580,7 +591,7 @@ export function Progress() {
                 {/* Progress Bar */}
                 <div className={styles.planProgressBar}>
                   <div className={styles.planProgressLabels}>
-                    <span>Progresso</span>
+                    <span>{t('progress.progressLabel')}</span>
                     <span>{planProgress.percentComplete}%</span>
                   </div>
                   <ProgressBar
@@ -593,18 +604,18 @@ export function Progress() {
                 <div className={styles.daysCounter}>
                   <div className={`${styles.dayBox} ${styles.elapsed}`}>
                     <span className={styles.dayNumber}>{planProgress.daysElapsed}</span>
-                    <span className={styles.dayLabel}>{planProgress.daysElapsed === 1 ? 'dia' : 'dias'}</span>
-                    <span className={styles.daySubLabel}>completados</span>
+                    <span className={styles.dayLabel}>{planProgress.daysElapsed === 1 ? t('progress.daySingular') : t('progress.dayPlural')}</span>
+                    <span className={styles.daySubLabel}>{t('progress.daysDone')}</span>
                   </div>
                   <div className={`${styles.dayBox} ${styles.total}`}>
                     <span className={styles.dayNumber}>{planProgress.totalDays}</span>
-                    <span className={styles.dayLabel}>{planProgress.totalDays === 1 ? 'dia' : 'dias'}</span>
-                    <span className={styles.daySubLabel}>total</span>
+                    <span className={styles.dayLabel}>{planProgress.totalDays === 1 ? t('progress.daySingular') : t('progress.dayPlural')}</span>
+                    <span className={styles.daySubLabel}>{t('progress.daysTotal')}</span>
                   </div>
                   <div className={`${styles.dayBox} ${planProgress.daysRemaining <= 7 ? styles.urgent : styles.remaining}`}>
                     <span className={styles.dayNumber}>{planProgress.daysRemaining}</span>
-                    <span className={styles.dayLabel}>{planProgress.daysRemaining === 1 ? 'dia' : 'dias'}</span>
-                    <span className={styles.daySubLabel}>restantes</span>
+                    <span className={styles.dayLabel}>{planProgress.daysRemaining === 1 ? t('progress.daySingular') : t('progress.dayPlural')}</span>
+                    <span className={styles.daySubLabel}>{t('progress.daysLeft')}</span>
                   </div>
                 </div>
 
@@ -612,25 +623,25 @@ export function Progress() {
                 {planProgress.status === 'active' && (
                   <div className={styles.motivationalMessage}>
                     {planProgress.daysRemaining <= 7 ? (
-                      <p>Reta final! Você está quase lá, continue firme!</p>
+                      <p>{t('progress.motivationFinal')}</p>
                     ) : planProgress.percentComplete >= 50 ? (
-                      <p>Mais da metade concluída! Continue assim!</p>
+                      <p>{t('progress.motivationHalf')}</p>
                     ) : (
-                      <p>Você está no caminho certo! Mantenha o foco!</p>
+                      <p>{t('progress.motivationStart')}</p>
                     )}
                   </div>
                 )}
 
                 {planProgress.status === 'completed' && (
                   <div className={`${styles.motivationalMessage} ${styles.completed}`}>
-                    <p>Parabéns! Você completou seu plano! Fale com seu nutricionista sobre os próximos passos.</p>
+                    <p>{t('progress.motivationDone')}</p>
                   </div>
                 )}
               </>
             ) : (
               <div className={styles.planNotSet}>
                 <CalendarDays size={32} className={styles.planNotSetIcon} />
-                <p>Período do plano ainda não definido pelo nutricionista.</p>
+                <p>{t('progress.planNotSet')}</p>
               </div>
             )}
           </Card>
@@ -638,20 +649,20 @@ export function Progress() {
 
         {/* Seção de Água */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Água de Hoje</h2>
+          <h2 className={styles.sectionTitle}>{t('progress.todayWater')}</h2>
 
           <Card className={styles.waterCard}>
             <div className={styles.waterHeader}>
               <Droplets size={24} className={styles.waterIcon} />
               <div className={styles.waterAmount}>
-                <span className={styles.waterValue}>{(todayWater / 1000).toFixed(1)}L</span>
-                <span className={styles.waterGoal}>/ {(waterGoal / 1000).toFixed(1)}L</span>
+                <span className={styles.waterValue}>{formatNumber(todayWater / 1000, locale, 1)}L</span>
+                <span className={styles.waterGoal}>/ {formatNumber(waterGoal / 1000, locale, 1)}L</span>
               </div>
             </div>
 
             <div className={styles.waterProgressWrapper}>
               <ProgressBar value={waterPercentage} variant="accent" />
-              <span className={styles.waterPercent}>{waterPercentage}% da meta</span>
+              <span className={styles.waterPercent}>{t('progress.waterPercent', { value: waterPercentage })}</span>
             </div>
 
             <div className={styles.glassesGrid}>
@@ -665,7 +676,7 @@ export function Progress() {
               ))}
             </div>
             <p className={styles.glassesLabel}>
-              {glassesConsumed} de {totalGlasses} copos
+              {t('progress.glasses', { done: glassesConsumed, total: totalGlasses })}
             </p>
 
             <div className={styles.waterButtons}>
@@ -702,7 +713,7 @@ export function Progress() {
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Histórico de Peso</h2>
+          <h2 className={styles.sectionTitle}>{t('progress.weightHistory')}</h2>
 
           <Card className={styles.addWeightCard}>
             <div className={styles.addWeightForm}>
@@ -714,7 +725,7 @@ export function Progress() {
                 max="500"
                 value={newWeight}
                 onChange={(e) => setNewWeight(e.target.value)}
-                placeholder="Seu peso hoje (kg)"
+                placeholder={t('progress.weightPlaceholder', { unit: weightUnitLabel(unitSystem) })}
                 className={styles.weightInput}
               />
               <button
@@ -722,7 +733,7 @@ export function Progress() {
                 disabled={savingWeight || !newWeight}
                 className={styles.addWeightBtn}
               >
-                {savingWeight ? 'Salvando...' : 'Registrar'}
+                {savingWeight ? t('common.saving') : t('progress.register')}
               </button>
             </div>
           </Card>
@@ -731,13 +742,13 @@ export function Progress() {
             <WeightChart weightHistory={weightHistory} styles={styles} />
           ) : (
             <Card className={styles.emptyState}>
-              <p>Nenhum registro de peso ainda</p>
+              <p>{t('progress.noWeightYet')}</p>
             </Card>
           )}
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Últimos 7 dias</h2>
+          <h2 className={styles.sectionTitle}>{t('progress.last7days')}</h2>
 
           <div className={styles.weekGrid}>
             {Array.from({ length: 7 }, (_, i) => {
@@ -756,7 +767,7 @@ export function Progress() {
                   className={`${styles.dayCell} ${hasActivity ? styles.active : ''}`}
                 >
                   <span className={styles.dayName}>
-                    {date.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
+                    {t(`weekday.${date.getDay()}.short` as TKey)}
                   </span>
                   <span className={styles.dayNumber}>{date.getDate()}</span>
                 </div>

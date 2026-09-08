@@ -7,6 +7,7 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input } from './Input';
 import type { TabelaTaco, UnitType } from '../../types/database';
+import { useI18n } from '../../i18n';
 import styles from './AddExtraMealModal.module.css';
 
 const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
@@ -59,6 +60,7 @@ function normalizeText(text: string): string {
 }
 
 export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalProps) {
+  const { t, tc } = useI18n();
   const [mealName, setMealName] = useState('');
   const [foods, setFoods] = useState<ExtraFood[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,6 +209,8 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
 
     const newFood: ExtraFood = {
       id: crypto.randomUUID(),
+      // NAO traduzir: este name vai para extra_meal_foods.food_name no banco e precisa
+      // continuar em pt-BR, senao os lookups de nutricao/substituicao param de casar.
       name: formatFoodName(selectedFood.alimento),
       quantity: gramsForCalc, // Always store grams for totals
       quantity_units: quantityUnits,
@@ -249,7 +253,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
   const handleSave = () => {
     const extraMeal: ExtraMeal = {
       id: crypto.randomUUID(),
-      meal_name: mealName || 'Refeição Extra',
+      meal_name: mealName || t('extra.fallbackName'),
       foods,
       total_calories: mealTotals.calories,
       total_protein: mealTotals.protein,
@@ -274,22 +278,22 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Adicionar Refeição Extra">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('extra.title')}>
       <div className={styles.content}>
         <Input
-          label="Nome da refeicao"
-          placeholder="Ex: Lanche da tarde"
+          label={t('extra.nameLabel')}
+          placeholder={t('extra.namePlaceholder')}
           value={mealName}
           onChange={(e) => setMealName(e.target.value)}
         />
 
         <div className={styles.searchSection}>
-          <label className={styles.label}>Buscar alimento</label>
+          <label className={styles.label}>{t('extra.searchLabel')}</label>
           <div className={styles.searchWrapper}>
             <Search size={18} className={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Digite para buscar..."
+              placeholder={t('extra.searchPlaceholder')}
               value={searchTerm}
               onChange={handleInputChange}
               className={styles.searchInput}
@@ -310,7 +314,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
             )}
           </div>
 
-          {loading && <div className={styles.loadingState}>Buscando...</div>}
+          {loading && <div className={styles.loadingState}>{t('extra.searching')}</div>}
 
           {!loading && searchTerm.length >= 2 && searchResults.length === 0 && !selectedFood && (
             <div className={styles.loadingState}>Nenhum alimento encontrado para "{searchTerm}"</div>
@@ -324,7 +328,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                   className={styles.searchItem}
                   onClick={() => handleSelectFood(food)}
                 >
-                  <span className={styles.foodName}>{formatFoodName(food.alimento)}</span>
+                  <span className={styles.foodName}>{tc('food', formatFoodName(food.alimento))}</span>
                   <span className={styles.foodCal}>
                     {Math.round(parseBrazilianNumber(food.caloria))} kcal
                   </span>
@@ -337,7 +341,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
         {selectedFood && (
           <div className={styles.addFoodSection}>
             <div className={styles.selectedFood}>
-              <span>{formatFoodName(selectedFood.alimento)}</span>
+              <span>{tc('food', formatFoodName(selectedFood.alimento))}</span>
               <span className={styles.selectedNutrition}>
                 {Math.round(parseBrazilianNumber(selectedFood.caloria))} kcal/100g
               </span>
@@ -351,7 +355,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                 className={styles.quantityInput}
               />
               <div className={styles.unitWrapper}>
-                <label className={styles.unitLabel}>Unidade</label>
+                <label className={styles.unitLabel}>{t('extra.unit')}</label>
                 <select
                   value={unitType}
                   onChange={(e) => handleUnitTypeChange(e.target.value as UnitType)}
@@ -385,7 +389,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
 
         {foods.length > 0 && (
           <div className={styles.addedFoods}>
-            <h4 className={styles.sectionTitle}>Alimentos adicionados</h4>
+            <h4 className={styles.sectionTitle}>{t('extra.addedFoods')}</h4>
             <ul className={styles.foodList}>
               {foods.map((food) => {
                 const isUsingUnits = food.unit_type !== 'gramas' && food.quantity_units !== null;
@@ -396,7 +400,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                 return (
                   <li key={food.id} className={styles.foodItem}>
                     <div className={styles.foodInfo}>
-                      <span className={styles.foodItemName}>{food.name}</span>
+                      <span className={styles.foodItemName}>{tc('food', food.name)}</span>
                       <span className={styles.foodItemQty}>{displayQty}</span>
                       {isUsingUnits ? (
                         <span className={styles.foodItemMacros}>
@@ -422,7 +426,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
             </ul>
 
             <div className={styles.totals}>
-              <h4>Total da refeicao:</h4>
+              <h4>{t('extra.mealTotal')}</h4>
               <div className={styles.totalsValues}>
                 <span className={styles.totalCalories}>{mealTotals.calories} kcal</span>
                 <span>P: {mealTotals.protein.toFixed(1)}g</span>

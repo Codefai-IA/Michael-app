@@ -1,5 +1,6 @@
 import { TrendingUp } from 'lucide-react';
 import { ProgressBar } from './ProgressBar';
+import { useI18n } from '../../i18n';
 import styles from './DailyMacrosSummary.module.css';
 
 interface MacroTotals {
@@ -15,6 +16,7 @@ interface DailyMacrosSummaryProps {
 }
 
 export function DailyMacrosSummary({ totalPlanned, consumed }: DailyMacrosSummaryProps) {
+  const { t } = useI18n();
   const remaining = {
     calories: Math.max(0, totalPlanned.calories - consumed.calories),
     protein: Math.max(0, totalPlanned.protein - consumed.protein),
@@ -30,12 +32,12 @@ export function DailyMacrosSummary({ totalPlanned, consumed }: DailyMacrosSummar
     <div className={styles.container}>
       <div className={styles.header}>
         <TrendingUp size={18} />
-        <span>Macros do Dia</span>
+        <span>{t('macros.title')}</span>
       </div>
 
       <div className={styles.macrosGrid}>
         <div className={styles.macroRow}>
-          <span className={styles.label}>Total:</span>
+          <span className={styles.label}>{t('macros.total')}</span>
           <span className={styles.value}>{Math.round(totalPlanned.calories)} kcal</span>
           <span className={styles.macro}>P: {Math.round(totalPlanned.protein)}g</span>
           <span className={styles.macro}>C: {Math.round(totalPlanned.carbs)}g</span>
@@ -43,7 +45,7 @@ export function DailyMacrosSummary({ totalPlanned, consumed }: DailyMacrosSummar
         </div>
 
         <div className={`${styles.macroRow} ${styles.remaining}`}>
-          <span className={styles.label}>Restante:</span>
+          <span className={styles.label}>{t('macros.remaining')}</span>
           <span className={styles.value}>{Math.round(remaining.calories)} kcal</span>
           <span className={styles.macro}>P: {Math.round(remaining.protein)}g</span>
           <span className={styles.macro}>C: {Math.round(remaining.carbs)}g</span>

@@ -10,9 +10,10 @@ import { HomeVideosManager } from '../../components/admin/HomeVideosManager';
 import { RankingGiftManager } from '../../components/admin/RankingGiftManager';
 import { HomeNoticeManager } from '../../components/admin/HomeNoticeManager';
 import { RecipesManager } from '../../components/admin/RecipesManager';
+import { TranslationsManager } from '../../components/admin/TranslationsManager';
 import styles from './LibraryManagement.module.css';
 
-type TabType = 'exercises' | 'foods' | 'recipes' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'notice' | 'ranking';
+type TabType = 'exercises' | 'foods' | 'recipes' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'notice' | 'ranking' | 'translations';
 
 export function LibraryManagement() {
   const navigate = useNavigate();
@@ -79,6 +80,12 @@ export function LibraryManagement() {
         >
           Ranking
         </button>
+        <button
+          onClick={() => setActiveTab('translations')}
+          className={`${styles.tab} ${activeTab === 'translations' ? styles.tabActive : ''}`}
+        >
+          Traduções
+        </button>
       </div>
 
       <main className={styles.content}>
@@ -106,6 +113,10 @@ export function LibraryManagement() {
         <div style={{ display: activeTab === 'ranking' ? 'block' : 'none' }}>
           <RankingGiftManager />
         </div>
+        {/* Montado so quando a aba esta ativa (os outros usam display:none e montam juntos):
+            esta lista chega a milhares de linhas e nao deve ser carregada em toda visita
+            a Biblioteca. */}
+        {activeTab === 'translations' && <TranslationsManager />}
       </main>
     </PageContainer>
   );

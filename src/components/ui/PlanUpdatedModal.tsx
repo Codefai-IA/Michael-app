@@ -8,6 +8,7 @@ import { formatQuantityDisplay } from '../../utils/foodUnits';
 import { formatFoodName } from '../../utils/formatters';
 import { parseBrazilianNumber } from './FoodSelect';
 import type { DietRevisionSnapshot, DietRevisionSnapshotFood } from '../../types/database';
+import { useI18n } from '../../i18n';
 import styles from './PlanUpdatedModal.module.css';
 
 /**
@@ -146,6 +147,7 @@ async function fetchDietDiffs(
 }
 
 export function PlanUpdatedModal() {
+  const { t, tc } = useI18n();
   const { user, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
@@ -257,8 +259,10 @@ export function PlanUpdatedModal() {
     setShow(false);
   }
 
+  // So exibicao: os 5 chamadores usam o retorno direto no JSX. O lookup em displayNames
+  // continua sendo feito com o food_name CRU, que e a chave.
   function foodLabel(food: DietRevisionSnapshotFood): string {
-    return displayNames.get(food.food_name) || formatFoodName(food.food_name);
+    return tc('food', displayNames.get(food.food_name) || formatFoodName(food.food_name));
   }
 
   function qtyLabel(food: DietRevisionSnapshotFood): string {
@@ -349,27 +353,27 @@ export function PlanUpdatedModal() {
                 ))}
 
                 <div className={styles.macroSummary}>
-                  <div className={styles.macroTitle}>Como sua dieta ficou</div>
+                  <div className={styles.macroTitle}>{t('planUpdated.macroTitle')}</div>
                   <MacroRow
-                    label="🔥 Calorias"
+                    label={t('planUpdated.calories')}
                     unit=" kcal"
                     before={plan.macrosBefore?.calories ?? null}
                     after={plan.macrosAfter.calories}
                   />
                   <MacroRow
-                    label="🥩 Proteínas"
+                    label={t('planUpdated.protein')}
                     unit="g"
                     before={plan.macrosBefore?.protein ?? null}
                     after={plan.macrosAfter.protein}
                   />
                   <MacroRow
-                    label="🍞 Carboidratos"
+                    label={t('planUpdated.carbs')}
                     unit="g"
                     before={plan.macrosBefore?.carbs ?? null}
                     after={plan.macrosAfter.carbs}
                   />
                   <MacroRow
-                    label="🥑 Gorduras"
+                    label={t('planUpdated.fats')}
                     unit="g"
                     before={plan.macrosBefore?.fats ?? null}
                     after={plan.macrosAfter.fats}

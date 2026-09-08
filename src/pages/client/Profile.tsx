@@ -6,10 +6,21 @@ import { supabase } from '../../lib/supabase';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, Button } from '../../components/ui';
 import type { WeightHistory } from '../../types/database';
+import { useI18n } from '../../i18n';
+import {
+  formatWeight,
+  formatHeight,
+  formatNumber,
+  weightUnitLabel,
+  parseWeightInput,
+  kgToLb,
+} from '../../utils/units';
 import styles from './Profile.module.css';
 
 // Retorna a data atual no fuso horário de Brasília
 function getBrasiliaDate(): string {
+  // CHAVE — NAO LOCALIZAR: 'en-CA' produz YYYY-MM-DD, formato usado para consultar e gravar
+  // o registro do dia em weight_history. Nao e formatacao de exibicao.
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -21,6 +32,7 @@ function getBrasiliaDate(): string {
 export function Profile() {
   const navigate = useNavigate();
   const { profile, signOut, refreshProfile } = useAuth();
+  const { t, locale, unitSystem } = useI18n();
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
   const [loggingOut, setLoggingOut] = useState(false);
   const [isEditingWeight, setIsEditingWeight] = useState(false);
@@ -52,9 +64,15 @@ export function Profile() {
       return;
     }
 
+    // O aluno digita na unidade dele (lb no imperial); o banco recebe SEMPRE kg.
+    const weightValue = parseWeightInput(newWeight, unitSystem);
+    if (weightValue === null) {
+      setSavingWeight(false);
+      return;
+    }
+
     setSavingWeight(true);
     const today = getBrasiliaDate();
-    const weightValue = parseFloat(newWeight);
 
     try {
       // Update current weight in profile
@@ -207,6 +225,9 @@ export function Profile() {
     }
   }
 
+  // O banco guarda kg; isto e so a projecao para a tela.
+  const displayWeight = (kg: number) => (unitSystem === 'imperial' ? kgToLb(kg) : kg);
+
   const currentWeight = profile?.current_weight_kg || 0;
   const startingWeight = profile?.starting_weight_kg || currentWeight;
   const goalWeight = profile?.goal_weight_kg || 0;
@@ -217,7 +238,7 @@ export function Profile() {
 
   function formatDate(dateStr: string | null): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('pt-BR', {
+    return new Date(dateStr).toLocaleDateString(locale, {
       month: 'short',
       year: 'numeric',
     });
@@ -228,7 +249,7 @@ export function Profile() {
       <header className={styles.header}>
         <img
           src="/logo-icon.png"
-          alt="Logo"
+          alt={t('profile.logoAlt')}
           className={styles.logo}
         />
         <div className={styles.avatarSection}>
@@ -244,7 +265,7 @@ export function Profile() {
               className={styles.avatarEditBtn}
               onClick={handlePhotoClick}
               disabled={uploadingPhoto}
-              aria-label="Alterar foto de perfil"
+              aria-label={t('profile.changePhoto')}
             >
               {uploadingPhoto ? (
                 <Loader2 size={16} className={styles.spinning} />
@@ -270,11 +291,11 @@ export function Profile() {
       <main className={styles.content}>
         {/* Weight Section */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Peso</h2>
+          <h2 className={styles.sectionTitle}>{t('profile.weight')}</h2>
 
           <Card className={styles.weightCard}>
             <div className={styles.currentWeightSection}>
-              <span className={styles.weightLabel}>Peso Atual</span>
+              <span className={styles.weightLabel}>{t('profile.currentWeight')}</span>
 
               {isEditingWeight ? (
                 <div className={styles.weightEditRow}>
@@ -285,10 +306,10 @@ export function Profile() {
                       value={newWeight}
                       onChange={(e) => setNewWeight(e.target.value)}
                       className={styles.weightInput}
-                      placeholder="kg"
+                      placeholder={weightUnitLabel(unitSystem)}
                       autoFocus
                     />
-                    <span className={styles.weightInputUnit}>kg</span>
+                    <span className={styles.weightInputUnit}>{weightUnitLabel(unitSystem)}</span>
                   </div>
                   <div className={styles.weightEditButtons}>
                     <button
@@ -309,33 +330,35 @@ export function Profile() {
               ) : (
                 <div className={styles.weightDisplayRow}>
                   <div className={styles.weightValue}>
-                    <span className={styles.weightNumber}>{currentWeight.toFixed(1)}</span>
-                    <span className={styles.weightUnit}>kg</span>
+                    <span className={styles.weightNumber}>
+                      {formatNumber(displayWeight(currentWeight), locale, 1)}
+                    </span>
+                    <span className={styles.weightUnit}>{weightUnitLabel(unitSystem)}</span>
                   </div>
                   <button onClick={startEditingWeight} className={styles.updateWeightBtn}>
                     <Edit3 size={16} />
-                    Atualizar
+                    {t('profile.update')}
                   </button>
                 </div>
               )}
 
               {weightSaved && (
-                <p className={styles.weightSavedMsg}>Peso atualizado!</p>
+                <p className={styles.weightSavedMsg}>{t('profile.weightSaved')}</p>
               )}
             </div>
 
             {/* Weight Stats Grid */}
             <div className={styles.weightStatsGrid}>
               <div className={styles.weightStatBox}>
-                <span className={styles.weightStatLabel}>Peso Inicial</span>
+                <span className={styles.weightStatLabel}>{t('profile.startingWeight')}</span>
                 <span className={styles.weightStatValue}>
-                  {startingWeight > 0 ? `${startingWeight.toFixed(1)} kg` : '--'}
+                  {startingWeight > 0 ? formatWeight(startingWeight, unitSystem, locale) : '--'}
                 </span>
               </div>
               <div className={styles.weightStatBox}>
-                <span className={styles.weightStatLabel}>Meta</span>
+                <span className={styles.weightStatLabel}>{t('profile.goalWeight')}</span>
                 <span className={styles.weightStatValue}>
-                  {goalWeight > 0 ? `${goalWeight.toFixed(1)} kg` : '--'}
+                  {goalWeight > 0 ? formatWeight(goalWeight, unitSystem, locale) : '--'}
                 </span>
               </div>
             </div>
@@ -346,8 +369,8 @@ export function Profile() {
                 {weightDiff > 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
                 <span>
                   {weightDiff > 0
-                    ? `Você já perdeu ${weightDiff.toFixed(1)} kg!`
-                    : `Você ganhou ${Math.abs(weightDiff).toFixed(1)} kg`
+                    ? t('profile.lost', { value: formatWeight(weightDiff, unitSystem, locale) })
+                    : t('profile.gained', { value: formatWeight(Math.abs(weightDiff), unitSystem, locale) })
                   }
                 </span>
               </div>
@@ -356,7 +379,7 @@ export function Profile() {
             {remainingToGoal > 0 && (
               <div className={styles.goalBadge}>
                 <Target size={16} />
-                <span>Faltam {remainingToGoal.toFixed(1)} kg para sua meta</span>
+                <span>{t('profile.remaining', { value: formatWeight(remainingToGoal, unitSystem, locale) })}</span>
               </div>
             )}
           </Card>
@@ -364,7 +387,7 @@ export function Profile() {
 
         {/* Stats Section */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Minhas Medidas</h2>
+          <h2 className={styles.sectionTitle}>{t('profile.measures')}</h2>
 
           <Card className={styles.statsCard}>
             <div className={styles.statsGrid}>
@@ -373,8 +396,10 @@ export function Profile() {
                   <Ruler size={18} />
                 </div>
                 <div className={styles.statInfo}>
-                  <span className={styles.statLabel}>Altura</span>
-                  <span className={styles.statValue}>{height.toFixed(2)}m</span>
+                  <span className={styles.statLabel}>{t('profile.height')}</span>
+                  <span className={styles.statValue}>
+                    {profile?.height_cm ? formatHeight(profile.height_cm, unitSystem) : '-'}
+                  </span>
                 </div>
               </div>
 
@@ -383,7 +408,7 @@ export function Profile() {
                   <Target size={18} />
                 </div>
                 <div className={styles.statInfo}>
-                  <span className={styles.statLabel}>IMC</span>
+                  <span className={styles.statLabel}>{t('profile.bmi')}</span>
                   <span className={styles.statValue}>{bmi.toFixed(1)}</span>
                 </div>
               </div>
@@ -393,8 +418,8 @@ export function Profile() {
                   <Calendar size={18} />
                 </div>
                 <div className={styles.statInfo}>
-                  <span className={styles.statLabel}>Idade</span>
-                  <span className={styles.statValue}>{profile?.age || '-'} anos</span>
+                  <span className={styles.statLabel}>{t('profile.age')}</span>
+                  <span className={styles.statValue}>{profile?.age || '-'} {t('profile.ageUnit')}</span>
                 </div>
               </div>
 
@@ -403,9 +428,11 @@ export function Profile() {
                   <Scale size={18} />
                 </div>
                 <div className={styles.statInfo}>
-                  <span className={styles.statLabel}>Variacao</span>
+                  <span className={styles.statLabel}>{t('profile.variation')}</span>
                   <span className={styles.statValue}>
-                    {weightDiff !== 0 ? `${weightDiff > 0 ? '-' : '+'}${Math.abs(weightDiff).toFixed(1)}kg` : '0kg'}
+                    {weightDiff !== 0
+                      ? `${weightDiff > 0 ? '-' : '+'}${formatWeight(Math.abs(weightDiff), unitSystem, locale)}`
+                      : formatWeight(0, unitSystem, locale)}
                   </span>
                 </div>
               </div>
@@ -415,7 +442,7 @@ export function Profile() {
 
         {profile?.goals && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Meu Objetivo</h2>
+            <h2 className={styles.sectionTitle}>{t('profile.myGoal')}</h2>
             <Card>
               <p className={styles.goalText}>{profile.goals}</p>
             </Card>
@@ -423,7 +450,7 @@ export function Profile() {
         )}
 
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Historico de Peso</h2>
+          <h2 className={styles.sectionTitle}>{t('profile.weightHistory')}</h2>
 
           {weightHistory.length > 0 ? (
             <div className={styles.historyList}>
@@ -434,10 +461,12 @@ export function Profile() {
                 return (
                   <Card key={record.id} className={styles.historyItem}>
                     <span className={styles.historyDate}>
-                      {new Date(record.recorded_at).toLocaleDateString('pt-BR')}
+                      {new Date(record.recorded_at).toLocaleDateString(locale)}
                     </span>
                     <div className={styles.historyWeightRow}>
-                      <span className={styles.historyWeight}>{Number(record.weight_kg).toFixed(1)}kg</span>
+                      <span className={styles.historyWeight}>
+                        {formatWeight(Number(record.weight_kg), unitSystem, locale)}
+                      </span>
                       {diff !== 0 && (
                         <span className={`${styles.historyTrend} ${diff < 0 ? styles.trendDown : styles.trendUp}`}>
                           {diff < 0 ? '↓' : '↑'}
@@ -450,7 +479,7 @@ export function Profile() {
             </div>
           ) : (
             <Card className={styles.emptyState}>
-              <p>Nenhum registro de peso</p>
+              <p>{t('profile.noWeightRecords')}</p>
             </Card>
           )}
         </section>
@@ -468,7 +497,7 @@ export function Profile() {
           }}
         >
           <LogOut size={18} />
-          Sair da Conta
+          {t('profile.signOut')}
         </Button>
       </main>
 

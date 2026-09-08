@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useI18n } from '../../i18n';
 import styles from './BirthdayModal.module.css';
 
 const BIRTHDAY_BONUS_DAYS = 15;
@@ -19,6 +20,7 @@ function getBrasiliaDateParts(): { year: number; month: number; day: number } {
 
 export function BirthdayModal() {
   const { user, profile, isAdmin } = useAuth();
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -67,22 +69,22 @@ export function BirthdayModal() {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.confetti}>🎉</div>
 
-        <h2 className={styles.title}>Feliz aniversário!</h2>
+        <h2 className={styles.title}>{t('birthday.title')}</h2>
 
         <p className={styles.message}>
-          🎉 Feliz aniversário! Hoje pode comemorar, mas ó… sem esquecer da dieta em 😅
+          {t('birthday.message')}
         </p>
 
         <p className={styles.signature}>
-          Nutri Michael te deseja muita saúde, felicidade e muitos resultados!
+          {t('birthday.signature')}
         </p>
 
         <div className={styles.bonus}>
-          🎁 Você acabou de ganhar <strong>+15 dias</strong> de planejamento!
+          {t('birthday.bonus')}
         </div>
 
         <button onClick={handleClose} className={styles.button}>
-          Obrigado, Michael!
+          {t('birthday.button')}
         </button>
       </div>
     </div>

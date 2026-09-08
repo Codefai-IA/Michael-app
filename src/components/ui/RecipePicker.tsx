@@ -3,6 +3,7 @@ import { X, Search, ChevronLeft, Plus, Loader2, UtensilsCrossed } from 'lucide-r
 import { supabase } from '../../lib/supabase';
 import { getYoutubeThumbnail, getYoutubeEmbedUrl } from '../../lib/youtube';
 import type { Recipe } from '../../types/database';
+import { useI18n } from '../../i18n';
 import styles from './RecipePicker.module.css';
 
 interface RecipePickerProps {
@@ -20,6 +21,7 @@ function normalize(text: string): string {
 }
 
 export function RecipePicker({ isOpen, onClose, onAdd }: RecipePickerProps) {
+  const { t, tc } = useI18n();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,14 +91,14 @@ export function RecipePicker({ isOpen, onClose, onAdd }: RecipePickerProps) {
         {/* Header */}
         <div className={styles.header}>
           {selected ? (
-            <button className={styles.iconBtn} onClick={() => setSelected(null)} aria-label="Voltar">
+            <button className={styles.iconBtn} onClick={() => setSelected(null)} aria-label={t('recipe.back')}>
               <ChevronLeft size={22} />
             </button>
           ) : (
             <span className={styles.headerSpacer} />
           )}
           <h2 className={styles.headerTitle}>{selected ? 'Receita' : 'Receitas'}</h2>
-          <button className={styles.iconBtn} onClick={onClose} aria-label="Fechar">
+          <button className={styles.iconBtn} onClick={onClose} aria-label={t('recipe.close')}>
             <X size={22} />
           </button>
         </div>
@@ -125,15 +127,15 @@ export function RecipePicker({ isOpen, onClose, onAdd }: RecipePickerProps) {
               </div>
               <div className={styles.macroBox}>
                 <span className={styles.macroValue}>{selected.protein}g</span>
-                <span className={styles.macroName}>Proteína</span>
+                <span className={styles.macroName}>{t('recipe.protein')}</span>
               </div>
               <div className={styles.macroBox}>
                 <span className={styles.macroValue}>{selected.carbs}g</span>
-                <span className={styles.macroName}>Carbo</span>
+                <span className={styles.macroName}>{t('recipe.carbs')}</span>
               </div>
               <div className={styles.macroBox}>
                 <span className={styles.macroValue}>{selected.fat}g</span>
-                <span className={styles.macroName}>Gordura</span>
+                <span className={styles.macroName}>{t('recipe.fat')}</span>
               </div>
             </div>
 
@@ -149,7 +151,7 @@ export function RecipePicker({ isOpen, onClose, onAdd }: RecipePickerProps) {
               <Search size={18} className={styles.searchIcon} />
               <input
                 className={styles.searchInput}
-                placeholder="Buscar receita..."
+                placeholder={t('recipe.search')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -171,12 +173,12 @@ export function RecipePicker({ isOpen, onClose, onAdd }: RecipePickerProps) {
               {loading ? (
                 <div className={styles.stateMsg}>
                   <Loader2 size={28} className={styles.spin} />
-                  <p>Carregando receitas...</p>
+                  <p>{t('recipe.loading')}</p>
                 </div>
               ) : filtered.length === 0 ? (
                 <div className={styles.stateMsg}>
                   <UtensilsCrossed size={32} />
-                  <p>Nenhuma receita encontrada</p>
+                  <p>{t('recipe.empty')}</p>
                 </div>
               ) : (
                 <div className={styles.grid}>
@@ -192,7 +194,7 @@ export function RecipePicker({ isOpen, onClose, onAdd }: RecipePickerProps) {
                           )}
                         </div>
                         <div className={styles.cardBody}>
-                          <span className={styles.cardTitle}>{recipe.title}</span>
+                          <span className={styles.cardTitle}>{tc('recipe', recipe.title)}</span>
                           <span className={styles.cardMacros}>
                             {Math.round(recipe.calories)} kcal · P {recipe.protein} · C {recipe.carbs} · G {recipe.fat}
                           </span>

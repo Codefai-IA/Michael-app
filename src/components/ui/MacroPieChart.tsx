@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import { useI18n } from '../../i18n';
 import styles from './MacroPieChart.module.css';
 
 interface MacroPieChartProps {
@@ -24,6 +25,7 @@ export function MacroPieChart({
   showLegend = true,
   size = 'md',
 }: MacroPieChartProps) {
+  const { t } = useI18n();
   const total = protein + carbs + fats;
 
   const data = [
@@ -63,7 +65,7 @@ export function MacroPieChart({
   if (total === 0) {
     return (
       <div className={styles.emptyState}>
-        <p>Sem dados nutricionais</p>
+        <p>{t('macros.noData')}</p>
       </div>
     );
   }

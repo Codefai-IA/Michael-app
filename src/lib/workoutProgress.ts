@@ -14,6 +14,13 @@ export interface ExerciseSession {
 
 export interface WorkoutHighlight {
   exerciseName: string;
+  /**
+   * Dados do destaque, para a UI montar a frase no idioma do aluno.
+   * `message` continua existindo em pt-BR para nao quebrar quem ja consome este modulo.
+   */
+  kind: 'weight' | 'reps';
+  from: string;
+  to: string;
   message: string;
 }
 
@@ -63,6 +70,9 @@ export function computeWorkoutHighlights(
     if (wToday > 0 && wPrev > 0 && wToday > wPrev) {
       highlights.push({
         exerciseName: exercise.name,
+        kind: 'weight',
+        from: fmtNum(wPrev),
+        to: fmtNum(wToday),
         message: `${exercise.name} evoluiu de ${fmtNum(wPrev)}kg para ${fmtNum(wToday)}kg.`,
       });
       continue;
@@ -75,6 +85,9 @@ export function computeWorkoutHighlights(
       if (rToday > 0 && rPrev > 0 && rToday > rPrev) {
         highlights.push({
           exerciseName: exercise.name,
+          kind: 'reps',
+          from: fmtNum(rPrev),
+          to: fmtNum(rToday),
           message: `${exercise.name} aumentou de ${fmtNum(rPrev)} para ${fmtNum(rToday)} repetições.`,
         });
         continue;
@@ -88,9 +101,16 @@ export function computeWorkoutHighlights(
 }
 
 // Formata duração total para o resumo: "1h20", "2h05", "45min", "menos de 1 minuto"
-export function formatDuration(ms: number): string {
+// Os rotulos vem de fora para poder sair no idioma do aluno; o default mantem o pt-BR.
+export function formatDuration(
+  ms: number,
+  labels: { lessThanMinute: string; minuteSuffix: string } = {
+    lessThanMinute: 'menos de 1 minuto',
+    minuteSuffix: 'min',
+  }
+): string {
   const totalMinutes = Math.round(ms / 60000);
-  if (totalMinutes < 1) return 'menos de 1 minuto';
+  if (totalMinutes < 1) return labels.lessThanMinute;
 
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -98,7 +118,7 @@ export function formatDuration(ms: number): string {
   if (hours > 0) {
     return minutes > 0 ? `${hours}h${String(minutes).padStart(2, '0')}` : `${hours}h`;
   }
-  return `${minutes}min`;
+  return `${minutes}${labels.minuteSuffix}`;
 }
 
 // Formata o cronômetro ao vivo: "MM:SS" ou "H:MM:SS"

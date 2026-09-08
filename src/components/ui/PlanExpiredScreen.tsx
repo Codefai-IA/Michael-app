@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Utensils, Dumbbell, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../i18n';
+import { formatWeight } from '../../utils/units';
 import styles from './PlanExpiredScreen.module.css';
 
 // Retorna a data atual no fuso horário de Brasília
@@ -24,7 +26,7 @@ function getProgressMessage(
   startingWeight?: number | null,
   currentWeight?: number | null,
   goalWeight?: number | null
-): { message: string; emoji: string } | null {
+): { messageKey: 'expired.progressOnTrack' | 'expired.progressLost' | 'expired.progressGained' | 'expired.progressEncourage'; value?: number; emoji: string } | null {
   if (!startingWeight || !currentWeight) return null;
 
   const diff = startingWeight - currentWeight;
@@ -33,7 +35,7 @@ function getProgressMessage(
   // Less than 0.5kg change - no significant progress
   if (absDiff < 0.5) {
     return {
-      message: 'Você está no caminho certo! Continue sua jornada.',
+      messageKey: 'expired.progressOnTrack',
       emoji: '\uD83D\uDCAA'
     };
   }
@@ -41,7 +43,8 @@ function getProgressMessage(
   // Lost weight
   if (diff > 0) {
     return {
-      message: `Você já perdeu ${absDiff.toFixed(1).replace('.', ',')}kg! Continue sua jornada.`,
+      messageKey: 'expired.progressLost',
+      value: absDiff,
       emoji: '\uD83C\uDF89'
     };
   }
@@ -51,13 +54,14 @@ function getProgressMessage(
     const isGainGoal = goalWeight && goalWeight > startingWeight;
     if (isGainGoal) {
       return {
-        message: `Você já ganhou ${absDiff.toFixed(1).replace('.', ',')}kg de massa! Continue sua jornada.`,
+        messageKey: 'expired.progressGained',
+        value: absDiff,
         emoji: '\uD83D\uDCAA'
       };
     } else {
       // Gained but goal was to lose - still encourage
       return {
-        message: 'Não desista! Renovar o plano é a chave para alcançar seus objetivos.',
+        messageKey: 'expired.progressEncourage',
         emoji: '\uD83D\uDE4C'
       };
     }
@@ -68,6 +72,7 @@ function getProgressMessage(
 
 export function PlanExpiredScreen({ planEndDate, nutritionistWhatsapp, startingWeight, currentWeight, goalWeight }: PlanExpiredScreenProps) {
   const navigate = useNavigate();
+  const { t, locale, unitSystem } = useI18n();
   const { signOut } = useAuth();
 
   const daysSinceExpired = Math.abs(
@@ -82,7 +87,7 @@ export function PlanExpiredScreen({ planEndDate, nutritionistWhatsapp, startingW
   };
 
   const whatsappNumber = nutritionistWhatsapp || '5511965293803';
-  const whatsappMessage = encodeURIComponent('Olá! Gostaria de renovar meu plano nutricional.');
+  const whatsappMessage = encodeURIComponent(t('expired.whatsappMessage'));
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   const progressInfo = getProgressMessage(startingWeight, currentWeight, goalWeight);
@@ -94,15 +99,21 @@ export function PlanExpiredScreen({ planEndDate, nutritionistWhatsapp, startingW
         <img src="/expired-icon.png" alt="" className={styles.expiredIcon} />
 
         {/* Title */}
-        <h1 className={styles.title}>Seu Plano Expirou</h1>
+        <h1 className={styles.title}>{t('expired.title')}</h1>
 
         {/* Progress Message - Under the icon/title */}
         {progressInfo && (
           <div className={styles.progressBox}>
-            <p className={styles.progressMessage}>{progressInfo.message}</p>
+            <p className={styles.progressMessage}>
+              {t(progressInfo.messageKey, {
+                value: progressInfo.value !== undefined
+                  ? formatWeight(progressInfo.value, unitSystem, locale)
+                  : '',
+              })}
+            </p>
             {startingWeight && currentWeight && (
               <p className={styles.progressWeights}>
-                {startingWeight.toFixed(1).replace('.', ',')}kg → {currentWeight.toFixed(1).replace('.', ',')}kg
+                {formatWeight(startingWeight, unitSystem, locale)} → {formatWeight(currentWeight, unitSystem, locale)}
               </p>
             )}
           </div>
@@ -110,42 +121,43 @@ export function PlanExpiredScreen({ planEndDate, nutritionistWhatsapp, startingW
 
         {/* Expiry Info */}
         <p className={styles.expiryInfo}>
-          Seu plano terminou{' '}
-          {daysSinceExpired === 1 ? 'há 1 dia' : `há ${daysSinceExpired} dias`}
+          {daysSinceExpired === 1
+            ? t('expired.endedOneDay')
+            : t('expired.endedDays', { count: daysSinceExpired })}
           <br />
           <span className={styles.expiryDate}>
-            ({new Date(planEndDate).toLocaleDateString('pt-BR')})
+            ({new Date(planEndDate).toLocaleDateString(locale)})
           </span>
         </p>
 
         {/* Warning Message */}
         <div className={styles.messageBox}>
           <p>
-            Não perca seu progresso! Renove agora para continuar acompanhando sua evolução.
+            {t('expired.warning')}
           </p>
         </div>
 
         {/* What's Blocked */}
         <div className={styles.blockedSection}>
-          <p className={styles.blockedLabel}>Acesso bloqueado:</p>
+          <p className={styles.blockedLabel}>{t('expired.blockedLabel')}</p>
           <div className={styles.blockedIcons}>
             <div className={styles.blockedItem}>
               <div className={styles.blockedIcon}>
                 <Utensils size={20} />
               </div>
-              <span>Dieta</span>
+              <span>{t('expired.blockedDiet')}</span>
             </div>
             <div className={styles.blockedItem}>
               <div className={styles.blockedIcon}>
                 <Dumbbell size={20} />
               </div>
-              <span>Treino</span>
+              <span>{t('expired.blockedWorkout')}</span>
             </div>
             <div className={styles.blockedItem}>
               <div className={styles.blockedIcon}>
                 <TrendingUp size={20} />
               </div>
-              <span>Progresso</span>
+              <span>{t('expired.blockedProgress')}</span>
             </div>
           </div>
         </div>
@@ -157,17 +169,17 @@ export function PlanExpiredScreen({ planEndDate, nutritionistWhatsapp, startingW
           rel="noopener noreferrer"
           className={styles.whatsappButton}
         >
-          Renovar Agora
+          {t('expired.renew')}
         </a>
 
         {/* Secondary Text */}
         <p className={styles.secondaryText}>
-          Não deixe todo seu esforço ir embora
+          {t('expired.secondary')}
         </p>
 
         {/* Logout Option */}
         <button onClick={handleLogout} className={styles.logoutButton}>
-          Sair da conta
+          {t('expired.logout')}
         </button>
       </div>
     </div>

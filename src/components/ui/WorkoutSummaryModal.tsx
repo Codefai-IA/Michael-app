@@ -1,5 +1,6 @@
 import { TrendingUp } from 'lucide-react';
 import { formatDuration, type WorkoutHighlight } from '../../lib/workoutProgress';
+import { useI18n } from '../../i18n';
 import styles from './WorkoutSummaryModal.module.css';
 
 interface WorkoutSummaryModalProps {
@@ -9,15 +10,21 @@ interface WorkoutSummaryModalProps {
 }
 
 export function WorkoutSummaryModal({ durationMs, highlights, onClose }: WorkoutSummaryModalProps) {
+  const { t } = useI18n();
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.trophy}>🎉</div>
 
-        <h2 className={styles.title}>Parabéns! Você concluiu seu treino.</h2>
+        <h2 className={styles.title}>{t('summary.title')}</h2>
 
         <p className={styles.duration}>
-          Você concluiu o treino em <strong>{formatDuration(durationMs)}</strong>.
+          {t('summary.duration', {
+            duration: formatDuration(durationMs, {
+              lessThanMinute: t('summary.lessThanMinute'),
+              minuteSuffix: t('summary.minuteSuffix'),
+            }),
+          })}
         </p>
 
         {highlights.length > 0 ? (
@@ -25,16 +32,22 @@ export function WorkoutSummaryModal({ durationMs, highlights, onClose }: Workout
             {highlights.map((h, i) => (
               <div key={i} className={styles.highlightRow}>
                 <TrendingUp size={16} className={styles.highlightIcon} />
-                <span>{h.message}</span>
+                <span>
+                  {t(h.kind === 'weight' ? 'summary.weightUp' : 'summary.repsUp', {
+                    exercise: h.exerciseName,
+                    from: h.from,
+                    to: h.to,
+                  })}
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <p className={styles.noHighlights}>Continue assim — cada treino conta! 💪</p>
+          <p className={styles.noHighlights}>{t('summary.noHighlights')}</p>
         )}
 
         <button onClick={onClose} className={styles.button}>
-          Concluir
+          {t('summary.finish')}
         </button>
       </div>
     </div>
