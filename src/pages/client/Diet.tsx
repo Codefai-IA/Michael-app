@@ -1118,7 +1118,8 @@ export function Diet() {
   console.log('[Diet] RENDERING - loading:', loading, 'meals.length:', meals.length);
 
   // Get current diet name for display
-  const currentDietName = availableDiets.find(d => d.id === selectedDietId)?.name || t('diet.fallbackName');
+  const currentDietName =
+    tc('diet_plan', availableDiets.find(d => d.id === selectedDietId)?.name) || t('diet.fallbackName');
 
   return (
     <PageContainer>
@@ -1136,7 +1137,7 @@ export function Diet() {
             >
               {availableDiets.map((diet) => (
                 <option key={diet.id} value={diet.id}>
-                  {diet.name}
+                  {tc('diet_plan', diet.name)}
                 </option>
               ))}
             </select>

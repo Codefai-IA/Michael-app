@@ -18,7 +18,9 @@ export type ContentEntity =
   | 'workout_type'
   | 'muscle_group'
   | 'recipe'
-  | 'notice';
+  | 'notice'
+  | 'reps'
+  | 'diet_plan';
 
 interface I18nContextValue {
   locale: Locale;

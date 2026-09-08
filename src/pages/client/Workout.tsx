@@ -694,7 +694,11 @@ export function Workout() {
                           {tc('exercise', exercise.name)}
                         </h3>
                         <p className={styles.exerciseDetails}>
-                          {t('workout.exerciseDetails', { sets: exercise.sets ?? 0, reps: exercise.reps ?? '' })}
+                          {t('workout.exerciseDetails', {
+                            sets: exercise.sets ?? 0,
+                            // "10 a 12" -> "10 to 12"; so o rotulo muda, o dado segue igual
+                            reps: tc('reps', exercise.reps ?? ''),
+                          })}
                           {exercise.rest && ` • ${formatRestTime(exercise.rest)} ${t('workout.restSuffix')}`}
                           {exercise.weight_kg && ` • ${formatLoad(exercise.weight_kg, unitSystem, locale)}`}
                         </p>
