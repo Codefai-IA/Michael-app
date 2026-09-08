@@ -66,10 +66,7 @@ export function Profile() {
 
     // O aluno digita na unidade dele (lb no imperial); o banco recebe SEMPRE kg.
     const weightValue = parseWeightInput(newWeight, unitSystem);
-    if (weightValue === null) {
-      setSavingWeight(false);
-      return;
-    }
+    if (weightValue === null) return;
 
     setSavingWeight(true);
     const today = getBrasiliaDate();
