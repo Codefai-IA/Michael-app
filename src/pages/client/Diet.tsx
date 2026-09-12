@@ -1309,7 +1309,7 @@ export function Diet() {
                   className={`${styles.mealOptionTab} ${(selectedMealOptions[selectedMeal.id] || 0) === idx ? styles.mealOptionTabActive : ''}`}
                   onClick={() => setSelectedMealOptions(prev => ({ ...prev, [selectedMeal.id]: idx }))}
                 >
-                  {idx === 0 ? 'Opção 1' : selectedMeal.meal_substitutions_with_nutrition![idx - 1].name || `Opção ${idx + 1}`}
+                  {idx === 0 ? t('diet.option', { n: 1 }) : selectedMeal.meal_substitutions_with_nutrition![idx - 1].name || t('diet.option', { n: idx + 1 })}
                 </button>
               ))}
             </div>

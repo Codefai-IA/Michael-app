@@ -129,8 +129,8 @@ export function ActivityCalendar() {
     return out;
   }, [viewMonth]);
 
-  const title = isThirdParty ? (ownerName ?? 'Calendário') : 'Meu Calendário';
-  const subtitle = isThirdParty ? 'Atividades dos últimos 30 dias' : 'Histórico de atividades';
+  const title = isThirdParty ? (ownerName ?? t('calendar.title')) : t('calendar.myTitle');
+  const subtitle = isThirdParty ? t('calendar.thirdPartySubtitle') : t('calendar.mySubtitle');
 
   return (
     <PageContainer hasBottomNav={!isThirdParty}>

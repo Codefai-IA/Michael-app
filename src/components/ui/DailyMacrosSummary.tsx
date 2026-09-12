@@ -41,7 +41,7 @@ export function DailyMacrosSummary({ totalPlanned, consumed }: DailyMacrosSummar
           <span className={styles.value}>{Math.round(totalPlanned.calories)} kcal</span>
           <span className={styles.macro}>P: {Math.round(totalPlanned.protein)}g</span>
           <span className={styles.macro}>C: {Math.round(totalPlanned.carbs)}g</span>
-          <span className={styles.macro}>G: {Math.round(totalPlanned.fats)}g</span>
+          <span className={styles.macro}>{t('macros.fatShort')}: {Math.round(totalPlanned.fats)}g</span>
         </div>
 
         <div className={`${styles.macroRow} ${styles.remaining}`}>
@@ -49,13 +49,13 @@ export function DailyMacrosSummary({ totalPlanned, consumed }: DailyMacrosSummar
           <span className={styles.value}>{Math.round(remaining.calories)} kcal</span>
           <span className={styles.macro}>P: {Math.round(remaining.protein)}g</span>
           <span className={styles.macro}>C: {Math.round(remaining.carbs)}g</span>
-          <span className={styles.macro}>G: {Math.round(remaining.fats)}g</span>
+          <span className={styles.macro}>{t('macros.fatShort')}: {Math.round(remaining.fats)}g</span>
         </div>
       </div>
 
       <div className={styles.progressWrapper}>
         <ProgressBar value={percentConsumed} variant="accent" />
-        <span className={styles.percentLabel}>{percentConsumed}% consumido</span>
+        <span className={styles.percentLabel}>{t('macros.consumed', { value: percentConsumed })}</span>
       </div>
     </div>
   );

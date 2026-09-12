@@ -243,11 +243,11 @@ export function RankingTab() {
           <div className={styles.myBreakdown}>
             <div className={styles.breakdownItem}>
               <Dumbbell size={14} />
-              <span>{myEntry.days_with_workout} dias de treino</span>
+              <span>{t('rankingTab.workoutDays', { count: myEntry.days_with_workout })}</span>
             </div>
             <div className={styles.breakdownItem}>
               <Utensils size={14} />
-              <span>{myEntry.days_with_diet} dias de dieta</span>
+              <span>{t('rankingTab.dietDays', { count: myEntry.days_with_diet })}</span>
             </div>
           </div>
         </Card>

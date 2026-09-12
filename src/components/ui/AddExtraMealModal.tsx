@@ -7,14 +7,46 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input } from './Input';
 import type { TabelaTaco, UnitType } from '../../types/database';
-import { useI18n } from '../../i18n';
+import { useI18n, type TKey } from '../../i18n';
+import { normalizeKey } from '../../utils/normalizeKey';
 import styles from './AddExtraMealModal.module.css';
 
-const UNIT_OPTIONS: { value: UnitType; label: string }[] = [
-  { value: 'gramas', label: 'Gramas (g)' },
-  { value: 'unidade', label: 'Unidade' },
-  { value: 'fatia', label: 'Fatia' },
+const UNIT_OPTIONS: { value: UnitType; labelKey: TKey }[] = [
+  { value: 'gramas', labelKey: 'extra.unitGrams' },
+  { value: 'unidade', labelKey: 'extra.unitUnit' },
+  { value: 'fatia', labelKey: 'extra.unitSlice' },
 ];
+
+const SEARCH_LIMIT = 30;
+const CATALOG_PAGE = 1000; // teto de linhas por request do PostgREST
+
+// Catalogo inteiro da TACO, carregado uma vez por sessao. So o aluno em outro idioma usa:
+// a tabela so tem nome em pt-BR, entao buscar pelo nome traduzido precisa ser feito aqui
+// no navegador — um ilike no banco com "rice" nunca acharia "Arroz".
+let tacoCatalog: Promise<TabelaTaco[]> | null = null;
+
+function loadTacoCatalog(): Promise<TabelaTaco[]> {
+  if (!tacoCatalog) {
+    tacoCatalog = (async () => {
+      const rows: TabelaTaco[] = [];
+      for (let from = 0; ; from += CATALOG_PAGE) {
+        const { data, error } = await supabase
+          .from('tabela_taco')
+          .select('*')
+          .order('id', { ascending: true })
+          .range(from, from + CATALOG_PAGE - 1);
+        if (error) throw error;
+        rows.push(...(data ?? []));
+        if (!data || data.length < CATALOG_PAGE) return rows;
+      }
+    })();
+    // Falhou (rede): esquece a promise para a proxima busca tentar de novo.
+    tacoCatalog.catch(() => {
+      tacoCatalog = null;
+    });
+  }
+  return tacoCatalog;
+}
 
 interface ExtraFood {
   id: string;
@@ -50,17 +82,8 @@ interface AddExtraMealModalProps {
   onAdd: (meal: ExtraMeal) => void;
 }
 
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/,/g, ' ')
-    .trim();
-}
-
 export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalProps) {
-  const { t, tc } = useI18n();
+  const { t, tc, locale } = useI18n();
   const [mealName, setMealName] = useState('');
   const [foods, setFoods] = useState<ExtraFood[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,15 +100,38 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
     }
 
     setLoading(true);
+    const normalizedTerm = normalizeKey(term);
 
     try {
+      if (locale !== 'pt-BR') {
+        const catalog = await loadTacoCatalog();
+        // tc() aqui so serve para COMPARAR com o que o aluno digitou; o item selecionado
+        // continua sendo a linha original em pt-BR (alimento e a chave de nutricao).
+        const matches = catalog
+          .map((food) => ({ food, shown: normalizeKey(tc('food', food.alimento)) }))
+          .filter(
+            ({ food, shown }) =>
+              shown.includes(normalizedTerm) || normalizeKey(food.alimento).includes(normalizedTerm)
+          )
+          .sort((a, b) => {
+            const aStarts = a.shown.startsWith(normalizedTerm);
+            const bStarts = b.shown.startsWith(normalizedTerm);
+            if (aStarts !== bStarts) return aStarts ? -1 : 1;
+            return a.shown.localeCompare(b.shown);
+          })
+          .slice(0, SEARCH_LIMIT)
+          .map(({ food }) => food);
+        setSearchResults(matches);
+        return;
+      }
+
       // Busca direta no servidor com filtro ilike para encontrar todos os alimentos
       const { data, error } = await supabase
         .from('tabela_taco')
         .select('*')
         .ilike('alimento', `%${term}%`)
         .order('alimento', { ascending: true })
-        .limit(30);
+        .limit(SEARCH_LIMIT);
 
       if (error) {
         console.error('Erro ao buscar alimentos:', error);
@@ -95,10 +141,9 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
 
       if (data) {
         // Ordena para priorizar alimentos que comecam com o termo buscado
-        const normalizedTerm = normalizeText(term);
         const sorted = [...data].sort((a, b) => {
-          const aName = normalizeText(a.alimento);
-          const bName = normalizeText(b.alimento);
+          const aName = normalizeKey(a.alimento);
+          const bName = normalizeKey(b.alimento);
           const aStartsWith = aName.startsWith(normalizedTerm);
           const bStartsWith = bName.startsWith(normalizedTerm);
           if (aStartsWith && !bStartsWith) return -1;
@@ -124,7 +169,8 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
 
   const handleSelectFood = async (food: TabelaTaco) => {
     setSelectedFood(food);
-    setSearchTerm(food.alimento);
+    // So exibicao: em pt-BR tc devolve o proprio alimento.
+    setSearchTerm(tc('food', food.alimento));
     setSearchResults([]);
     setUnitType('gramas');
     setQuantity('100');
@@ -172,8 +218,8 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
 
   const getUnitLabel = (type: UnitType): string => {
     switch (type) {
-      case 'fatia': return 'fatia(s)';
-      case 'unidade': return 'unidade(s)';
+      case 'fatia': return t('extra.slicesSuffix');
+      case 'unidade': return t('extra.unitsSuffix');
       default: return 'g';
     }
   };
@@ -317,7 +363,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
           {loading && <div className={styles.loadingState}>{t('extra.searching')}</div>}
 
           {!loading && searchTerm.length >= 2 && searchResults.length === 0 && !selectedFood && (
-            <div className={styles.loadingState}>Nenhum alimento encontrado para "{searchTerm}"</div>
+            <div className={styles.loadingState}>{t('extra.noResults', { term: searchTerm })}</div>
           )}
 
           {!loading && searchResults.length > 0 && (
@@ -348,7 +394,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
             </div>
             <div className={styles.quantityRow}>
               <Input
-                label={unitType === 'gramas' ? 'Quantidade (g)' : 'Quantidade'}
+                label={unitType === 'gramas' ? t('extra.quantityGrams') : t('extra.quantity')}
                 type="number"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
@@ -362,13 +408,13 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                   className={styles.unitSelect}
                 >
                   {UNIT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <Button onClick={addFoodToMeal} className={styles.addButton}>
                 <Plus size={18} />
-                Adicionar
+                {t('common.add')}
               </Button>
             </div>
             {unitType !== 'gramas' && (
@@ -379,7 +425,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                   </span>
                 ) : (
                   <span className={styles.unitWarning}>
-                    Peso por unidade não cadastrado — usando 100g por unidade
+                    {t('extra.noUnitWeight')}
                   </span>
                 )}
               </div>
@@ -404,11 +450,11 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                       <span className={styles.foodItemQty}>{displayQty}</span>
                       {isUsingUnits ? (
                         <span className={styles.foodItemMacros}>
-                          {food.calories_100g} kcal | P: {food.protein_100g}g | C: {food.carbs_100g}g | G: {food.fats_100g}g (por 100g)
+                          {food.calories_100g} kcal | P: {food.protein_100g}g | C: {food.carbs_100g}g | {t('macros.fatShort')}: {food.fats_100g}g {t('extra.per100g')}
                         </span>
                       ) : (
                         <span className={styles.foodItemMacros}>
-                          {food.calories} kcal | P: {food.protein}g | C: {food.carbs}g | G: {food.fats}g
+                          {food.calories} kcal | P: {food.protein}g | C: {food.carbs}g | {t('macros.fatShort')}: {food.fats}g
                         </span>
                       )}
                     </div>
@@ -431,7 +477,7 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
                 <span className={styles.totalCalories}>{mealTotals.calories} kcal</span>
                 <span>P: {mealTotals.protein.toFixed(1)}g</span>
                 <span>C: {mealTotals.carbs.toFixed(1)}g</span>
-                <span>G: {mealTotals.fats.toFixed(1)}g</span>
+                <span>{t('macros.fatShort')}: {mealTotals.fats.toFixed(1)}g</span>
               </div>
             </div>
           </div>
@@ -439,10 +485,10 @@ export function AddExtraMealModal({ isOpen, onClose, onAdd }: AddExtraMealModalP
 
         <div className={styles.actions}>
           <Button variant="ghost" onClick={handleClose}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={foods.length === 0}>
-            Salvar Refeição
+            {t('extra.save')}
           </Button>
         </div>
       </div>

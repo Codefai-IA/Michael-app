@@ -181,11 +181,10 @@ export function CameraCapture({
                 <CameraOff size={40} />
                 <p className={styles.stateTitle}>{t('camera.blocked')}</p>
                 <p className={styles.stateHint}>
-                  Para registrar o check-in, habilite a permissão de câmera nas
-                  configurações do navegador e tente novamente.
+                  {t('camera.deniedHint')}
                 </p>
                 <button className={styles.retryBtn} onClick={startStream}>
-                  Tentar de novo
+                  {t('common.tryAgain')}
                 </button>
               </div>
             )}
@@ -194,11 +193,10 @@ export function CameraCapture({
                 <CameraOff size={40} />
                 <p className={styles.stateTitle}>{t('camera.unavailable')}</p>
                 <p className={styles.stateHint}>
-                  Este check-in exige uma foto tirada na hora. Abra o app em um
-                  celular com câmera para concluir.
+                  {t('camera.unavailableHint')}
                 </p>
                 <button className={styles.retryBtn} onClick={startStream}>
-                  Tentar de novo
+                  {t('common.tryAgain')}
                 </button>
               </div>
             )}

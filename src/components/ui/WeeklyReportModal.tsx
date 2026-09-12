@@ -110,15 +110,15 @@ export function WeeklyReportModal() {
 
         <div className={styles.actions}>
           <button onClick={handleProgress} className={styles.secondaryBtn}>
-            Atualizar Progresso
+            {t('weekly.updateProgress')}
           </button>
           <button onClick={handleWhatsApp} className={styles.primaryBtn}>
-            Enviar no WhatsApp
+            {t('weekly.sendWhatsApp')}
           </button>
         </div>
 
         <button onClick={handleClose} className={styles.dismissBtn}>
-          Lembrar depois
+          {t('weekly.remindLater')}
         </button>
       </div>
     </div>

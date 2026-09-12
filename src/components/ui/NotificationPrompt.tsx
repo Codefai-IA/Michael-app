@@ -84,7 +84,7 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
         <h2 className={styles.title}>{t('notify.title')}</h2>
 
         <p className={styles.description}>
-          Receba avisos quando seu nutricionista atualizar sua dieta ou treino.
+          {t('notify.description')}
         </p>
 
         <div className={styles.benefits}>
@@ -104,15 +104,15 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
 
         <button onClick={handleEnable} className={styles.enableButton}>
           <Bell size={18} />
-          Ativar Notificações
+          {t('notify.title')}
         </button>
 
         <div className={styles.secondaryActions}>
           <button onClick={handleLater} className={styles.laterButton}>
-            Depois
+            {t('common.later')}
           </button>
           <button onClick={handleDismiss} className={styles.dismissButton}>
-            Não mostrar
+            {t('common.dontShow')}
           </button>
         </div>
       </div>

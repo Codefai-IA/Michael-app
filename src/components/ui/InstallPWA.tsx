@@ -114,12 +114,12 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
 
         {/* Title */}
         <h2 className={styles.title}>
-          Instalar MC Nutri
+          {t('install.title')}
         </h2>
 
         {/* Description */}
         <p className={styles.description}>
-          Instale o app no seu celular para uma experiência melhor com acesso rápido e notificações.
+          {t('install.description')}
         </p>
 
         {/* Benefits */}
@@ -142,7 +142,7 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
         {isIOS ? (
           <div className={styles.iosInstructions}>
             <p className={styles.iosTitle}>
-              Para instalar no iPhone/iPad:
+              {t('install.iosTitle')}
             </p>
             <div className={styles.iosStep}>
               <span>{t('install.step1')}</span>
@@ -161,7 +161,7 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
             onClick={handleInstall}
             className={styles.installButton}
           >
-            Instalar Agora
+            {t('install.installNow')}
           </button>
         )}
 
@@ -171,13 +171,13 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
             onClick={handleLater}
             className={styles.laterButton}
           >
-            Depois
+            {t('common.later')}
           </button>
           <button
             onClick={handleDismiss}
             className={styles.dismissButton}
           >
-            Não mostrar
+            {t('common.dontShow')}
           </button>
         </div>
       </div>

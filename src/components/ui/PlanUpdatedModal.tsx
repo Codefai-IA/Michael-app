@@ -278,17 +278,17 @@ export function PlanUpdatedModal() {
   const both = !!pending.diet && !!pending.workout;
   const hasDiff = !!pending.diet && dietDiffs.length > 0;
   const title = both
-    ? 'Novidades pra você!'
+    ? t('planUpdated.titleBoth')
     : pending.diet
-    ? 'Dieta atualizada!'
-    : 'Treino atualizado!';
+    ? t('planUpdated.titleDiet')
+    : t('planUpdated.titleWorkout');
   const subtitle = both
-    ? 'Seu nutricionista atualizou sua dieta e seu treino. Confira agora!'
+    ? t('planUpdated.subtitleBoth')
     : pending.diet
     ? hasDiff
-      ? 'Seu nutricionista atualizou sua dieta. Veja o que mudou:'
-      : 'Seu nutricionista atualizou sua dieta. Confira agora!'
-    : 'Seu treinador atualizou seu treino. Confira agora!';
+      ? t('planUpdated.subtitleDietDiff')
+      : t('planUpdated.subtitleDiet')
+    : t('planUpdated.subtitleWorkout');
 
   return (
     <div className={styles.overlay} onClick={handleClose}>
@@ -388,7 +388,7 @@ export function PlanUpdatedModal() {
           {pending.diet && (
             <button onClick={goToDiet} className={styles.primaryBtn}>
               <Utensils size={18} />
-              Ver minha dieta
+              {t('planUpdated.viewDiet')}
             </button>
           )}
           {pending.workout && (
@@ -397,13 +397,13 @@ export function PlanUpdatedModal() {
               className={pending.diet ? styles.secondaryBtn : styles.primaryBtn}
             >
               <Dumbbell size={18} />
-              Ver meu treino
+              {t('planUpdated.viewWorkout')}
             </button>
           )}
         </div>
 
         <button onClick={handleClose} className={styles.dismissBtn}>
-          Agora não
+          {t('planUpdated.notNow')}
         </button>
       </div>
     </div>

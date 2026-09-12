@@ -30,21 +30,21 @@ export function MacroPieChart({
 
   const data = [
     {
-      name: 'Proteínas',
+      name: t('macros.proteinName'),
       value: protein,
       grams: Math.round(protein * 10) / 10,
       percentage: total > 0 ? Math.round((protein / total) * 100) : 0,
       color: COLORS.protein,
     },
     {
-      name: 'Carboidratos',
+      name: t('macros.carbsName'),
       value: carbs,
       grams: Math.round(carbs * 10) / 10,
       percentage: total > 0 ? Math.round((carbs / total) * 100) : 0,
       color: COLORS.carbs,
     },
     {
-      name: 'Gorduras',
+      name: t('macros.fatsName'),
       value: fats,
       grams: Math.round(fats * 10) / 10,
       percentage: total > 0 ? Math.round((fats / total) * 100) : 0,

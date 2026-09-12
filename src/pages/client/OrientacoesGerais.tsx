@@ -134,7 +134,7 @@ export function OrientacoesGerais() {
                   <h2 className={styles.cardTitle}>{t('guidelines.freeMeal')}</h2>
                 </div>
                 <p className={styles.videoDescription}>
-                  Assista o vídeo para entender como funciona sua refeição livre
+                  {t('guidelines.freeMealHint')}
                 </p>
                 <div className={styles.videoWrapper}>
                   <iframe

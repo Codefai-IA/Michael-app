@@ -16,8 +16,10 @@ export function PlanExpiringBanner({ daysRemaining }: PlanExpiringBannerProps) {
   return (
     <div className={styles.banner}>
       <span className={styles.message}>
-        Seu plano expira em {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'}!
-        Entre em contato para renovar.
+        {daysRemaining === 1
+          ? t('banner.expiringOne')
+          : t('banner.expiringMany', { count: daysRemaining })}{' '}
+        {t('banner.contact')}
       </span>
       <button
         onClick={() => setDismissed(true)}
