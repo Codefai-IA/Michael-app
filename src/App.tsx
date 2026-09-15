@@ -28,16 +28,8 @@ import { WorkoutManagement } from './pages/admin/WorkoutManagement';
 import { LibraryManagement } from './pages/admin/LibraryManagement';
 import { GuidelinesManagement } from './pages/admin/GuidelinesManagement';
 import { LoadProgression } from './pages/admin/LoadProgression';
+import { getBrasiliaDate } from './utils/planStatus';
 
-// Helper function for Brasilia date
-// CHAVE — NAO LOCALIZAR (ver Intl abaixo): produz YYYY-MM-DD usado como chave de dia.
-function getBrasiliaDate(): string {
-  const now = new Date();
-  const brasiliaOffset = -3 * 60;
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const brasiliaTime = new Date(utc + (brasiliaOffset * 60000));
-  return brasiliaTime.toISOString().split('T')[0];
-}
 
 // Componente para rotas de ALUNO (não-admin)
 function ClientRoute({ children }: { children: React.ReactNode }) {

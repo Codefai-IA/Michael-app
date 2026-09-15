@@ -73,6 +73,50 @@
   margin-bottom: 16px;
 }
 
+/* Seletor Ativos / Inativos (mesmo visual das abas da Biblioteca) */
+.filterTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filterTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border: none;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), color var(--transition);
+}
+
+.filterTab:hover {
+  color: var(--text-primary);
+}
+
+.filterTabActive,
+.filterTabActive:hover {
+  background: var(--accent-primary);
+  color: black;
+}
+
+.filterCount {
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .clientCount {
   font-size: 14px;
   color: var(--text-muted);
@@ -147,6 +191,7 @@
 
 .statusRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 6px;
 }
@@ -174,6 +219,11 @@
 .statusBadge.notset {
   background: rgba(107, 114, 128, 0.15);
   color: #6b7280;
+}
+
+.statusBadge.expired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
 }
 
 .clientArrow {

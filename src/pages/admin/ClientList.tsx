@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ChevronRight, Plus, LogOut, Utensils, Dumbbell, BookOpen, Cake } from 'lucide-react';
+import { Search, ChevronRight, Plus, LogOut, Utensils, Dumbbell, BookOpen, Cake, Hourglass } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { PageContainer } from '../../components/layout';
 import { Card, Input } from '../../components/ui';
 import { AddClientModal } from '../../components/admin/AddClientModal';
 import type { Profile } from '../../types/database';
+import { daysUntilPlanEnd, isPlanExpired } from '../../utils/planStatus';
 import styles from './ClientList.module.css';
 
 interface ClientWithPlans extends Profile {
@@ -14,11 +15,31 @@ interface ClientWithPlans extends Profile {
   workoutUpdatedAt: string | null;
 }
 
+type StatusFilter = 'active' | 'inactive';
+
+// sessionStorage: ao abrir um aluno e voltar, a lista continua na mesma aba.
+const STATUS_FILTER_KEY = 'admin_client_status_filter';
+
+function readStatusFilter(): StatusFilter {
+  try {
+    return sessionStorage.getItem(STATUS_FILTER_KEY) === 'inactive' ? 'inactive' : 'active';
+  } catch {
+    return 'active';
+  }
+}
+
+/** "2026-08-10" -> "10/08", sem passar por Date (evita cair no dia anterior pelo fuso). */
+function formatPlanDate(dateStr: string): string {
+  const [, m, d] = dateStr.slice(0, 10).split('-');
+  return `${d}/${m}`;
+}
+
 export function ClientList() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [clients, setClients] = useState<ClientWithPlans[]>([]);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(readStatusFilter);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -82,9 +103,22 @@ export function ClientList() {
     fetchClients();
   }, [fetchClients]);
 
-  const filteredClients = clients.filter((client) =>
+  const changeStatusFilter = (value: StatusFilter) => {
+    setStatusFilter(value);
+    try {
+      sessionStorage.setItem(STATUS_FILTER_KEY, value);
+    } catch {
+      // storage bloqueado: a aba so nao e lembrada
+    }
+  };
+
+  // A busca vale para as duas abas; os contadores refletem o que foi digitado.
+  const searchedClients = clients.filter((client) =>
     client.full_name.toLowerCase().includes(search.toLowerCase())
   );
+  const activeClients = searchedClients.filter((c) => !isPlanExpired(c.plan_end_date));
+  const inactiveClients = searchedClients.filter((c) => isPlanExpired(c.plan_end_date));
+  const filteredClients = statusFilter === 'active' ? activeClients : inactiveClients;
 
   // Aniversariantes do dia (timezone Brasilia)
   const todaysBirthdays = (() => {
@@ -197,8 +231,31 @@ export function ClientList() {
           />
         </div>
 
+        <div className={styles.filterTabs} role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={statusFilter === 'active'}
+            className={`${styles.filterTab} ${statusFilter === 'active' ? styles.filterTabActive : ''}`}
+            onClick={() => changeStatusFilter('active')}
+          >
+            Alunos ativos <span className={styles.filterCount}>{activeClients.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={statusFilter === 'inactive'}
+            className={`${styles.filterTab} ${statusFilter === 'inactive' ? styles.filterTabActive : ''}`}
+            onClick={() => changeStatusFilter('inactive')}
+          >
+            Alunos inativos <span className={styles.filterCount}>{inactiveClients.length}</span>
+          </button>
+        </div>
+
         <p className={styles.clientCount}>
-          {filteredClients.length} aluno{filteredClients.length !== 1 ? 's' : ''} ativo{filteredClients.length !== 1 ? 's' : ''}
+          {filteredClients.length} aluno{filteredClients.length !== 1 ? 's' : ''}{' '}
+          {statusFilter === 'active' ? 'ativo' : 'inativo'}{filteredClients.length !== 1 ? 's' : ''}
+          {statusFilter === 'inactive' && ' (plano vencido)'}
         </p>
 
         <div className={styles.clientList}>
@@ -239,6 +296,29 @@ export function ClientList() {
                           <Dumbbell size={12} />
                           {formatShortDate(client.workoutUpdatedAt)}
                         </span>
+                        {statusFilter === 'active' && (() => {
+                          const days = daysUntilPlanEnd(client.plan_end_date);
+                          if (days === null) {
+                            return (
+                              <span className={`${styles.statusBadge} ${styles.notset}`}>
+                                <Hourglass size={12} />
+                                Sem término
+                              </span>
+                            );
+                          }
+                          // Ultima semana em amarelo, para lembrar da renovacao.
+                          return (
+                            <span className={`${styles.statusBadge} ${days <= 7 ? styles.warning : styles.ok}`}>
+                              <Hourglass size={12} />
+                              {days === 0 ? 'Vence hoje' : `${days} dia${days !== 1 ? 's' : ''}`}
+                            </span>
+                          );
+                        })()}
+                        {statusFilter === 'inactive' && client.plan_end_date && (
+                          <span className={`${styles.statusBadge} ${styles.expired}`}>
+                            Venceu em {formatPlanDate(client.plan_end_date)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <ChevronRight size={20} className={styles.clientArrow} />
