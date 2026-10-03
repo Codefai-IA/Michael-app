@@ -108,6 +108,8 @@ const SOURCES = [
   // `reps` fica de fora de proposito: so precisa de traducao quando tem o "a" entre numeros
   // ("10 a 12" -> "10 to 12"), e isso foi feito a parte (ver translations-backup/reps.json).
   { entity: 'diet_plan', table: 'diet_plans', column: 'name' },
+  // Rotulo fixo de porcao nas equivalencias (chocolates): "1 un. (19g)", "cerca de 20g".
+  { entity: 'portion', table: 'food_equivalences', column: 'portion_label' },
 ];
 
 const GLOSSARY = {
@@ -118,6 +120,7 @@ const GLOSSARY = {
   workout_type: 'Tipos/divisoes de treino (ex.: "Costas e Biceps" -> "Back and Biceps", "Inferiores" -> "Lower Body", "Descanso" -> "Rest").',
   recipe: 'Titulos de receitas.',
   notice: 'Avisos curtos do treinador para os alunos.',
+  portion: 'Rotulos curtos de porcao de alimento (ex.: "1 un. (19g)" -> "1 pc. (19g)", "cerca de 20g" -> "about 20g", "1 bombom ou 20g" -> "1 bonbon or 20g"). Preserve numeros e gramas.',
   diet_plan: 'Nomes de planos de dieta escritos pelo treinador (ex.: "PERDA DE PESO - SETEMBRO" -> "WEIGHT LOSS - SEPTEMBER", "BULKING - OFFSEASON" -> "BULKING - OFFSEASON"). Traduza meses. Mantenha termos de academia ja usados em ingles (cutting, bulking, shape).',
 };
 

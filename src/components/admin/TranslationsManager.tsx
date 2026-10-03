@@ -26,6 +26,7 @@ const ENTITY_LABELS: Record<string, string> = {
   notice: 'Avisos',
   diet_plan: 'Nomes de dieta',
   reps: 'Repetições',
+  portion: 'Porções',
 };
 
 const STATUS_LABELS: Record<string, string> = {
