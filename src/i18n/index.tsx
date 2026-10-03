@@ -40,8 +40,13 @@ interface I18nContextValue {
   tc: (entity: ContentEntity, original: string | null | undefined) => string;
 }
 
-const CONTENT_CACHE_KEY = 'mc_content_i18n';
+// v2: o cache da v1 foi gravado truncado em 1.000 linhas (ver CONTENT_PAGE) — trocar a chave
+// descarta esse cache na hora, sem esperar o TTL.
+const CONTENT_CACHE_KEY = 'mc_content_i18n_v2';
 const CONTENT_TTL_MS = 60 * 60 * 1000; // 1h
+// Teto de linhas por request do PostgREST (max_rows do Supabase). O servidor corta em silencio,
+// sem erro: sem paginar, o app recebia so 1.000 das 1.612 traducoes.
+const CONTENT_PAGE = 1000;
 
 interface ContentCache {
   at: number;
@@ -72,6 +77,7 @@ function writeContentCache(locale: string, entries: Record<string, string>): voi
       CONTENT_CACHE_KEY,
       JSON.stringify({ at: Date.now(), locale, entries } satisfies ContentCache)
     );
+    localStorage.removeItem('mc_content_i18n'); // cache truncado da v1
   } catch {
     // localStorage cheio ou bloqueado: seguir sem cache
   }
@@ -178,18 +184,24 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     let active = true;
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from('content_translations')
-          .select('entity_type,source_key,translated_text')
-          .eq('locale', locale)
-          .eq('status', 'approved');
-
-        // Tabela ainda nao criada / RLS / rede: mantem o cache e segue em pt-BR.
-        if (error || !data || !active) return;
-
         const entries: Dict = {};
-        for (const row of data) {
-          entries[`${row.entity_type}::${row.source_key}`] = row.translated_text;
+        for (let from = 0; ; from += CONTENT_PAGE) {
+          const { data, error } = await supabase
+            .from('content_translations')
+            .select('entity_type,source_key,translated_text')
+            .eq('locale', locale)
+            .eq('status', 'approved')
+            .order('id', { ascending: true })
+            .range(from, from + CONTENT_PAGE - 1);
+
+          // Tabela ainda nao criada / RLS / rede: mantem o cache e segue em pt-BR. Nunca grava
+          // um dicionario parcial — uma pagina que falhou no meio descarta a carga inteira.
+          if (error || !data || !active) return;
+
+          for (const row of data) {
+            entries[`${row.entity_type}::${row.source_key}`] = row.translated_text;
+          }
+          if (data.length < CONTENT_PAGE) break;
         }
         setContentDict(entries);
         writeContentCache(locale, entries);

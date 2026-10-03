@@ -103,6 +103,11 @@ const SOURCES = [
   { entity: 'meal', table: 'extra_meals', column: 'meal_name' },
   { entity: 'workout_type', table: 'daily_workouts', column: 'workout_type' },
   { entity: 'recipe', table: 'recipes', column: 'title' },
+  // Rotulo do seletor quando o aluno tem mais de uma dieta. Texto livre do treinador, entao
+  // nomes novos aparecem a cada mes ("SETEMBRO - LIMPANDO O SHAPE").
+  // `reps` fica de fora de proposito: so precisa de traducao quando tem o "a" entre numeros
+  // ("10 a 12" -> "10 to 12"), e isso foi feito a parte (ver translations-backup/reps.json).
+  { entity: 'diet_plan', table: 'diet_plans', column: 'name' },
 ];
 
 const GLOSSARY = {
@@ -113,6 +118,7 @@ const GLOSSARY = {
   workout_type: 'Tipos/divisoes de treino (ex.: "Costas e Biceps" -> "Back and Biceps", "Inferiores" -> "Lower Body", "Descanso" -> "Rest").',
   recipe: 'Titulos de receitas.',
   notice: 'Avisos curtos do treinador para os alunos.',
+  diet_plan: 'Nomes de planos de dieta escritos pelo treinador (ex.: "PERDA DE PESO - SETEMBRO" -> "WEIGHT LOSS - SEPTEMBER", "BULKING - OFFSEASON" -> "BULKING - OFFSEASON"). Traduza meses. Mantenha termos de academia ja usados em ingles (cutting, bulking, shape).',
 };
 
 async function translateBatch(entity, items) {
@@ -185,9 +191,17 @@ async function main() {
   // 2. tirar o que ja foi aprovado (idempotencia)
   let existing = [];
   try {
-    existing = await sb(
-      `content_translations?select=entity_type,source_key,status&locale=eq.${LOCALE}&limit=10000`
-    );
+    // Paginado: o PostgREST corta cada request em 1.000 linhas (um limit maior e ignorado).
+    // Sem isso o script via so 1.000 das traducoes existentes e o upsert abaixo REBAIXAVA as
+    // demais de 'approved' para 'pending' (somem para o aluno) e apagava edicoes humanas.
+    for (let offset = 0; ; offset += 1000) {
+      const page = await sb(
+        `content_translations?select=entity_type,source_key,status,origin&locale=eq.${LOCALE}` +
+          `&order=id&limit=1000&offset=${offset}`
+      );
+      existing.push(...page);
+      if (page.length < 1000) break;
+    }
   } catch (err) {
     // Tabela ainda nao criada: da para rodar --dry-run antes de aplicar o SQL.
     if (String(err.message).includes('PGRST205')) {
@@ -197,11 +211,14 @@ async function main() {
       throw err;
     }
   }
+  // Nunca sobrescrever o que ja foi aprovado ou editado a mao pelo admin.
   const approved = new Set(
-    existing.filter((r) => r.status === 'approved').map((r) => `${r.entity_type}::${r.source_key}`)
+    existing
+      .filter((r) => r.status === 'approved' || r.origin === 'human')
+      .map((r) => `${r.entity_type}::${r.source_key}`)
   );
   const todo = [...found.values()].filter((it) => !approved.has(`${it.entity}::${it.key}`));
-  console.log(`ja aprovados: ${approved.size} | a gerar: ${todo.length}\n`);
+  console.log(`ja aprovados ou editados a mao: ${approved.size} | a gerar: ${todo.length}\n`);
 
   if (!todo.length) return console.log('nada a fazer.');
 
