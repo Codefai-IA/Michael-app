@@ -26,3 +26,4 @@ export { PlanUpdatedModal } from './PlanUpdatedModal';
 export { CameraCapture } from './CameraCapture';
 export { StampedImage, formatStamp } from './StampedImage';
 export { RecipePicker } from './RecipePicker';
+export { GuidelineText } from './GuidelineText';

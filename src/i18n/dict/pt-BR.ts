@@ -224,6 +224,7 @@ export const ptBR = {
   'diet.addMeal': 'Adicionar Refeição',
   'diet.empty': 'Nenhuma dieta cadastrada',
   'diet.foods': 'Alimentos:',
+  'diet.mealNotes': 'Observação',
   'diet.viewSubstitutions': 'Ver substituições ({count})',
   'diet.swapFor': 'Troque por:',
   'diet.viewEquivalences': 'Ver equivalências ({count})',

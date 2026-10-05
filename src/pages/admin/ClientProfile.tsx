@@ -587,6 +587,7 @@ export function ClientProfile() {
               suggested_time: meal.suggested_time,
               order_index: meal.order_index,
               meal_substitutions: meal.meal_substitutions,
+              notes: meal.notes ?? null,
             })
             .select()
             .single();

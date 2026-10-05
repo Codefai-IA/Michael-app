@@ -378,6 +378,7 @@ export function Diet() {
           suggested_time,
           order_index,
           meal_substitutions,
+          notes,
           meal_foods (
             id,
             food_name,
@@ -725,6 +726,7 @@ export function Diet() {
           suggested_time,
           order_index,
           meal_substitutions,
+          notes,
           meal_foods (
             id,
             food_name,
@@ -1561,6 +1563,14 @@ export function Diet() {
                 );
               })}
             </ul>
+          )}
+
+          {/* Observacao do treinador: texto livre, sem traducao; so aparece quando preenchida */}
+          {selectedMeal?.notes?.trim() && (
+            <div className={styles.mealNotes}>
+              <h4 className={styles.mealNotesTitle}>{t('diet.mealNotes')}</h4>
+              <p className={styles.mealNotesText}>{selectedMeal.notes.trim()}</p>
+            </div>
           )}
 
           <Button fullWidth onClick={handleCloseMeal}>

@@ -448,6 +448,7 @@ export function DietManagement() {
               suggested_time: meal.suggested_time || null,
               order_index: Number(meal.order_index) || 0,
               meal_substitutions: meal.meal_substitutions || [],
+              notes: meal.notes?.trim() || null,
             })
             .select()
             .single();
@@ -465,6 +466,7 @@ export function DietManagement() {
               suggested_time: meal.suggested_time || null,
               order_index: Number(meal.order_index) || 0,
               meal_substitutions: meal.meal_substitutions || [],
+              notes: meal.notes?.trim() || null,
             })
             .eq('id', meal.id);
 
@@ -715,6 +717,7 @@ export function DietManagement() {
         order_index: mealIdx,
         foods,
         meal_substitutions: meal.meal_substitutions || [],
+        notes: meal.notes ?? null,
       };
     });
 
@@ -732,6 +735,7 @@ export function DietManagement() {
       order_index: meals.length,
       foods: [],
       meal_substitutions: [],
+      notes: null,
     };
     setMeals([...meals, newMeal]);
   }
@@ -800,6 +804,7 @@ export function DietManagement() {
       order_index: meals.length,
       foods: duplicatedFoods,
       meal_substitutions: duplicatedMealSubs,
+      notes: mealToDuplicate.notes ?? null,
     };
 
     setMeals([...meals, duplicatedMeal]);
@@ -1586,6 +1591,20 @@ export function DietManagement() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div className={styles.mealNotes}>
+                  <label className={styles.mealNotesLabel} htmlFor={`meal-notes-${meal.id}`}>
+                    Observação <span className={styles.mealNotesHint}>(aparece para o aluno só se preenchida)</span>
+                  </label>
+                  <textarea
+                    id={`meal-notes-${meal.id}`}
+                    className={styles.mealNotesInput}
+                    value={meal.notes || ''}
+                    onChange={(e) => updateMeal(mealIndex, 'notes', e.target.value)}
+                    placeholder="Ex: pode trocar o pão por tapioca nos dias de treino"
+                    rows={2}
+                  />
                 </div>
               </Card>
             );

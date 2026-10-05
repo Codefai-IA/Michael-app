@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Pill, FlaskConical, Utensils, FileText, Check, Play, Trash2, Plus } from 'lucide-react';
+import { Pill, FlaskConical, Utensils, FileText, Check, Play, Trash2, Plus, ClipboardList } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { getYoutubeId, YOUTUBE_URL_ERROR } from '../../lib/youtube';
 import { PageContainer, Header } from '../../components/layout';
-import { Card, Button } from '../../components/ui';
+import { Card, Button, GuidelineText } from '../../components/ui';
 import type { Profile } from '../../types/database';
 import styles from './GuidelinesManagement.module.css';
 
@@ -152,6 +152,48 @@ export function GuidelinesManagement() {
     setSaved(false);
   };
 
+  // Preenche suplementos e video da refeicao livre com as Orientacoes padrao da Biblioteca.
+  // So altera o formulario: nada e gravado ate o admin clicar em Salvar.
+  const handleUseDefaults = async () => {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('default_recommended_supplements, default_free_meal_video_url')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      alert('Erro ao carregar as orientações padrão: ' + error.message);
+      return;
+    }
+    // Regra do Enzo (05/10/2026): a lista padrao de suplementos (marcas brasileiras, em portugues)
+    // nao vai para aluno em ingles. O video da refeicao livre vai normalmente.
+    const isEnglish = client?.locale === 'en';
+    const defaultSupplements = isEnglish ? null : data?.default_recommended_supplements;
+    if (!defaultSupplements && !data?.default_free_meal_video_url) {
+      alert(
+        isEnglish
+          ? 'Este aluno usa o app em inglês: a lista padrão de suplementos não se aplica a ele, e não há vídeo padrão cadastrado.'
+          : 'Nenhuma orientação padrão cadastrada. Preencha em Biblioteca > Orientações padrão.'
+      );
+      return;
+    }
+    const hasOwn =
+      (defaultSupplements && formData.recommended_supplements.trim()) || formData.free_meal_video_url.trim();
+    const what = defaultSupplements ? 'os suplementos e o vídeo da refeição livre' : 'o vídeo da refeição livre';
+    if (hasOwn && !window.confirm(`Substituir ${what} deste aluno pelo padrão?`)) {
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      recommended_supplements: defaultSupplements || prev.recommended_supplements,
+      free_meal_video_url: data?.default_free_meal_video_url || prev.free_meal_video_url,
+    }));
+    if (isEnglish && data?.default_recommended_supplements) {
+      alert('Aluno em inglês: só o vídeo foi preenchido. A lista padrão de suplementos não se aplica a ele.');
+    }
+    setSaved(false);
+  };
+
   const handleRemoveVideo = (index: number) => {
     setVideoUrls(prev => prev.filter((_, i) => i !== index));
     setSaved(false);
@@ -186,6 +228,11 @@ export function GuidelinesManagement() {
           Essas informações aparecerão na aba "Orientações" do app do paciente.
         </p>
 
+        <Button variant="outline" onClick={handleUseDefaults} fullWidth>
+          <ClipboardList size={18} />
+          Usar padrão (suplementos e vídeo da refeição livre)
+        </Button>
+
         {/* Suplementos Recomendados */}
         <Card className={styles.fieldCard}>
           <div className={styles.fieldHeader}>
@@ -201,6 +248,13 @@ export function GuidelinesManagement() {
             placeholder="Ex:&#10;- Whey Protein Isolado - 30g após treino&#10;- Creatina - 5g por dia&#10;- Ômega 3 - 2 cápsulas no almoço"
             rows={5}
           />
+          <p className={styles.fieldHint}>Formato: TÍTULO EM MAIÚSCULAS vira seção · nome da marca seguido de ✅/❌ vira card · ✅ aprovado · ❌ evitar · ⭐ destaque · “Obs.:” nota · “Rótulo: a • b” vira etiquetas.</p>
+          {formData.recommended_supplements.trim() && (
+            <details className={styles.richPreview}>
+              <summary>Prévia (como o aluno vê)</summary>
+              <GuidelineText text={formData.recommended_supplements} />
+            </details>
+          )}
         </Card>
 
         {/* Manipulados */}

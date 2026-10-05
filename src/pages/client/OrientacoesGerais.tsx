@@ -6,7 +6,7 @@ import { getYoutubeId } from '../../lib/youtube';
 import { usePageData } from '../../hooks';
 import { useI18n } from '../../i18n';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
-import { Card, VideoCarousel } from '../../components/ui';
+import { Card, VideoCarousel, GuidelineText } from '../../components/ui';
 import styles from './OrientacoesGerais.module.css';
 
 interface Guidelines {
@@ -99,11 +99,7 @@ export function OrientacoesGerais() {
                   </div>
                   <h2 className={styles.cardTitle}>{t('guidelines.supplements')}</h2>
                 </div>
-                <div className={`${styles.cardContent} ${styles.supplementsBg}`}>
-                  <p className={styles.cardText}>
-                    {guidelines.recommended_supplements}
-                  </p>
-                </div>
+                <GuidelineText text={guidelines.recommended_supplements} />
               </Card>
             )}
 
@@ -116,11 +112,7 @@ export function OrientacoesGerais() {
                   </div>
                   <h2 className={styles.cardTitle}>{t('guidelines.manipulated')}</h2>
                 </div>
-                <div className={`${styles.cardContent} ${styles.manipulatedBg}`}>
-                  <p className={styles.cardText}>
-                    {guidelines.manipulated_supplements}
-                  </p>
-                </div>
+                <GuidelineText text={guidelines.manipulated_supplements} />
               </Card>
             )}
 

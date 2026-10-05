@@ -223,6 +223,7 @@ export const en: Record<TKey, string> = {
   'diet.addMeal': 'Add Meal',
   'diet.empty': 'No diet plan yet',
   'diet.foods': 'Foods:',
+  'diet.mealNotes': 'Notes',
   'diet.viewSubstitutions': 'View substitutions ({count})',
   'diet.swapFor': 'Swap for:',
   'diet.viewEquivalences': 'View equivalents ({count})',

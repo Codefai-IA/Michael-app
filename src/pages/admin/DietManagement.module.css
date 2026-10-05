@@ -302,6 +302,46 @@
   color: var(--primary);
 }
 
+.mealNotes {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mealNotesLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mealNotesHint {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.mealNotesInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  resize: vertical;
+}
+
+.mealNotesInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
 .saveSection {
   text-align: center;
 }

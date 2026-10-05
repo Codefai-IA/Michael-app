@@ -11,9 +11,10 @@ import { RankingGiftManager } from '../../components/admin/RankingGiftManager';
 import { HomeNoticeManager } from '../../components/admin/HomeNoticeManager';
 import { RecipesManager } from '../../components/admin/RecipesManager';
 import { TranslationsManager } from '../../components/admin/TranslationsManager';
+import { DefaultGuidelinesManager } from '../../components/admin/DefaultGuidelinesManager';
 import styles from './LibraryManagement.module.css';
 
-type TabType = 'exercises' | 'foods' | 'recipes' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'notice' | 'ranking' | 'translations';
+type TabType = 'exercises' | 'foods' | 'recipes' | 'dietTemplates' | 'workoutTemplates' | 'homeVideos' | 'notice' | 'ranking' | 'translations' | 'defaultGuidelines';
 
 export function LibraryManagement() {
   const navigate = useNavigate();
@@ -86,6 +87,12 @@ export function LibraryManagement() {
         >
           Traduções
         </button>
+        <button
+          onClick={() => setActiveTab('defaultGuidelines')}
+          className={`${styles.tab} ${activeTab === 'defaultGuidelines' ? styles.tabActive : ''}`}
+        >
+          Orientações padrão
+        </button>
       </div>
 
       <main className={styles.content}>
@@ -117,6 +124,7 @@ export function LibraryManagement() {
             esta lista chega a milhares de linhas e nao deve ser carregada em toda visita
             a Biblioteca. */}
         {activeTab === 'translations' && <TranslationsManager />}
+        {activeTab === 'defaultGuidelines' && <DefaultGuidelinesManager />}
       </main>
     </PageContainer>
   );
