@@ -7,8 +7,10 @@ import { useI18n, type TKey } from '../../i18n';
 import { formatLoad, weightUnitLabel } from '../../utils/units';
 import { PageContainer, Header, BottomNav } from '../../components/layout';
 import { Card, Checkbox, YouTubeEmbed, TechniqueBadge, WorkoutSummaryModal, CameraCapture } from '../../components/ui';
+import { LoadProgressionSection } from '../../components/workout/LoadProgressionSection';
 import type { DailyWorkout, Exercise } from '../../types/database';
 import { maybeAwardWorkoutPoints } from '../../lib/points';
+import { isLowTicket } from '../../utils/accessTier';
 import { uploadCheckinPhoto } from '../../lib/checkinPhotos';
 import {
   computeWorkoutHighlights,
@@ -276,7 +278,8 @@ export function Workout() {
     }
 
     // Award points when ALL exercises for the day are completed
-    if (!isCompleted && newCompleted.length === exercises.length && exercises.length > 0) {
+    // (aluno low ticket faz check-in mas nao pontua: ele nao participa do ranking)
+    if (!isCompleted && newCompleted.length === exercises.length && exercises.length > 0 && !isLowTicket(profile)) {
       maybeAwardWorkoutPoints(profile!.id, today);
     }
   }
@@ -589,7 +592,7 @@ export function Workout() {
       });
       if (photo) {
         // Pontua só com a foto de treino registrada E ao menos um exercício marcado.
-        if (completedExercises.length > 0) {
+        if (completedExercises.length > 0 && !isLowTicket(profile)) {
           maybeAwardWorkoutPoints(profile.id, today);
         }
         setShowWorkoutCamera(false);
@@ -797,6 +800,12 @@ export function Workout() {
                 );
               })}
             </div>
+
+            {/* Progressao de carga do aluno: fechada por padrao, so busca dados ao abrir.
+                key = dia, para o seletor recomecar ao trocar de dia. */}
+            {exercises.length > 0 && profile && (
+              <LoadProgressionSection key={selectedDay} clientId={profile.id} exercises={exercises} />
+            )}
           </>
         ) : (
           <div className={styles.emptyState}>

@@ -1,0 +1,113 @@
+/* Mesma identidade da PlanExpiredScreen, mas como pagina (a BottomNav continua acessivel). */
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: linear-gradient(135deg, #0A1628 0%, #1E3A8A 50%, #2563EB 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(110px + env(safe-area-inset-bottom, 0px));
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.lockIcon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: rgba(244, 162, 97, 0.2);
+  border: 1px solid rgba(244, 162, 97, 0.4);
+  color: #F4A261;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.benefit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.benefitIcon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 24px;
+  background: #F4A261;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(244, 162, 97, 0.4);
+  margin-bottom: 12px;
+}
+
+.cta:hover {
+  background: #E38B4F;
+  transform: scale(1.02);
+}
+
+.cta:active {
+  transform: scale(0.98);
+}
+
+.secondary {
+  display: inline-block;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: underline;
+  padding: 8px 16px;
+}

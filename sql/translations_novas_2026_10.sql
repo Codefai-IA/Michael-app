@@ -1,0 +1,21 @@
+INSERT INTO content_translations (entity_type, source_key, source_sample, locale, translated_text, status, origin) VALUES
+('food', 'flocao de milho', 'Flocão de milho', 'en', 'Flaked cornmeal', 'pending', 'llm'),
+('diet_plan', 'setembro - limpando o shape', 'SETEMBRO  - LIMPANDO O SHAPE', 'en', 'SEPTEMBER - GETTING LEAN', 'pending', 'llm'),
+('diet_plan', 'cutting ate dezembro', 'CUTTING ATÉ DEZEMBRO', 'en', 'CUTTING UNTIL DECEMBER', 'pending', 'llm'),
+('diet_plan', 'setembro - 2026', 'SETEMBRO - 2026', 'en', 'SEPTEMBER - 2026', 'pending', 'llm'),
+('diet_plan', 'cuttin final do ano', 'CUTTIN FINAL DO ANO', 'en', 'YEAR-END CUTTING', 'pending', 'llm'),
+('diet_plan', 'cutting final do ano', 'CUTTING FINAL DO ANO', 'en', 'YEAR-END CUTTING', 'pending', 'llm'),
+('diet_plan', 'inicio cutting', 'INICIO CUTTING', 'en', 'START OF CUTTING', 'pending', 'llm'),
+('diet_plan', 'setembro - ganhos', 'SETEMBRO - GANHOS', 'en', 'SEPTEMBER - GAINS', 'pending', 'llm'),
+('diet_plan', 'outubro e novembro', 'OUTUBRO E NOVEMBRO', 'en', 'OCTOBER AND NOVEMBER', 'pending', 'llm'),
+('diet_plan', 'bulking - setembro', 'BULKING - SETEMBRO', 'en', 'BULKING - SEPTEMBER', 'pending', 'llm'),
+('diet_plan', 'deserto para acabar logo - setembro', 'DESERTO PARA ACABAR LOGO - SETEMBRO', 'en', 'DESERT, SO IT ENDS SOON - SEPTEMBER', 'pending', 'llm'),
+('diet_plan', 'comeco ganho - setembro', 'COMEÇO GANHO - SETEMBRO', 'en', 'START OF MUSCLE GAIN - SEPTEMBER', 'pending', 'llm'),
+('diet_plan', 'perda de peso - out/novembro', 'PERDA DE PESO - OUT/NOVEMBRO', 'en', 'WEIGHT LOSS - OCT/NOVEMBER', 'pending', 'llm'),
+('diet_plan', 'inicio cutting - out', 'INICIO CUTTING - OUT', 'en', 'START OF CUTTING - OCT', 'pending', 'llm'),
+('diet_plan', 'ganho de massa/ recomposicao', 'GANHO DE MASSA/ RECOMPOSIÇÃO', 'en', 'MUSCLE GAIN/RECOMPOSITION', 'pending', 'llm'),
+('diet_plan', 'perda de peso -jejum', 'PERDA DE PESO  -JEJUM', 'en', 'WEIGHT LOSS - FASTING', 'pending', 'llm'),
+('diet_plan', 'perda de peso - jejum', 'PERDA DE PESO - JEJUM', 'en', 'WEIGHT LOSS - FASTING', 'pending', 'llm'),
+('reps', '5 a 12', '5 a 12', 'en', '5 to 12', 'pending', 'llm'),
+('reps', '2x8 a 12 / 1x 10', '2x8 a 12 / 1x 10', 'en', '2x8 to 12 / 1x 10', 'pending', 'llm')
+ON CONFLICT (entity_type, source_key, locale) DO NOTHING;

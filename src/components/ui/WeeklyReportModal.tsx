@@ -4,6 +4,7 @@ import { TrendingUp, Camera, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n';
 import styles from './WeeklyReportModal.module.css';
+import { isLowTicket } from '../../utils/accessTier';
 
 // Número de WhatsApp do nutricionista (formato wa.me: DDI + DDD + número)
 const WHATSAPP_NUMBER = '5511965293803';
@@ -58,6 +59,8 @@ export function WeeklyReportModal() {
 
   useEffect(() => {
     if (!user || isAdmin || !profile) return;
+    // Aluno low ticket nao tem Progresso (destino do botao do relatorio).
+    if (isLowTicket(profile)) return;
 
     // Âncora na sexta mais recente: se o aluno não abriu na sexta, aparece
     // na próxima abertura (sáb, dom...) — uma única vez por semana.

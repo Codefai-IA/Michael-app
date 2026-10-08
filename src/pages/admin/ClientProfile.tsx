@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote, Droplets, Cake, Languages } from 'lucide-react';
+import { ClipboardList, Utensils, Dumbbell, Trash2, ChevronRight, Clock, AlertCircle, CalendarDays, Check, FileText, Mail, Plus, Copy, TrendingUp, TrendingDown, Scale, Target, StickyNote, Droplets, Cake, Languages, Unlock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageContainer, Header } from '../../components/layout';
 import { Card, Button, Modal, Input } from '../../components/ui';
@@ -120,6 +120,7 @@ export function ClientProfile() {
   const [planStartDate, setPlanStartDate] = useState('');
   const [planEndDate, setPlanEndDate] = useState('');
   const [savingDates, setSavingDates] = useState(false);
+  const [upgradingTier, setUpgradingTier] = useState(false);
   const [datesSaved, setDatesSaved] = useState(false);
   const [localeInput, setLocaleInput] = useState<Locale>('pt-BR');
   const [unitSystemInput, setUnitSystemInput] = useState<UnitSystem>('metric');
@@ -297,6 +298,28 @@ export function ClientProfile() {
     } finally {
       setSavingGoalWeight(false);
     }
+  }
+
+  // Aluno low ticket (criado pelo webhook de compra) que comprou o plano completo.
+  async function handleUpgradeToFull() {
+    if (!id || !client) return;
+    if (!confirm(`Liberar o plano completo para ${client.full_name}? Ele passa a ver dieta, progresso, orientações e ranking.`)) {
+      return;
+    }
+
+    setUpgradingTier(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ access_tier: 'full', updated_at: new Date().toISOString() })
+      .eq('id', id);
+    setUpgradingTier(false);
+
+    if (error) {
+      console.error('Error upgrading access tier:', error);
+      alert('Erro ao liberar o plano completo. Tente novamente.');
+      return;
+    }
+    setClient({ ...client, access_tier: 'full' });
   }
 
   async function handleSaveLocale() {
@@ -947,6 +970,26 @@ export function ClientProfile() {
             </div>
           )}
         </Card>
+
+        {client.access_tier === 'low_ticket' && (
+          <Card className={styles.planDatesCard}>
+            <h3 className={styles.planDatesTitle}>
+              <Unlock size={20} />
+              Aluno low ticket
+            </h3>
+            <p className={styles.lowTicketInfo}>
+              Entrou pela compra do treino. Vê só Home, Treino e Perfil; as outras abas aparecem
+              com cadeado e oferecem o plano completo.
+            </p>
+            <button
+              onClick={handleUpgradeToFull}
+              disabled={upgradingTier}
+              className={styles.saveDatesBtn}
+            >
+              {upgradingTier ? 'Salvando...' : 'Liberar plano completo'}
+            </button>
+          </Card>
+        )}
 
         {/* Plan Dates Section */}
         <Card className={styles.planDatesCard}>

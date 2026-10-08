@@ -10,6 +10,7 @@ import { parseBrazilianNumber } from './FoodSelect';
 import type { DietRevisionSnapshot, DietRevisionSnapshotFood } from '../../types/database';
 import { useI18n } from '../../i18n';
 import styles from './PlanUpdatedModal.module.css';
+import { isLowTicket } from '../../utils/accessTier';
 
 /**
  * Popup in-app que avisa o aluno quando a dieta e/ou o treino foram atualizados
@@ -184,7 +185,8 @@ export function PlanUpdatedModal() {
 
       if (cancelled) return;
 
-      const dietUpd = diet?.updated_at ?? null;
+      // Aluno low ticket nao tem acesso a dieta: o popup so avisa do treino.
+      const dietUpd = isLowTicket(profile) ? null : diet?.updated_at ?? null;
       const workoutUpd = workout?.updated_at ?? null;
       const dietKey = `diet-seen-${user.id}`;
       const workoutKey = `workout-seen-${user.id}`;

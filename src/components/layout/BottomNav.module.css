@@ -68,3 +68,27 @@
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* Aba bloqueada (aluno low ticket) */
+.iconWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.locked {
+  opacity: 0.45;
+}
+
+.lockBadge {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

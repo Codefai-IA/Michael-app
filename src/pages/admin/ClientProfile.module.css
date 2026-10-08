@@ -187,6 +187,13 @@
   margin: 0 0 16px;
 }
 
+.lowTicketInfo {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
 .planDatesGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;

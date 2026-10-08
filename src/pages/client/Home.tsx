@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Dumbbell, Utensils, ChevronRight, Flame } from 'lucide-react';
+import { Dumbbell, Utensils, ChevronRight, Flame, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
@@ -8,6 +8,7 @@ import { useI18n } from '../../i18n';
 import { PageContainer, BottomNav } from '../../components/layout';
 import { Card, ProgressBar, VideoCarousel, NoticeBoard } from '../../components/ui';
 import type { DailyProgress } from '../../types/database';
+import { isLowTicket } from '../../utils/accessTier';
 import styles from './Home.module.css';
 
 interface VideoItem {
@@ -92,9 +93,13 @@ export function Home() {
   });
 
   const firstName = profile?.full_name?.split(' ')[0] || t('home.fallbackName');
-  const weeklyPercentage = Math.round(
-    ((weeklyStats.workouts + weeklyStats.meals) / (weeklyStats.totalWorkouts + weeklyStats.totalMeals)) * 100
-  );
+  // Aluno low ticket nao tem dieta: o progresso semanal conta so os treinos.
+  const lowTicket = isLowTicket(profile);
+  const weeklyPercentage = lowTicket
+    ? Math.round((weeklyStats.workouts / weeklyStats.totalWorkouts) * 100)
+    : Math.round(
+        ((weeklyStats.workouts + weeklyStats.meals) / (weeklyStats.totalWorkouts + weeklyStats.totalMeals)) * 100
+      );
 
   return (
     <PageContainer>
@@ -126,12 +131,17 @@ export function Home() {
             <ProgressBar value={weeklyPercentage} showLabel />
           </div>
           <p className={styles.progressStats}>
-            {t('home.weeklyStats', {
-              workouts: weeklyStats.workouts,
-              totalWorkouts: weeklyStats.totalWorkouts,
-              meals: weeklyStats.meals,
-              totalMeals: weeklyStats.totalMeals,
-            })}
+            {lowTicket
+              ? t('home.weeklyStatsWorkoutOnly', {
+                  workouts: weeklyStats.workouts,
+                  totalWorkouts: weeklyStats.totalWorkouts,
+                })
+              : t('home.weeklyStats', {
+                  workouts: weeklyStats.workouts,
+                  totalWorkouts: weeklyStats.totalWorkouts,
+                  meals: weeklyStats.meals,
+                  totalMeals: weeklyStats.totalMeals,
+                })}
           </p>
         </Card>
 
@@ -179,18 +189,29 @@ export function Home() {
               </div>
               <div className={styles.cardContent}>
                 <h3 className={styles.cardTitle}>{t('home.dietCard')}</h3>
-                <p className={styles.cardSubtitle}>
-                  {t('home.dietDone', { count: progress?.meals_completed.length || 0 })}
-                </p>
-                <div className={styles.cardProgress}>
-                  <ProgressBar
-                    value={progress?.meals_completed.length || 0}
-                    max={6}
-                    size="sm"
-                  />
-                </div>
+                {lowTicket ? (
+                  // Upsell: o card leva para /app/dieta, que mostra a UpgradeScreen.
+                  <p className={styles.cardSubtitle}>{t('home.dietLocked')}</p>
+                ) : (
+                  <>
+                    <p className={styles.cardSubtitle}>
+                      {t('home.dietDone', { count: progress?.meals_completed.length || 0 })}
+                    </p>
+                    <div className={styles.cardProgress}>
+                      <ProgressBar
+                        value={progress?.meals_completed.length || 0}
+                        max={6}
+                        size="sm"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
-              <ChevronRight size={20} className={styles.cardArrow} />
+              {lowTicket ? (
+                <Lock size={18} className={styles.cardArrow} />
+              ) : (
+                <ChevronRight size={20} className={styles.cardArrow} />
+              )}
             </Card>
           </Link>
         </section>

@@ -221,6 +221,11 @@
   color: #6b7280;
 }
 
+.statusBadge.lowTicket {
+  background: rgba(244, 162, 97, 0.18);
+  color: #c2410c;
+}
+
 .statusBadge.expired {
   background: rgba(239, 68, 68, 0.12);
   color: #dc2626;

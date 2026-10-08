@@ -24,6 +24,8 @@ const ENTITY_LABELS: Record<string, string> = {
   workout_type: 'Tipos de treino',
   recipe: 'Receitas',
   notice: 'Avisos',
+  diet_plan: 'Nomes de dieta',
+  reps: 'Repetições',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,6 +35,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const PAGE_SIZE = 100;
+const LOAD_PAGE = 1000; // teto de linhas por request do PostgREST
 
 /**
  * Revisao das traducoes de conteudo geradas pelo script.
@@ -51,20 +54,28 @@ export function TranslationsManager() {
   const [error, setError] = useState<string | null>(null);
 
   const loadRows = useCallback(async () => {
-    const { data, error: err } = await supabase
-      .from('content_translations')
-      .select('*')
-      .order('entity_type', { ascending: true })
-      .order('source_sample', { ascending: true })
-      .limit(5000);
+    // Paginado: o PostgREST corta cada request em 1.000 linhas em silencio (um .limit maior e
+    // ignorado), e sem isso a tela nunca mostrava refeicoes, reps, tipos de treino...
+    const all: TranslationRow[] = [];
+    for (let from = 0; ; from += LOAD_PAGE) {
+      const { data, error: err } = await supabase
+        .from('content_translations')
+        .select('*')
+        .order('entity_type', { ascending: true })
+        .order('source_sample', { ascending: true })
+        .order('id', { ascending: true }) // desempate estavel entre paginas
+        .range(from, from + LOAD_PAGE - 1);
 
-    if (err) {
-      // Mensagem crua ajuda quando a tabela ainda nao foi criada no banco.
-      setError(`Erro ao carregar traduções: ${err.message}`);
-      return;
+      if (err) {
+        // Mensagem crua ajuda quando a tabela ainda nao foi criada no banco.
+        setError(`Erro ao carregar traduções: ${err.message}`);
+        return;
+      }
+      all.push(...((data ?? []) as TranslationRow[]));
+      if (!data || data.length < LOAD_PAGE) break;
     }
     setError(null);
-    setRows((data ?? []) as TranslationRow[]);
+    setRows(all);
   }, []);
 
   const { isInitialLoading: loading } = usePageData({

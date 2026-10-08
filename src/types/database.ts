@@ -10,6 +10,10 @@ export type DigestionRating = 'good' | 'poor' | 'terrible';
 export type BowelFrequency = 'once_a_day' | 'every_other_day' | 'constipated' | 'more_than_once';
 export type SleepQuality = 'excellent' | 'good' | 'regular' | 'poor' | 'terrible';
 
+// 'low_ticket' = aluno criado pelo webhook de compra do funil low ticket (ve so Home, Treino e
+// Perfil). Todo aluno criado pelo admin e 'full'.
+export type AccessTier = 'full' | 'low_ticket';
+
 export interface Profile {
   id: string;
   role: UserRole;
@@ -44,6 +48,7 @@ export interface Profile {
   weekly_weight_goal_kg: number | null;
   locale: Locale;
   unit_system: UnitSystem;
+  access_tier: AccessTier;
 }
 
 export interface Anamnesis {
@@ -335,6 +340,7 @@ export interface AppSettings {
   id: string;
   home_video_urls: Array<{ url: string; title: string }> | null;
   ranking_monthly_gift: string | null;
+  upgrade_url: string | null;
   created_at: string;
   updated_at: string;
 }

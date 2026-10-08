@@ -136,11 +136,13 @@ export function RankingTab() {
         supabase
           .from('monthly_points')
           .select(`*, profiles!inner(full_name, photo_url)`)
+          .neq('profiles.access_tier', 'low_ticket')
           .eq('year_month', yearMonth)
           .order('total_points', { ascending: false }),
         supabase
           .from('monthly_points')
           .select(`*, profiles!inner(full_name, photo_url)`)
+          .neq('profiles.access_tier', 'low_ticket')
           .eq('year_month', previousYearMonth)
           .order('total_points', { ascending: false })
           .limit(3),

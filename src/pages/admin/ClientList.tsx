@@ -296,6 +296,11 @@ export function ClientList() {
                           <Dumbbell size={12} />
                           {formatShortDate(client.workoutUpdatedAt)}
                         </span>
+                        {client.access_tier === 'low_ticket' && (
+                          <span className={`${styles.statusBadge} ${styles.lowTicket}`}>
+                            Low ticket
+                          </span>
+                        )}
                         {statusFilter === 'active' && (() => {
                           const days = daysUntilPlanEnd(client.plan_end_date);
                           if (days === null) {

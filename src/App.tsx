@@ -2,12 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from '
 import { useMemo } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { I18nProvider, useI18n } from './i18n';
-import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal, PlanUpdatedModal } from './components/ui';
+import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal, PlanUpdatedModal, UpgradeScreen } from './components/ui';
 
 // Auth pages
 import { SplashScreen } from './pages/auth/SplashScreen';
 import { Login } from './pages/auth/Login';
 import { AdminLogin } from './pages/auth/AdminLogin';
+import { SetPassword } from './pages/auth/SetPassword';
 
 // Client pages
 import { Home } from './pages/client/Home';
@@ -29,6 +30,7 @@ import { LibraryManagement } from './pages/admin/LibraryManagement';
 import { GuidelinesManagement } from './pages/admin/GuidelinesManagement';
 import { LoadProgression } from './pages/admin/LoadProgression';
 import { getBrasiliaDate } from './utils/planStatus';
+import { isRouteLocked } from './utils/accessTier';
 
 
 // Componente para rotas de ALUNO (não-admin)
@@ -75,6 +77,11 @@ function ClientRoute({ children }: { children: React.ReactNode }) {
         goalWeight={profile?.goal_weight_kg}
       />
     );
+  }
+
+  // Aluno low ticket (criado pelo webhook de compra): so Home, Treino e Perfil.
+  if (!loading && isRouteLocked(profile, location.pathname)) {
+    return <UpgradeScreen />;
   }
 
   // Show expiring banner if plan ends in 7 days or less
@@ -228,6 +235,11 @@ function AppRoutes() {
           )
         }
       />
+
+      {/* Criar senha (convite da compra) / redefinir senha — link do e-mail. Publica de
+          proposito: o proprio link e que faz o login. /reset-password e o redirect antigo. */}
+      <Route path="/definir-senha" element={<SetPassword />} />
+      <Route path="/reset-password" element={<SetPassword />} />
 
       {/* Login de ADMIN */}
       <Route
