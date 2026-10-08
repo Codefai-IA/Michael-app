@@ -20,7 +20,8 @@ export type ContentEntity =
   | 'recipe'
   | 'notice'
   | 'reps'
-  | 'diet_plan';
+  | 'diet_plan'
+  | 'portion'; // food_equivalences.portion_label ("1 un. (19g)", "cerca de 20g")
 
 interface I18nContextValue {
   locale: Locale;

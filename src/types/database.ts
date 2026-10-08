@@ -3,6 +3,7 @@ export type UserRole = 'client' | 'admin';
 export type Locale = 'pt-BR' | 'en';
 /** Sistema de unidades de EXIBICAO. O banco guarda sempre kg/cm. */
 export type UnitSystem = 'metric' | 'imperial';
+export type AnamnesisMainGoal = 'weight_loss' | 'muscle_gain' | 'definition' | 'performance';
 export type GoalType = 'perder_peso' | 'ganhar_massa' | 'manter_peso' | 'melhorar_saude' | 'definicao';
 export type HealthRating = 'excellent' | 'good' | 'regular' | 'poor';
 export type UnitType = 'gramas' | 'ml' | 'unidade' | 'fatia' | 'colher_sopa' | 'colher_cha' | 'xicara' | 'copo' | 'porcao';
@@ -80,6 +81,31 @@ export interface Anamnesis {
   sleep_hours: number | null;
   diseases: string | null;
   family_history: string | null;
+  // Perguntas da call de avaliacao (sql/anamnese_call.sql)
+  profession: string | null;
+  instagram: string | null;
+  referral_source: string | null;
+  main_goal: AnamnesisMainGoal | null;
+  body_change_wish: string | null;
+  body_part_bothers: string | null;
+  ideal_result: string | null;
+  tried_before: string[] | null;
+  best_result: string | null;
+  kept_result: boolean | null;
+  lost_result_reason: string | null;
+  meals_description: string | null;
+  food_difficulty: string | null;
+  hunger_times: string[] | null;
+  cravings_time: string | null;
+  weekend_meals: string | null;
+  work_activity: string | null;
+  work_hours: string | null;
+  mental_load: string | null;
+  trains_currently: boolean | null;
+  training_frequency: string | null;
+  body_part_to_develop: string | null;
+  training_limitations: string | null;
+  energy_level: string | null;
   updated_at: string;
 }
 
@@ -105,6 +131,8 @@ export interface Meal {
   suggested_time: string | null;
   order_index: number;
   meal_substitutions?: MealSubstitution[];
+  // Observacao livre do treinador; o aluno ve so quando preenchida (sql/observacao_refeicao_e_orientacoes_padrao.sql)
+  notes: string | null;
 }
 
 export interface MealFood {
@@ -341,6 +369,9 @@ export interface AppSettings {
   home_video_urls: Array<{ url: string; title: string }> | null;
   ranking_monthly_gift: string | null;
   upgrade_url: string | null;
+  // Orientacoes copiadas para cada aluno novo (AddClientModal)
+  default_recommended_supplements: string | null;
+  default_free_meal_video_url: string | null;
   created_at: string;
   updated_at: string;
 }

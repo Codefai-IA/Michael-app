@@ -4,7 +4,7 @@ import { Utensils, Dumbbell, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { diffDietMeals, type MealDiff } from '../../utils/dietDiff';
-import { formatQuantityDisplay } from '../../utils/foodUnits';
+import { formatQuantityDisplay, getLocalizedUnitLabel } from '../../utils/foodUnits';
 import { formatFoodName } from '../../utils/formatters';
 import { parseBrazilianNumber } from './FoodSelect';
 import type { DietRevisionSnapshot, DietRevisionSnapshotFood } from '../../types/database';
@@ -271,7 +271,8 @@ export function PlanUpdatedModal() {
     return formatQuantityDisplay(
       Math.round(parseBrazilianNumber(food.quantity)),
       food.quantity_units,
-      food.unit_type || 'gramas'
+      food.unit_type || 'gramas',
+      (type, n) => getLocalizedUnitLabel(t, type, n)
     );
   }
 

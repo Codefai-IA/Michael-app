@@ -58,6 +58,7 @@ interface TemplateMeal {
   order_index: number;
   foods: TemplateFood[];
   meal_substitutions: MealSubstitution[];
+  notes: string | null;
 }
 
 interface DietTemplate {
@@ -307,6 +308,7 @@ export function DietTemplatesManager() {
             suggested_time: meal.suggested_time || null,
             order_index: meal.order_index,
             meal_substitutions: meal.meal_substitutions || [],
+            notes: meal.notes?.trim() || null,
           })
           .select('id')
           .single();
@@ -402,6 +404,7 @@ export function DietTemplatesManager() {
           suggested_time: meal.suggested_time || null,
           order_index: meal.order_index,
           meal_substitutions: meal.meal_substitutions || [],
+          notes: meal.notes ?? null,
         })
         .select('id')
         .single();
@@ -439,6 +442,7 @@ export function DietTemplatesManager() {
       order_index: templateMeals.length,
       foods: [],
       meal_substitutions: [],
+      notes: null,
     };
     setTemplateMeals([...templateMeals, newMeal]);
   }
@@ -484,6 +488,7 @@ export function DietTemplatesManager() {
       order_index: templateMeals.length,
       foods: duplicatedFoods,
       meal_substitutions: duplicatedMealSubs,
+      notes: mealToDuplicate.notes ?? null,
     };
 
     setTemplateMeals([...templateMeals, duplicatedMeal]);
@@ -1013,6 +1018,16 @@ export function DietTemplatesManager() {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Observação (aparece para o aluno só se preenchida)</label>
+                      <textarea
+                        value={meal.notes || ''}
+                        onChange={(e) => updateMeal(mealIndex, 'notes', e.target.value)}
+                        placeholder="Ex: pode trocar o pão por tapioca nos dias de treino"
+                        rows={2}
+                      />
                     </div>
                   </Card>
                 ))}

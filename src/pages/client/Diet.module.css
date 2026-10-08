@@ -239,6 +239,28 @@
   gap: 16px;
 }
 
+.mealNotes {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  border-left: 3px solid var(--primary);
+}
+
+.mealNotesTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+
+.mealNotesText {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .modalLabel {
   font-size: 14px;
   font-weight: 600;

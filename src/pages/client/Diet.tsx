@@ -8,8 +8,7 @@ import { Card, Checkbox, Button, Modal, MacroPieChart, DailyMacrosSummary, AddEx
 import type { ExtraMeal } from '../../components/ui';
 import { parseBrazilianNumber } from '../../components/ui/FoodSelect';
 import { formatFoodName } from '../../utils/formatters';
-import { formatQuantityDisplay, getUnitLabel } from '../../utils/foodUnits';
-import { UNIT_TYPES } from '../../constants/foodUnits';
+import { formatQuantityDisplay, getLocalizedUnitLabel } from '../../utils/foodUnits';
 import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, FoodEquivalence, DietPlan, MealSubstitution, MealSubstitutionItem, CheckinPhoto, Recipe, Locale } from '../../types/database';
 import { maybeAwardDietPoints } from '../../lib/points';
 import { uploadCheckinPhoto, getDayCheckinPhotos } from '../../lib/checkinPhotos';
@@ -379,6 +378,7 @@ export function Diet() {
           suggested_time,
           order_index,
           meal_substitutions,
+          notes,
           meal_foods (
             id,
             food_name,
@@ -726,6 +726,7 @@ export function Diet() {
           suggested_time,
           order_index,
           meal_substitutions,
+          notes,
           meal_foods (
             id,
             food_name,
@@ -1363,7 +1364,8 @@ export function Diet() {
               const quantityDisplay = formatQuantityDisplay(
                 parseBrazilianNumber(food.quantity),
                 food.quantity_units,
-                food.unit_type || 'gramas'
+                food.unit_type || 'gramas',
+                (type, n) => getLocalizedUnitLabel(t, type, n)
               );
 
               return (
@@ -1442,7 +1444,7 @@ export function Diet() {
                         {equivalenceData.equivalents.map((eq) => (
                           <div key={eq.id} className={styles.equivalenceRow}>
                             <span className={styles.equivalenceArrow}>→</span>
-                            <span>{tc('food', eq.food_name)} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
+                            <span>{tc('food', eq.food_name)} ({eq.portion_label != null ? tc('portion', eq.portion_label) : `${Math.round(eq.quantity_grams * ratio)}g`})</span>
                           </div>
                         ))}
                       </div>
@@ -1468,9 +1470,7 @@ export function Diet() {
                   quantityDisplay = `${qtyValue}ml`;
                 } else {
                   const unitsCount = item.quantity_units ?? qtyValue;
-                  const unitInfo = UNIT_TYPES[unitType] || { singular: unitType, plural: unitType };
-                  const label = unitsCount === 1 ? unitInfo.singular : unitInfo.plural;
-                  quantityDisplay = `${unitsCount} ${label}`;
+                  quantityDisplay = `${unitsCount} ${getLocalizedUnitLabel(t, unitType, unitsCount)}`;
                 }
 
                 // Reuso de substituicoes e equivalencias pelo food_name do item
@@ -1553,7 +1553,7 @@ export function Diet() {
                           {equivData.equivalents.map((eq) => (
                             <div key={eq.id} className={styles.equivalenceRow}>
                               <span className={styles.equivalenceArrow}>→</span>
-                              <span>{tc('food', eq.food_name)} ({eq.portion_label ?? `${Math.round(eq.quantity_grams * ratio)}g`})</span>
+                              <span>{tc('food', eq.food_name)} ({eq.portion_label != null ? tc('portion', eq.portion_label) : `${Math.round(eq.quantity_grams * ratio)}g`})</span>
                             </div>
                           ))}
                         </div>
@@ -1563,6 +1563,14 @@ export function Diet() {
                 );
               })}
             </ul>
+          )}
+
+          {/* Observacao do treinador: texto livre, sem traducao; so aparece quando preenchida */}
+          {selectedMeal?.notes?.trim() && (
+            <div className={styles.mealNotes}>
+              <h4 className={styles.mealNotesTitle}>{t('diet.mealNotes')}</h4>
+              <p className={styles.mealNotesText}>{selectedMeal.notes.trim()}</p>
+            </div>
           )}
 
           <Button fullWidth onClick={handleCloseMeal}>

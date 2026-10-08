@@ -31,7 +31,7 @@
   margin-bottom: 0;
 }
 
-.field label {
+.field > label {
   display: block;
   font-size: 14px;
   font-weight: 500;
@@ -80,27 +80,60 @@
   border-color: var(--primary);
 }
 
-.radioGroup {
+.radioGroup,
+.choiceGroup {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
+/* Cada opcao (radio ou checkbox) e um "botao" com borda; a marcada fica destacada. */
 .radio {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 16px 10px 14px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
   cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+.radio:hover {
+  border-color: var(--primary);
+}
+
+.radio:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.radio:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 .radio input {
-  width: 20px;
-  height: 20px;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
   accent-color: var(--primary);
+  cursor: pointer;
 }
 
 .radio span {
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
   color: var(--text-primary);
+}
+
+.radio:has(input:checked) span {
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .row {
@@ -172,4 +205,17 @@
   font-weight: 400;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.profileSummary {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.callScript {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-style: italic;
 }
