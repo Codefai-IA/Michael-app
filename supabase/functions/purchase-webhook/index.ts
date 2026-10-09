@@ -25,10 +25,16 @@ interface ParsedEvent {
   phone: string | null;
   /** Ids que podem estar em purchase_products (produto e oferta; order bump traz varios). */
   productIds: string[];
+  /** Nomes do produto/oferta: casam com purchase_products.name quando o id nao e conhecido. */
+  productNames: string[];
 }
 
 const str = (v: unknown) =>
   typeof v === 'string' && v.trim() ? v.trim() : typeof v === 'number' ? String(v) : null;
+
+/** "GLÚTEO  PRO " -> "gluteo pro": compara nome de produto sem acento, caixa ou espaco extra. */
+const normalizeName = (s: string) =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 /**
  * Kirvano: { "event": "SALE_APPROVED" | "SALE_REFUNDED" | "SALE_CHARGEBACK" | ..., "sale_id",
@@ -55,6 +61,9 @@ function parseKirvano(body: Record<string, unknown>): ParsedEvent | null {
   const productIds = products
     .flatMap((p) => [str(p?.id), str(p?.offer_id)])
     .filter((id): id is string => !!id);
+  const productNames = products
+    .flatMap((p) => [str(p?.name), str(p?.offer_name)])
+    .filter((n): n is string => !!n);
 
   return {
     gateway: 'kirvano',
@@ -64,6 +73,7 @@ function parseKirvano(body: Record<string, unknown>): ParsedEvent | null {
     name: str(customer.name),
     phone: str(customer.phone_number),
     productIds,
+    productNames,
   };
 }
 
@@ -95,6 +105,7 @@ function parseGatewayEvent(body: Record<string, unknown>): ParsedEvent | null {
     name: str(body.name),
     phone: str(body.phone),
     productIds: productId ? [productId] : [],
+    productNames: [],
   };
 }
 
@@ -204,21 +215,25 @@ async function findAuthUserIdByEmail(db: SupabaseClient, email: string): Promise
 
 /** Retorna { clientId, status, note } — note explica o que foi (ou nao foi) feito, para o log. */
 async function handleApproved(db: SupabaseClient, ev: ParsedEvent) {
-  if (ev.productIds.length === 0) return { clientId: null, status: 'ignored', note: 'sem product_id' };
+  if (ev.productIds.length === 0 && ev.productNames.length === 0) {
+    return { clientId: null, status: 'ignored', note: 'sem produto no payload' };
+  }
 
+  // Tabela pequena (1 linha por produto): busca as ativas e casa por id OU por nome.
   const { data: products, error: productError } = await db
     .from('purchase_products')
-    .select('access_tier, workout_template_id, active')
-    .in('gateway_product_id', ev.productIds)
-    .eq('active', true)
-    .limit(1);
+    .select('gateway_product_id, name, access_tier, workout_template_id')
+    .eq('active', true);
   if (productError) throw productError;
-  const product = products?.[0];
+  const names = new Set(ev.productNames.map(normalizeName));
+  const product =
+    products?.find((p) => ev.productIds.includes(p.gateway_product_id)) ??
+    products?.find((p) => p.name && names.has(normalizeName(p.name)));
   if (!product) {
     return {
       clientId: null,
       status: 'ignored',
-      note: `produto nao cadastrado/ativo: ${ev.productIds.join(', ')}`,
+      note: `produto nao cadastrado/ativo: ${[...ev.productNames, ...ev.productIds].join(', ')}`,
     };
   }
 

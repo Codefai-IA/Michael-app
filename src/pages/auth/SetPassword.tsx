@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input } from '../../components/ui';
@@ -30,6 +31,10 @@ export function SetPassword() {
   const [error, setError] = useState('');
   // O token do link e de uso unico: o StrictMode roda o efeito 2x e a 2a chamada falharia.
   const startedRef = useRef(false);
+  // Sessao criada pelo link. A sessao fica no localStorage, compartilhado entre abas: outra aba
+  // do app (admin, conta antiga) pode sobrescrever ou apagar, e o updateUser falharia sem nem
+  // chamar o servidor. Guardar aqui permite restaurar antes de salvar.
+  const linkSessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -45,13 +50,17 @@ export function SetPassword() {
 
       let ok = false;
       if (tokenHash && type && OTP_TYPES.includes(type)) {
-        const { error: otpError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+        const { data, error: otpError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+        if (otpError) console.error('[SetPassword] verifyOtp:', otpError.code, otpError.message);
+        linkSessionRef.current = data.session;
         ok = !otpError;
       } else if (accessToken && refreshToken) {
-        const { error: sessionError } = await supabase.auth.setSession({
+        const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
+        if (sessionError) console.error('[SetPassword] setSession:', sessionError.code, sessionError.message);
+        linkSessionRef.current = data.session;
         ok = !sessionError;
       } else {
         // Sem token na URL: so serve para quem ja esta logado trocar a senha.
@@ -80,15 +89,35 @@ export function SetPassword() {
     }
 
     setSaving(true);
+    const linkSession = linkSessionRef.current;
+    if (linkSession) {
+      const { data: { session: current } } = await supabase.auth.getSession();
+      if (current?.user.id !== linkSession.user.id) {
+        console.warn('[SetPassword] sessao do link sumiu ou foi trocada por outra aba; restaurando');
+        await supabase.auth.setSession({
+          access_token: linkSession.access_token,
+          refresh_token: linkSession.refresh_token,
+        });
+      }
+    }
     const { error: updateError } = await supabase.auth.updateUser({ password });
-    setSaving(false);
 
     if (updateError) {
-      setError(t('setPassword.error'));
+      setSaving(false);
+      console.error('[SetPassword] updateUser:', updateError.code, updateError.message);
+      setError(
+        updateError.code === 'same_password'
+          ? t('setPassword.samePassword')
+          : updateError.code === 'weak_password'
+            ? t('setPassword.weakPassword')
+            : t('setPassword.error')
+      );
       return;
     }
-    // A rota raiz manda aluno para /app e admin para /admin.
-    navigate('/', { replace: true });
+    // Recarrega em vez de navigate: o AuthContext so trata SIGNED_IN, entao depois de um link de
+    // "esqueci minha senha" (evento PASSWORD_RECOVERY) ele nao sabe do login e a raiz mandaria
+    // para /login. Na carga, o initAuth le a sessao salva. A raiz manda aluno p/ /app e admin p/ /admin.
+    window.location.replace('/');
   }
 
   return (

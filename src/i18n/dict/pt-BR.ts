@@ -457,6 +457,8 @@ export const ptBR = {
   'setPassword.tooShort': 'A senha precisa ter pelo menos 8 caracteres',
   'setPassword.mismatch': 'As senhas não conferem',
   'setPassword.error': 'Não foi possível salvar a senha. Tente novamente.',
+  'setPassword.samePassword': 'A nova senha precisa ser diferente da senha atual.',
+  'setPassword.weakPassword': 'Senha muito fraca. Escolha uma senha mais difícil de adivinhar.',
   // --- Progressao de carga do aluno (fim da aba Treino) ---
   'loadProgression.title': 'Progressão de carga',
   'loadProgression.subtitle': 'Sua evolução nas últimas 12 semanas',

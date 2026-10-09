@@ -456,6 +456,8 @@ export const en: Record<TKey, string> = {
   'setPassword.tooShort': 'Password must be at least 8 characters',
   'setPassword.mismatch': 'Passwords do not match',
   'setPassword.error': "Couldn't save your password. Please try again.",
+  'setPassword.samePassword': 'Your new password must be different from your current one.',
+  'setPassword.weakPassword': 'Password is too weak. Choose one that is harder to guess.',
   // --- Student load progression (end of the Workout tab) ---
   'loadProgression.title': 'Load progression',
   'loadProgression.subtitle': 'Your progress over the last 12 weeks',
