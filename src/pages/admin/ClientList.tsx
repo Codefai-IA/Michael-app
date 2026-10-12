@@ -4,7 +4,7 @@ import { Search, ChevronRight, Plus, LogOut, Utensils, Dumbbell, BookOpen, Cake,
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { PageContainer } from '../../components/layout';
-import { Card, Input } from '../../components/ui';
+import { Card, Input, AvatarImage } from '../../components/ui';
 import { AddClientModal } from '../../components/admin/AddClientModal';
 import type { Profile } from '../../types/database';
 import { daysUntilPlanEnd, isPlanExpired } from '../../utils/planStatus';
@@ -275,7 +275,7 @@ export function ClientList() {
                   <Card hoverable className={styles.clientCard}>
                     <div className={styles.clientAvatar}>
                       {client.photo_url ? (
-                        <img src={client.photo_url} alt="" />
+                        <AvatarImage src={client.photo_url} />
                       ) : (
                         <span>{client.full_name.charAt(0)}</span>
                       )}

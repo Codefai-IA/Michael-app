@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { clearPageCache } from '../lib/pageCache';
 import type { Profile } from '../types/database';
 import { setCachedPreferences, clearCachedPreferences } from '../i18n/localeCache';
 
@@ -20,6 +21,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: boolean;
+  noAccess: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,8 +64,11 @@ function clearCachedRole(): void {
   }
 }
 
-// Função para buscar o profile do usuário
-async function fetchProfile(userId: string): Promise<Profile | null> {
+// Função para buscar o profile do usuário.
+// `missing` so e true quando a consulta deu certo e nao achou a linha: usuario do Auth sem
+// cadastro de aluno (ex.: comprador da Escola do Nutri, que divide o mesmo Supabase).
+// Erro de rede devolve missing=false para nao bloquear aluno real com conexao ruim.
+async function fetchProfile(userId: string): Promise<{ profile: Profile | null; missing: boolean }> {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -73,12 +78,12 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 
     if (error) {
       console.error('Erro ao buscar profile:', error.message);
-      return null;
+      return { profile: null, missing: false };
     }
 
-    return data;
+    return { profile: data, missing: !data };
   } catch {
-    return null;
+    return { profile: null, missing: false };
   }
 }
 
@@ -92,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(cachedRole?.toLowerCase() === 'admin');
+  const [noAccess, setNoAccess] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initCompleteRef = useRef(false);
   const userIdRef = useRef<string | null>(null);
@@ -132,10 +138,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           // Buscar profile do banco (com timeout de 4 segundos)
-          const userProfile = await Promise.race([
+          const { profile: userProfile, missing } = await Promise.race([
             fetchProfile(existingSession.user.id),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000))
+            new Promise<{ profile: null; missing: false }>((resolve) =>
+              setTimeout(() => resolve({ profile: null, missing: false }), 4000))
           ]);
+
+          if (isMounted) setNoAccess(missing);
 
           if (isMounted && userProfile) {
             setProfile(userProfile);
@@ -152,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null);
           setProfile(null);
           setIsAdmin(false);
+          setNoAccess(false);
           clearCachedRole();
         }
       } catch (error) {
@@ -162,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null);
           setProfile(null);
           setIsAdmin(false);
+          setNoAccess(false);
           clearCachedRole();
         }
       } finally {
@@ -210,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null);
           setProfile(null);
           setIsAdmin(false);
+          setNoAccess(false);
           clearCachedRole();
           return;
         }
@@ -235,7 +247,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(newSession);
           setUser(newSession.user);
 
-          const userProfile = await fetchProfile(newSession.user.id);
+          const { profile: userProfile, missing } = await fetchProfile(newSession.user.id);
+          if (isMounted) setNoAccess(missing);
           if (isMounted && userProfile) {
             setProfile(userProfile);
             const roleFromDb = userProfile.role?.toLowerCase() === 'admin';
@@ -270,6 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setProfile(null);
         setIsAdmin(false);
+        setNoAccess(false);
         return { error, isAdmin: false };
       }
 
@@ -282,8 +296,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
 
       // Buscar profile
-      const userProfile = await fetchProfile(data.user.id);
+      const { profile: userProfile, missing } = await fetchProfile(data.user.id);
       setProfile(userProfile);
+      setNoAccess(missing);
 
       const isUserAdmin = userProfile?.role?.toLowerCase() === 'admin';
       setIsAdmin(isUserAdmin);
@@ -303,6 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setProfile(null);
       setIsAdmin(false);
+      setNoAccess(false);
       return { error: err as Error, isAdmin: false };
     }
   }
@@ -313,9 +329,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setSession(null);
     setIsAdmin(false);
+    setNoAccess(false);
 
     // Limpar cache
     clearCachedRole();
+    clearPageCache();
 
     // Tentar signOut do Supabase com timeout de 3 segundos
     try {
@@ -333,7 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refreshProfile(): Promise<void> {
     if (!user?.id) return;
 
-    const userProfile = await fetchProfile(user.id);
+    const { profile: userProfile } = await fetchProfile(user.id);
     if (userProfile) {
       setProfile(userProfile);
     }
@@ -350,6 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         refreshProfile,
         isAdmin,
+        noAccess,
       }}
     >
       {children}

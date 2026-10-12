@@ -443,6 +443,9 @@ export const ptBR = {
   'upgrade.cta': 'Quero o plano completo',
   'upgrade.backToWorkout': 'Voltar para o treino',
   'upgrade.whatsappMessage': 'Olá! Tenho o acesso ao treino e quero conhecer o plano completo.',
+  'noAccess.title': 'Este login não tem acesso ao app',
+  'noAccess.subtitle': 'Seu e-mail não está cadastrado como aluno do acompanhamento. Se você comprou outro produto, acesse pela plataforma dele. Dúvidas? Fale com o suporte.',
+  'noAccess.signOut': 'Sair',
   'home.dietLocked': 'Disponível no plano completo',
 
   // --- Criar / redefinir senha (link do e-mail) ---

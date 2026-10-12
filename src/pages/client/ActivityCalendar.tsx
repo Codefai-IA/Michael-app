@@ -79,12 +79,15 @@ export function ActivityCalendar() {
   // Nome do dono (modo terceiro)
   useEffect(() => {
     if (!isThirdParty || !id) return;
-    supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', id)
-      .maybeSingle()
-      .then(({ data }) => setOwnerName(data?.full_name ?? null));
+    // O aluno nao le o perfil dos colegas: o nome vem de get_member_cards (o mesmo do ranking).
+    // Se nao voltar (ex.: admin abrindo aluno low ticket), o admin ainda le direto em profiles.
+    (async () => {
+      const { data: cards } = await supabase.rpc('get_member_cards', { p_ids: [id] });
+      const fromCard = (cards as { full_name: string }[] | null)?.[0]?.full_name;
+      if (fromCard) return setOwnerName(fromCard);
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', id).maybeSingle();
+      setOwnerName(data?.full_name ?? null);
+    })();
   }, [id, isThirdParty]);
 
   // Carregar calendário do mês via RPC

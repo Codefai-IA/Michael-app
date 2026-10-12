@@ -92,38 +92,11 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
     setLoading(true);
 
     try {
-      // 1. Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName.trim(),
-          },
-        },
-      });
-
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          setError('Este email já está cadastrado');
-        } else {
-          setError(authError.message);
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (!authData.user) {
-        setError('Erro ao criar usuário');
-        setLoading(false);
-        return;
-      }
-
-      // 2. Create/update profile in profiles table
+      // Conta e perfil sao criados no servidor (Edge Function admin-create-client). O cadastro
+      // publico do Supabase fica desligado e o admin continua logado (signUp no navegador trocava
+      // a sessao do admin pela do aluno novo).
       const currentWeightKg = parseWeightInput(formData.currentWeightKg, formData.unitSystem);
       const profileData = {
-        id: authData.user.id,
-        role: 'client' as const,
         full_name: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
@@ -135,19 +108,26 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         starting_weight_kg: currentWeightKg,
         goal_weight_kg: parseWeightInput(formData.goalWeightKg, formData.unitSystem),
         goals: formData.goals.trim() || null,
-        is_active: true,
         coaching_start_date: new Date().toISOString().split('T')[0],
         locale: formData.locale,
         unit_system: formData.unitSystem,
       };
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'id' });
+      const { error: fnError } = await supabase.functions.invoke('admin-create-client', {
+        body: { ...profileData, password: formData.password },
+      });
 
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        setError('Usuário criado, mas erro ao salvar perfil: ' + profileError.message);
+      if (fnError) {
+        // A function devolve { error: 'mensagem' } (ex.: 409 "Este email já está cadastrado").
+        let message = 'Erro ao criar aluno';
+        try {
+          const body = await (fnError as { context?: Response }).context?.json();
+          if (body?.error) message = body.error;
+        } catch {
+          // resposta sem JSON: fica a mensagem generica
+        }
+        console.error('Create client error:', fnError);
+        setError(message);
         setLoading(false);
         return;
       }

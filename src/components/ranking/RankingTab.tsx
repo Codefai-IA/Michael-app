@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Dumbbell, Utensils, Loader2, Crown, Medal } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Card } from '../ui';
-import type { RankingEntry } from '../../types/database';
+import { getPageCache, setPageCache } from '../../lib/pageCache';
+import { Card, AvatarImage } from '../ui';
+import type { MonthlyPoints, RankingEntry } from '../../types/database';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../types/database';
 import styles from './RankingTab.module.css';
@@ -78,7 +79,7 @@ function Podium({
               <div className={`${styles.podiumAvatarWrap} ${styles[`podiumPlace${place}`]}`}>
                 <div className={styles.podiumAvatar}>
                   {entry.profiles.photo_url ? (
-                    <img src={entry.profiles.photo_url} alt="" />
+                    <AvatarImage src={entry.profiles.photo_url} />
                   ) : (
                     <span>{entry.profiles.full_name?.charAt(0) || '?'}</span>
                   )}
@@ -107,19 +108,61 @@ function Podium({
   );
 }
 
+interface RankingCache {
+  ranking: RankingEntry[];
+  lastMonthWinners: RankingEntry[];
+  monthlyGift: string | null;
+}
+
+type RankingRow = MonthlyPoints & { full_name: string; photo_url: string | null };
+
+const toEntry = ({ full_name, photo_url, ...row }: RankingRow): RankingEntry => ({
+  ...row,
+  profiles: { full_name, photo_url },
+});
+
+async function fetchRankingFallback(
+  yearMonth: string,
+  previousYearMonth: string
+): Promise<[RankingEntry[] | null, RankingEntry[] | null]> {
+  const [currentResult, lastMonthResult] = await Promise.all([
+    supabase.from('monthly_points').select('*').eq('year_month', yearMonth).order('total_points', { ascending: false }),
+    supabase.from('monthly_points').select('*').eq('year_month', previousYearMonth).order('total_points', { ascending: false }),
+  ]);
+  const current = (currentResult.data ?? []) as MonthlyPoints[];
+  const lastMonth = (lastMonthResult.data ?? []) as MonthlyPoints[];
+  const ids = [...new Set([...current, ...lastMonth].map((p) => p.client_id))];
+  const { data: cards } = ids.length ? await supabase.rpc('get_member_cards', { p_ids: ids }) : { data: [] };
+  const cardById = new Map(
+    ((cards ?? []) as { id: string; full_name: string; photo_url: string | null }[]).map((c) => [c.id, c])
+  );
+  const withCards = (rows: MonthlyPoints[]): RankingEntry[] =>
+    rows.flatMap((row) => {
+      const card = cardById.get(row.client_id);
+      return card ? [{ ...row, profiles: { full_name: card.full_name, photo_url: card.photo_url } }] : [];
+    });
+  return [
+    currentResult.error ? null : withCards(current),
+    lastMonthResult.error ? null : withCards(lastMonth).slice(0, 3),
+  ];
+}
+
 export function RankingTab() {
   const { t, tc, locale } = useI18n();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const openCalendar = (clientId: string) => navigate(`/app/aluno/${clientId}/calendario`);
-  const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [lastMonthWinners, setLastMonthWinners] = useState<RankingEntry[]>([]);
-  const [monthlyGift, setMonthlyGift] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const today = getBrasiliaDate();
   const yearMonth = today.substring(0, 7);
   const previousYearMonth = getPreviousYearMonth(yearMonth);
+  const cacheKey = `ranking:${profile?.id}:${yearMonth}`;
+  const cached = getPageCache<RankingCache>(cacheKey);
+
+  const [ranking, setRanking] = useState<RankingEntry[]>(cached?.ranking ?? []);
+  const [lastMonthWinners, setLastMonthWinners] = useState<RankingEntry[]>(cached?.lastMonthWinners ?? []);
+  const [monthlyGift, setMonthlyGift] = useState<string | null>(cached?.monthlyGift ?? null);
+  // Reabrindo a aba: mostra o ultimo ranking na hora e atualiza por tras
+  const [loading, setLoading] = useState(!cached);
   const dayOfMonth = getBrasiliaDay();
   const isFirstDay = dayOfMonth === 1;
   // Ranking starts in March 2026, so only show last month's winner from April onwards
@@ -130,22 +173,12 @@ export function RankingTab() {
   }, []);
 
   async function fetchData() {
-    setLoading(true);
     try {
+      // Pontos + nome/foto numa unica viagem (get_ranking). O aluno nao le o perfil dos outros
+      // (e-mail, telefone, peso): o RPC devolve so nome e foto e ja deixa o low ticket de fora.
       const [currentResult, lastMonthResult, settingsResult] = await Promise.all([
-        supabase
-          .from('monthly_points')
-          .select(`*, profiles!inner(full_name, photo_url)`)
-          .neq('profiles.access_tier', 'low_ticket')
-          .eq('year_month', yearMonth)
-          .order('total_points', { ascending: false }),
-        supabase
-          .from('monthly_points')
-          .select(`*, profiles!inner(full_name, photo_url)`)
-          .neq('profiles.access_tier', 'low_ticket')
-          .eq('year_month', previousYearMonth)
-          .order('total_points', { ascending: false })
-          .limit(3),
+        supabase.rpc('get_ranking', { p_year_month: yearMonth }),
+        supabase.rpc('get_ranking', { p_year_month: previousYearMonth, p_limit: 3 }),
         supabase
           .from('app_settings')
           .select('ranking_monthly_gift')
@@ -153,14 +186,22 @@ export function RankingTab() {
           .maybeSingle(),
       ]);
 
-      if (!currentResult.error) {
-        setRanking((currentResult.data as RankingEntry[]) || []);
+      let current: RankingEntry[] | null = null;
+      let lastMonth: RankingEntry[] | null = null;
+      if (!currentResult.error && !lastMonthResult.error) {
+        current = ((currentResult.data ?? []) as RankingRow[]).map(toEntry);
+        lastMonth = ((lastMonthResult.data ?? []) as RankingRow[]).map(toEntry);
+      } else {
+        // get_ranking ainda nao existe no banco: caminho anterior (pontos + get_member_cards)
+        [current, lastMonth] = await fetchRankingFallback(yearMonth, previousYearMonth);
       }
-      if (!lastMonthResult.error) {
-        setLastMonthWinners((lastMonthResult.data as RankingEntry[]) || []);
-      }
-      if (settingsResult.data?.ranking_monthly_gift) {
-        setMonthlyGift(settingsResult.data.ranking_monthly_gift);
+
+      const gift = settingsResult.data?.ranking_monthly_gift ?? null;
+      if (current) setRanking(current);
+      if (lastMonth) setLastMonthWinners(lastMonth);
+      if (gift) setMonthlyGift(gift);
+      if (current && lastMonth) {
+        setPageCache<RankingCache>(cacheKey, { ranking: current, lastMonthWinners: lastMonth, monthlyGift: gift });
       }
     } catch (err) {
       console.error('Error fetching ranking:', err);
@@ -201,7 +242,7 @@ export function RankingTab() {
         <div className={styles.winnerBanner}>
           <div className={styles.winnerBannerAvatar}>
             {lastMonthWinners[0].profiles.photo_url ? (
-              <img src={lastMonthWinners[0].profiles.photo_url} alt="" />
+              <AvatarImage src={lastMonthWinners[0].profiles.photo_url} />
             ) : (
               <span>{lastMonthWinners[0].profiles.full_name?.charAt(0) || '?'}</span>
             )}
@@ -281,7 +322,7 @@ export function RankingTab() {
 
                   <div className={styles.rankAvatar}>
                     {entry.profiles.photo_url ? (
-                      <img src={entry.profiles.photo_url} alt="" />
+                      <AvatarImage src={entry.profiles.photo_url} />
                     ) : (
                       <span>{entry.profiles.full_name?.charAt(0) || '?'}</span>
                     )}

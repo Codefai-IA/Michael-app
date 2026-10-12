@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from '
 import { useMemo } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { I18nProvider, useI18n } from './i18n';
-import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal, PlanUpdatedModal, UpgradeScreen } from './components/ui';
+import { PlanExpiredScreen, PlanExpiringBanner, InstallPWA, NotificationPrompt, BirthdayModal, WeeklyReportModal, PlanUpdatedModal, UpgradeScreen, NoAccessScreen } from './components/ui';
 
 // Auth pages
 import { SplashScreen } from './pages/auth/SplashScreen';
@@ -36,7 +36,7 @@ import { isRouteLocked } from './utils/accessTier';
 // Componente para rotas de ALUNO (não-admin)
 function ClientRoute({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user, profile, loading, isAdmin, noAccess } = useAuth();
   const location = useLocation();
 
   // Calculate plan status
@@ -64,6 +64,11 @@ function ClientRoute({ children }: { children: React.ReactNode }) {
   // Admin tentando acessar área de aluno -> redireciona para admin
   if (isAdmin && !loading) {
     return <Navigate to="/admin" replace />;
+  }
+
+  // Logado, mas sem cadastro de aluno (ex.: comprador so da Escola do Nutri) -> nada do app
+  if (noAccess && !loading) {
+    return <NoAccessScreen />;
   }
 
   // Check if plan expired (allow access to profile page)
@@ -191,7 +196,7 @@ function KeyedActivityCalendar() {
 }
 
 function AppRoutes() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, noAccess } = useAuth();
 
   // Enquanto carrega, mostra splash screen
   if (loading) {
@@ -201,7 +206,8 @@ function AppRoutes() {
   return (
     <>
     <InstallPWA isAuthenticated={!!user} />
-    <NotificationPrompt isAuthenticated={!!user} isAdmin={isAdmin} userId={user?.id ?? null} />
+    {/* Login sem cadastro de aluno (ex.: Escola do Nutri) ve so a NoAccessScreen, sem pedir notificacao */}
+    <NotificationPrompt isAuthenticated={!!user && !noAccess} isAdmin={isAdmin} userId={user?.id ?? null} />
     <BirthdayModal />
     <WeeklyReportModal />
     <PlanUpdatedModal />

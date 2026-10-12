@@ -125,7 +125,6 @@ export function Progress() {
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
   const [weeklyProgress, setWeeklyProgress] = useState<DailyProgress[]>([]);
   const [todayWater, setTodayWater] = useState(0);
-  const [profileReady, setProfileReady] = useState(false);
   const [trainingDaysInPlan, setTrainingDaysInPlan] = useState<number | null>(null);
   const [newWeight, setNewWeight] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
@@ -135,34 +134,10 @@ export function Progress() {
   const weeklyDietGoal = profile?.weekly_diet_goal ?? 7;
   const weeklyWeightGoal = profile?.weekly_weight_goal_kg ?? null;
 
-  // Garantir que profile existe no banco
-  useEffect(() => {
-    async function ensureProfile() {
-      if (!user?.id) return;
-
-      // Verificar se existe
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!data) {
-        // Criar profile
-        await supabase.from('profiles').insert({
-          id: user.id,
-          role: 'client',
-          full_name: user.email?.split('@')[0] || 'Usuário',
-          email: user.email,
-          is_active: true,
-        });
-      }
-
-      setProfileReady(true);
-    }
-
-    ensureProfile();
-  }, [user?.id, user?.email]);
+  // O perfil e criado pelo admin (AddClientModal) ou pelo webhook de compra. Esta tela NAO cria
+  // perfil: antes criava, e qualquer usuario do Auth (ex.: comprador da Escola do Nutri, que divide
+  // o mesmo Supabase) virava aluno ao abrir o Progresso.
+  const profileReady = !!profile?.id;
 
   const fetchAllData = useCallback(async () => {
     if (!clientId || !profileReady) return;

@@ -57,6 +57,29 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // So o admin dispara push (notifyDietUpdated/notifyWorkoutUpdated no painel). Sem esta
+    // checagem qualquer usuario logado no Supabase, inclusive os da Escola do Nutri, que divide
+    // o mesmo projeto, mandaria notificacao para qualquer aluno.
+    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    const { data: caller } = token ? await supabaseAdmin.auth.getUser(token) : { data: { user: null } };
+    if (!caller.user) {
+      return new Response(
+        JSON.stringify({ error: 'unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.user.id)
+      .maybeSingle();
+    if (callerProfile?.role?.toLowerCase() !== 'admin') {
+      return new Response(
+        JSON.stringify({ error: 'forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data: subscriptions } = await supabaseAdmin
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth')

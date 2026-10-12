@@ -442,6 +442,9 @@ export const en: Record<TKey, string> = {
   'upgrade.cta': 'I want the full plan',
   'upgrade.backToWorkout': 'Back to workout',
   'upgrade.whatsappMessage': 'Hi! I have the workout access and would like to know about the full plan.',
+  'noAccess.title': 'This login has no access to the app',
+  'noAccess.subtitle': 'Your email is not registered as a coaching client. If you bought another product, sign in through its own platform. Questions? Contact support.',
+  'noAccess.signOut': 'Sign out',
   'home.dietLocked': 'Available on the full plan',
 
   // --- Create / reset password (e-mail link) ---

@@ -27,4 +27,6 @@ export { CameraCapture } from './CameraCapture';
 export { StampedImage, formatStamp } from './StampedImage';
 export { RecipePicker } from './RecipePicker';
 export { UpgradeScreen } from './UpgradeScreen';
+export { NoAccessScreen } from './NoAccessScreen';
 export { GuidelineText } from './GuidelineText';
+export { AvatarImage } from './AvatarImage';

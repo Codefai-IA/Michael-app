@@ -12,6 +12,7 @@ import type { DailyWorkout, Exercise } from '../../types/database';
 import { maybeAwardWorkoutPoints } from '../../lib/points';
 import { isLowTicket } from '../../utils/accessTier';
 import { uploadCheckinPhoto } from '../../lib/checkinPhotos';
+import { getPageCache, setPageCache } from '../../lib/pageCache';
 import {
   computeWorkoutHighlights,
   formatTimer,
@@ -67,14 +68,32 @@ interface ExerciseLog {
   };
 }
 
+// Ultimo treino carregado por aluno + dia da semana (so em memoria; ver lib/pageCache).
+// Reabrindo a aba, a tela aparece na hora e a busca nova atualiza por tras.
+interface WorkoutCache {
+  date: string;
+  day: number;
+  workout: DailyWorkout | null;
+  exercises: Exercise[];
+  exerciseLogs: ExerciseLog;
+  completed: string[];
+}
+const workoutCacheKey = (profileId: string | undefined, day: number) => `treino:${profileId}:${day}`;
+function readWorkoutCache(profileId: string | undefined, day: number): WorkoutCache | undefined {
+  const cached = getPageCache<WorkoutCache>(workoutCacheKey(profileId, day));
+  // Virou o dia: o progresso de ontem nao vale mais
+  return cached && cached.date === getBrasiliaDate() ? cached : undefined;
+}
+
 export function Workout() {
   const { profile } = useAuth();
   const { t, tc, locale, unitSystem } = useI18n();
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
-  const [workout, setWorkout] = useState<DailyWorkout | null>(null);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [completedExercises, setCompletedExercises] = useState<string[]>([]);
-  const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog>({});
+  const [initialCache] = useState(() => readWorkoutCache(profile?.id, new Date().getDay()));
+  const [workout, setWorkout] = useState<DailyWorkout | null>(initialCache?.workout ?? null);
+  const [exercises, setExercises] = useState<Exercise[]>(initialCache?.exercises ?? []);
+  const [completedExercises, setCompletedExercises] = useState<string[]>(initialCache?.completed ?? []);
+  const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog>(initialCache?.exerciseLogs ?? {});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [autoSaving, setAutoSaving] = useState<Set<string>>(new Set());
   const autoSaveTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -108,12 +127,19 @@ export function Workout() {
     // Usar ref para garantir data mais atual (evita stale closure)
     const today = currentDateRef.current;
 
-    // Buscar workout plan e progresso em paralelo
+    // Plano + treino do dia + exercicios + ultima carga de cada exercicio numa unica viagem
+    // (antes eram 4 buscas em fila, ~250 ms cada). O ultimo log vem limitado a 1 por exercicio,
+    // ja ordenado por data DESC, exatamente o que o logs.find abaixo pegava antes.
     const [planResult, progressResult] = await Promise.all([
       supabase
         .from('workout_plans')
-        .select('id')
+        .select('id, daily_workouts(*, exercises(*, exercise_logs(exercise_id, date, sets_completed)))')
         .eq('client_id', profile.id)
+        .eq('daily_workouts.day_of_week', selectedDay)
+        .order('order_index', { referencedTable: 'daily_workouts.exercises' })
+        .eq('daily_workouts.exercises.exercise_logs.client_id', profile.id)
+        .order('date', { referencedTable: 'daily_workouts.exercises.exercise_logs', ascending: false })
+        .limit(1, { referencedTable: 'daily_workouts.exercises.exercise_logs' })
         .order('created_at', { ascending: false })
         .limit(1),
       supabase
@@ -127,64 +153,53 @@ export function Workout() {
     if (progressResult.data) {
       setCompletedExercises(progressResult.data.exercises_completed || []);
     }
+    const completed: string[] = progressResult.data?.exercises_completed || [];
+    const remember = (w: DailyWorkout | null, ex: Exercise[], logs: ExerciseLog) =>
+      setPageCache<WorkoutCache>(workoutCacheKey(profile.id, selectedDay), {
+        date: today, day: selectedDay, workout: w, exercises: ex, exerciseLogs: logs, completed,
+      });
 
     const workoutPlan = planResult.data?.[0];
     if (!workoutPlan) {
       setWorkout(null);
       setExercises([]);
       setExerciseLogs({});
+      remember(null, [], {});
       return;
     }
 
-    // Buscar daily workout
-    const { data: dailyWorkout } = await supabase
-      .from('daily_workouts')
-      .select('*')
-      .eq('workout_plan_id', workoutPlan.id)
-      .eq('day_of_week', selectedDay)
-      .maybeSingle();
+    type LastLog = { exercise_id: string; date: string; sets_completed: { set: number; weight: number; reps: number }[] | null };
+    type ExerciseWithLog = Exercise & { exercise_logs?: LastLog[] };
+    const dailyWorkoutRow = (workoutPlan.daily_workouts?.[0] ?? null) as (DailyWorkout & { exercises?: ExerciseWithLog[] }) | null;
 
-    if (!dailyWorkout) {
+    if (!dailyWorkoutRow) {
       setWorkout(null);
       setExercises([]);
       setExerciseLogs({});
+      remember(null, [], {});
       return;
     }
 
-    setWorkout(dailyWorkout);
+    const { exercises: exercisesWithLogs, ...dailyWorkout } = dailyWorkoutRow;
+    setWorkout(dailyWorkout as DailyWorkout);
 
-    // Buscar exercicios
-    const { data: exercisesData } = await supabase
-      .from('exercises')
-      .select('*')
-      .eq('daily_workout_id', dailyWorkout.id)
-      .order('order_index');
-
-    const exercises = exercisesData || [];
+    const lastLogById = new Map<string, LastLog>();
+    const exercises: Exercise[] = (exercisesWithLogs ?? []).map(({ exercise_logs, ...exercise }) => {
+      if (exercise_logs?.[0]) lastLogById.set(exercise.id, exercise_logs[0]);
+      return exercise as Exercise;
+    });
     setExercises(exercises);
 
     if (exercises.length === 0) {
       setExerciseLogs({});
+      remember(dailyWorkout as DailyWorkout, [], {});
       return;
     }
 
-    // Buscar logs mais recentes de cada exercício (sem filtrar por data)
-    // Ordenado por data DESC para pegar o mais recente primeiro
-    const exerciseIds = exercises.map(e => e.id);
-    const { data: allLogs } = await supabase
-      .from('exercise_logs')
-      .select('*')
-      .eq('client_id', profile.id)
-      .in('exercise_id', exerciseIds)
-      .order('date', { ascending: false });
-
-    const logs = allLogs || [];
-
-    // Processar logs - pegar o mais recente de cada exercício
+    // Processar logs - o mais recente de cada exercício (sem filtrar por data)
     const newLogs: ExerciseLog = {};
     exercises.forEach(exercise => {
-      // Encontra o log mais recente deste exercício (já está ordenado por data DESC)
-      const mostRecentLog = logs.find(l => l.exercise_id === exercise.id);
+      const mostRecentLog = lastLogById.get(exercise.id);
       const plannedSets = parseInt(exercise.sets?.toString() || '3');
 
       if (mostRecentLog && mostRecentLog.sets_completed) {
@@ -213,6 +228,7 @@ export function Workout() {
     });
 
     setExerciseLogs(newLogs);
+    remember(dailyWorkout as DailyWorkout, exercises, newLogs);
   }, [profile?.id, selectedDay]);
 
   // Manter ref de fetchAllData atualizada
@@ -238,11 +254,39 @@ export function Workout() {
   }, []);
 
   // Hook que gerencia loading e refetch automático
-  const { isInitialLoading: loading } = usePageData({
+  const { isInitialLoading } = usePageData({
     userId: profile?.id,
     fetchData: fetchAllData,
     dependencies: [selectedDay],
   });
+  const loading = isInitialLoading && !readWorkoutCache(profile?.id, selectedDay);
+
+  // Ao sair da aba, guarda o estado atual (exercicios marcados, cargas digitadas) para a volta
+  // mostrar exatamente o que o aluno deixou; a busca nova confirma em seguida.
+  const snapshotRef = useRef<WorkoutCache | null>(null);
+  useEffect(() => {
+    snapshotRef.current = isInitialLoading ? null : {
+      date: currentDate, day: selectedDay, workout, exercises, exerciseLogs, completed: completedExercises,
+    };
+  });
+  useEffect(() => {
+    const profileId = profile?.id;
+    return () => {
+      const snap = snapshotRef.current;
+      if (snap && profileId) setPageCache<WorkoutCache>(workoutCacheKey(profileId, snap.day), snap);
+    };
+  }, [profile?.id]);
+
+  function selectDay(day: number) {
+    setSelectedDay(day);
+    const cached = readWorkoutCache(profile?.id, day);
+    if (cached) {
+      setWorkout(cached.workout);
+      setExercises(cached.exercises);
+      setExerciseLogs(cached.exerciseLogs);
+      setCompletedExercises(cached.completed);
+    }
+  }
 
   async function toggleExercise(exerciseId: string) {
     const isCompleted = completedExercises.includes(exerciseId);
@@ -624,7 +668,7 @@ export function Workout() {
               <button
                 key={day.index}
                 className={`${styles.dayButton} ${selectedDay === day.index ? styles.active : ''}`}
-                onClick={() => setSelectedDay(day.index)}
+                onClick={() => selectDay(day.index)}
               >
                 <span className={styles.dayName}>{t(`weekday.${day.index}.short` as TKey)}</span>
                 {selectedDay === day.index && <span className={styles.dayIndicator} />}
