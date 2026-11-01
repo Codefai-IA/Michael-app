@@ -12,10 +12,10 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      includeAssets: ['logo.jpeg', 'favicon.svg', 'expired-icon.png'],
+      includeAssets: ['logo.jpeg', 'favicon.svg', 'expired-icon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Michael Cezar Nutricionista',
-        short_name: 'MC Nutri',
+        short_name: 'Michael Nutri',
         description: 'App de acompanhamento nutricional e treinos',
         theme_color: '#1c4c9b',
         background_color: '#f5f7fa',
@@ -25,19 +25,19 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
-            src: '/logo.jpeg',
+            src: '/icon-192.png',
             sizes: '192x192',
-            type: 'image/jpeg'
+            type: 'image/png'
           },
           {
-            src: '/logo.jpeg',
+            src: '/icon-512.png',
             sizes: '512x512',
-            type: 'image/jpeg'
+            type: 'image/png'
           },
           {
-            src: '/logo.jpeg',
+            src: '/icon-maskable-512.png',
             sizes: '512x512',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'maskable'
           }
         ]

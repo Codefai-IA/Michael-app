@@ -55,7 +55,7 @@ self.addEventListener('push', (event: PushEvent) => {
 
   const options: NotificationOptions = {
     body: data.body || 'Você tem uma atualização!',
-    icon: '/logo.jpeg',
+    icon: '/icon-192.png',
     badge: '/logo.jpeg',
     data: {
       url: data.url || '/',
@@ -63,7 +63,7 @@ self.addEventListener('push', (event: PushEvent) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'MC Nutri', options)
+    self.registration.showNotification(data.title || 'Michael Nutri', options)
   );
 });
 

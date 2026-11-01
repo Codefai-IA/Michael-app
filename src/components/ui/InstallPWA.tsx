@@ -105,7 +105,7 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
         <div className={styles.iconContainer}>
           <div className={styles.iconWrapper}>
             <img
-              src="/logo.jpeg"
+              src="/icon-192.png"
               alt={t('install.appName')}
               className={styles.icon}
             />

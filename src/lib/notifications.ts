@@ -12,7 +12,7 @@ export async function notifyDietUpdated(clientId: string): Promise<void> {
         // admin que dispara isto esta sempre em pt-BR, entao nao da para montar o texto aqui).
         // title/body continuam sendo enviados como FALLBACK: enquanto a funcao nova nao for
         // publicada, a versao antiga ignora message_key e usa estes — mantendo exatamente o
-        // texto que os alunos recebem hoje, em vez de cair no generico "MC Nutri".
+        // texto que os alunos recebem hoje, em vez de cair no generico "Michael Nutri".
         message_key: 'diet_updated',
         title: 'Dieta Atualizada!',
         body: 'Seu nutricionista atualizou sua dieta. Confira agora!',
