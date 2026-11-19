@@ -51,7 +51,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" onClick={onClose}>
       <div
         ref={modalRef}
         className={styles.modal}

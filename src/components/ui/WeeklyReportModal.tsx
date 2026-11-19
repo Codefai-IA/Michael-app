@@ -89,7 +89,7 @@ export function WeeklyReportModal() {
   if (!show) return null;
 
   return (
-    <div className={styles.overlay} onClick={handleClose}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.icon}>📋</div>
 

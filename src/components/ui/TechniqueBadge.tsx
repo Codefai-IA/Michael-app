@@ -7,6 +7,8 @@ import styles from './TechniqueBadge.module.css';
 interface TechniqueBadgeProps {
   techniqueId: string | null;
   effortParameterId: string | null;
+  /** Alvo do tutorial interativo (data-tour na linha de selos). */
+  tourTarget?: string;
 }
 
 interface TechniquePopupProps {
@@ -52,7 +54,7 @@ function TechniquePopup({ technique, onClose }: TechniquePopupProps) {
   );
 }
 
-export function TechniqueBadge({ techniqueId, effortParameterId }: TechniqueBadgeProps) {
+export function TechniqueBadge({ techniqueId, effortParameterId, tourTarget }: TechniqueBadgeProps) {
   const { t } = useI18n();
   const [showPopup, setShowPopup] = useState(false);
   const [selectedTechnique, setSelectedTechnique] = useState<TrainingTechnique | null>(null);
@@ -74,7 +76,7 @@ export function TechniqueBadge({ techniqueId, effortParameterId }: TechniqueBadg
 
   return (
     <>
-      <div className={styles.badgeContainer}>
+      <div className={styles.badgeContainer} data-tour={tourTarget}>
         {technique && (
           <button
             className={styles.techBadge}

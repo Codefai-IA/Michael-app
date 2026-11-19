@@ -19,7 +19,18 @@ import {
   type LoggedSet,
   type WorkoutHighlight,
 } from '../../lib/workoutProgress';
+import { Tour, TourButton, type TourStep } from '../../components/tour/Tour';
+import { getTechniqueById } from '../../constants/trainingTechniques';
 import styles from './Workout.module.css';
+
+// Tutorial interativo do treino (ordem = ordem na tela). Passo sem alvo no dia e mostrado num dia que tiver.
+const WORKOUT_TOUR: TourStep[] = [
+  { target: 'workout-days', title: 'tour.workout.days.title', text: 'tour.workout.days.text' },
+  { target: 'workout-start', title: 'tour.workout.start.title', text: 'tour.workout.start.text' },
+  { target: 'workout-check', title: 'tour.workout.check.title', text: 'tour.workout.check.text' },
+  { target: 'workout-technique', title: 'tour.workout.technique.title', text: 'tour.workout.technique.text' },
+  { target: 'workout-video', title: 'tour.workout.video.title', text: 'tour.workout.video.text' },
+];
 
 // Chave do localStorage para a sessão de treino em andamento (sobrevive a reload/fechar o app)
 function sessionStorageKey(dailyWorkoutId: string, date: string): string {
@@ -655,14 +666,21 @@ export function Workout() {
   }
 
 
+  // Alvos do tutorial: so o primeiro exercicio com selo / com video recebe data-tour.
+  const firstTechniqueExerciseId = exercises.find(
+    (ex) => (ex.technique_id && getTechniqueById(ex.technique_id)) || (ex.effort_parameter_id && getTechniqueById(ex.effort_parameter_id)),
+  )?.id;
+  const firstVideoExerciseId = exercises.find((ex) => !!ex.video_url)?.id;
+
   return (
     <PageContainer>
       <Header
         title={t('workout.title')}
         subtitle={t(`weekday.${selectedDay}.full` as TKey)}
         showBack
+        rightAction={!loading && workout ? <TourButton id="workout" /> : undefined}
       >
-        <div className={styles.daysNav}>
+        <div className={styles.daysNav} data-tour="workout-days">
           <div className={styles.days}>
             {WEEKDAYS.map((day) => (
               <button
@@ -704,7 +722,7 @@ export function Workout() {
 
             <div className={styles.sessionBar}>
               {sessionStart === null ? (
-                <button className={styles.startBtn} onClick={startWorkout}>
+                <button className={styles.startBtn} onClick={startWorkout} data-tour="workout-start">
                   <Play size={18} fill="currentColor" /> {t('workout.start')}
                 </button>
               ) : (
@@ -734,6 +752,7 @@ export function Workout() {
                         <Checkbox
                           checked={isCompleted}
                           onChange={() => toggleExercise(exercise.id)}
+                          tourTarget={index === 0 ? 'workout-check' : undefined}
                         />
                       </div>
                       <div className={styles.exerciseContent} onClick={() => toggleExpand(exercise.id)}>
@@ -755,6 +774,7 @@ export function Workout() {
                         <TechniqueBadge
                           techniqueId={exercise.technique_id}
                           effortParameterId={exercise.effort_parameter_id}
+                          tourTarget={exercise.id === firstTechniqueExerciseId ? 'workout-technique' : undefined}
                         />
                       </div>
                       <div className={styles.exerciseActions}>
@@ -762,6 +782,7 @@ export function Workout() {
                           <YouTubeEmbed
                             url={exercise.video_url}
                             title={exercise.name}
+                            tourTarget={exercise.id === firstVideoExerciseId ? 'workout-video' : undefined}
                           />
                         )}
                         <button
@@ -857,6 +878,8 @@ export function Workout() {
           </div>
         )}
       </main>
+
+      <Tour id="workout" steps={WORKOUT_TOUR} ready={!loading && !!workout} userId={profile?.id} retryKey={selectedDay} />
 
       <BottomNav />
 

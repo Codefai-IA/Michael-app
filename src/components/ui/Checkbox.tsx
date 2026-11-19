@@ -5,10 +5,12 @@ import styles from './Checkbox.module.css';
 interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string;
   stopPropagation?: boolean;
+  /** Alvo do tutorial interativo (data-tour no rotulo visivel; o input fica escondido). */
+  tourTarget?: string;
 }
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ label, className = '', checked, stopPropagation = false, onChange, ...props }, ref) => {
+  ({ label, className = '', checked, stopPropagation = false, tourTarget, onChange, ...props }, ref) => {
     const handleClick = (e: MouseEvent) => {
       if (stopPropagation) {
         e.stopPropagation();
@@ -23,7 +25,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
     };
 
     return (
-      <label className={`${styles.wrapper} ${className}`} onClick={handleClick}>
+      <label className={`${styles.wrapper} ${className}`} onClick={handleClick} data-tour={tourTarget}>
         <input
           ref={ref}
           type="checkbox"

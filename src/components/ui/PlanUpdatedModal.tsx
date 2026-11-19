@@ -294,7 +294,7 @@ export function PlanUpdatedModal() {
     : t('planUpdated.subtitleWorkout');
 
   return (
-    <div className={styles.overlay} onClick={handleClose}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.iconCircle}>
           <Bell size={30} strokeWidth={2.25} />

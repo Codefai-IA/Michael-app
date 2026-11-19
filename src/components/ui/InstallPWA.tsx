@@ -98,7 +98,7 @@ export function InstallPWA({ isAuthenticated }: InstallPWAProps) {
   }
 
   return (
-    <div className={styles.overlay}>
+    <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
 
         {/* App Icon */}

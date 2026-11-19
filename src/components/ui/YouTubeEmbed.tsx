@@ -9,6 +9,8 @@ interface YouTubeEmbedProps {
   title?: string;
   /** Player vertical 9:16 (YouTube Shorts) no modal. */
   vertical?: boolean;
+  /** Alvo do tutorial interativo (data-tour na miniatura). */
+  tourTarget?: string;
 }
 
 type VideoType = 'youtube' | 'drive' | 'other';
@@ -49,7 +51,7 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps) {
+export function YouTubeEmbed({ url, title, vertical = false, tourTarget }: YouTubeEmbedProps) {
   const { t } = useI18n();
   const [showVideo, setShowVideo] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -67,6 +69,7 @@ export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps
         target="_blank"
         rel="noopener noreferrer"
         className={styles.externalLink}
+        data-tour={tourTarget}
       >
         <ExternalLink size={16} />
         <span>{t('video.watch')}</span>
@@ -93,6 +96,7 @@ export function YouTubeEmbed({ url, title, vertical = false }: YouTubeEmbedProps
       <div
         className={styles.thumbnail}
         onClick={() => setShowVideo(true)}
+        data-tour={tourTarget}
       >
         {thumbnailUrl ? (
           <img

@@ -1,0 +1,52 @@
+/* Tutorial interativo: escurece a tela, recorta o alvo com borda laranja e mostra o balao do passo.
+   z-index acima do Modal (1000) e do RecipePicker (1100), abaixo dos popups globais (9999). */
+.root { position: fixed; inset: 0; z-index: 2000; }
+.blocker { position: absolute; inset: 0; }
+
+.hole {
+  position: fixed; border-radius: 14px; pointer-events: none;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 200vmax rgba(8, 13, 21, 0.72);
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.hole::after {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit;
+  border: 2px solid var(--accent); animation: tourPulse 1.6s ease-out infinite;
+}
+@keyframes tourPulse {
+  0% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+.tip {
+  position: fixed; display: flex; flex-direction: column; gap: 8px;
+  padding: 18px 18px 14px;
+  background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-xl);
+  transition: top 0.25s ease, left 0.25s ease;
+}
+.count { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-hover); }
+.title { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--text-primary); }
+.text { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+
+.dots { display: flex; gap: 6px; padding-top: 4px; }
+.dot, .dotOn { width: 8px; height: 8px; border-radius: 999px; background: var(--border-medium); }
+.dotOn { width: 20px; background: var(--accent); }
+
+.actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; }
+.actionsRight { display: flex; gap: 8px; }
+
+/* Botao "Como usar" do cabecalho: mesmo formato do botao de voltar. */
+.replay {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md); background: var(--bg-subtle); color: var(--text-secondary);
+  transition: background var(--transition), color var(--transition);
+}
+.replay:hover { background: var(--border-light); color: var(--text-primary); }
+.replay:focus-visible { outline: none; box-shadow: var(--ring); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hole, .tip { transition: none; }
+  .hole::after { animation: none; }
+}

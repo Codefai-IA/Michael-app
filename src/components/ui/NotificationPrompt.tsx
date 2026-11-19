@@ -73,7 +73,7 @@ export function NotificationPrompt({ isAuthenticated, isAdmin, userId }: Notific
   if (!show) return null;
 
   return (
-    <div className={styles.overlay}>
+    <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
         <div className={styles.iconContainer}>
           <div className={styles.iconWrapper}>

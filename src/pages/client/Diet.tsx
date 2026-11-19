@@ -13,7 +13,22 @@ import type { Meal, MealFood, FoodSubstitution, UnitType, FoodEquivalenceGroup, 
 import { maybeAwardDietPoints } from '../../lib/points';
 import { uploadCheckinPhoto, getDayCheckinPhotos } from '../../lib/checkinPhotos';
 import { useI18n } from '../../i18n';
+import { Tour, TourButton, type TourStep } from '../../components/tour/Tour';
 import styles from './Diet.module.css';
+
+// Tutorial interativo da lista de refeicoes (ordem = ordem na tela).
+const DIET_TOUR: TourStep[] = [
+  { target: 'diet-options', title: 'tour.diet.options.title', text: 'tour.diet.options.text' },
+  { target: 'diet-meal', title: 'tour.diet.meal.title', text: 'tour.diet.meal.text' },
+  { target: 'diet-photo', title: 'tour.diet.photo.title', text: 'tour.diet.photo.text' },
+  { target: 'diet-check', title: 'tour.diet.check.title', text: 'tour.diet.check.text' },
+];
+
+// Tutorial dentro do popup da refeicao: o "Ver equivalencias" so existe ali.
+const DIET_MEAL_TOUR: TourStep[] = [
+  { target: 'diet-modal-options', title: 'tour.dietMeal.options.title', text: 'tour.dietMeal.options.text' },
+  { target: 'diet-equivalences', title: 'tour.dietMeal.equivalences.title', text: 'tour.dietMeal.equivalences.text' },
+];
 
 // Helper para salvar/carregar dieta selecionada do localStorage
 const SELECTED_DIET_KEY = 'selectedDietId';
@@ -1122,9 +1137,20 @@ export function Diet() {
   const currentDietName =
     tc('diet_plan', availableDiets.find(d => d.id === selectedDietId)?.name) || t('diet.fallbackName');
 
+  // Alvos do tutorial: so o primeiro de cada tipo recebe data-tour.
+  const firstOptionsMealId = meals.find((m) => (m.meal_substitutions_with_nutrition?.length ?? 0) > 0)?.id;
+  const firstEquivalenceFoodId = selectedMeal?.foods.find(
+    (f) => (getEquivalencesForFood(f.food_name, f.display_name)?.equivalents.length ?? 0) > 0,
+  )?.id;
+
   return (
     <PageContainer>
-      <Header title={t('diet.title')} subtitle={getBrasiliaDisplayDate(locale)} showBack />
+      <Header
+        title={t('diet.title')}
+        subtitle={getBrasiliaDisplayDate(locale)}
+        showBack
+        rightAction={!loading && meals.length > 0 ? <TourButton id="diet" /> : undefined}
+      />
 
       <main className={styles.content}>
         {/* Diet Selector - only show if more than one diet available */}
@@ -1162,7 +1188,8 @@ export function Diet() {
           <LoadingSkeleton />
         ) : meals.length > 0 ? (
           <>
-            {meals.map((meal) => {
+            {meals.map((meal, mealIndex) => {
+              const isFirstMeal = mealIndex === 0;
               const isCompleted = completedMeals.includes(meal.id);
               const hasPhoto = mealsWithPhoto.has(meal.id);
               const hasMealOptions = meal.meal_substitutions_with_nutrition && meal.meal_substitutions_with_nutrition.length > 0;
@@ -1180,10 +1207,12 @@ export function Diet() {
                   hoverable
                   className={styles.mealCard}
                   onClick={() => handleOpenMeal(meal)}
+                  data-tour={isFirstMeal ? 'diet-meal' : undefined}
                 >
                   <Checkbox
                     checked={isCompleted}
                     stopPropagation
+                    tourTarget={isFirstMeal ? 'diet-check' : undefined}
                     onChange={() => toggleMeal(meal.id)}
                   />
                   <div className={styles.mealContent}>
@@ -1196,6 +1225,7 @@ export function Diet() {
                       <div
                         className={styles.mealOptionsTabs}
                         onClick={(e) => e.stopPropagation()}
+                        data-tour={meal.id === firstOptionsMealId ? 'diet-options' : undefined}
                       >
                         {Array.from({ length: totalOptions }).map((_, idx) => (
                           <button
@@ -1231,6 +1261,7 @@ export function Diet() {
                   </div>
                   <button
                     className={`${styles.mealPhotoButton} ${hasPhoto ? styles.mealPhotoButtonDone : ''}`}
+                    data-tour={isFirstMeal ? 'diet-photo' : undefined}
                     title={hasPhoto ? t('diet.photoTaken') : t('diet.takeMealPhoto')}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1303,7 +1334,7 @@ export function Diet() {
         <div className={styles.modalContent}>
           {/* Meal Options Tabs in Modal */}
           {selectedMeal && selectedMeal.meal_substitutions_with_nutrition && selectedMeal.meal_substitutions_with_nutrition.length > 0 && (
-            <div className={styles.mealOptionsTabs}>
+            <div className={styles.mealOptionsTabs} data-tour="diet-modal-options">
               {Array.from({ length: selectedMeal.meal_substitutions_with_nutrition.length + 1 }).map((_, idx) => (
                 <button
                   key={idx}
@@ -1414,6 +1445,7 @@ export function Diet() {
                     <button
                       className={styles.equivalenceToggle}
                       onClick={() => toggleEquivalenceExpansion(food.id)}
+                      data-tour={food.id === firstEquivalenceFoodId ? 'diet-equivalences' : undefined}
                     >
                       <RefreshCw size={16} />
                       {isEquivalenceExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -1637,6 +1669,16 @@ export function Diet() {
         uploading={uploadingPhoto}
         onCapture={handleMealPhotoCapture}
         onCancel={() => setCameraMeal(null)}
+      />
+
+      <Tour id="diet" steps={DIET_TOUR} ready={!loading && meals.length > 0} userId={profile?.id} />
+      <Tour
+        id="diet-meal"
+        steps={DIET_MEAL_TOUR}
+        ready={!!selectedMeal}
+        userId={profile?.id}
+        retryKey={selectedMeal?.id}
+        insideModal
       />
 
       <BottomNav />
