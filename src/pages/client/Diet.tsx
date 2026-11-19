@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { Clock, ChevronRight, ChevronDown, ChevronUp, Plus, Trash2, RefreshCw, Camera, CheckCircle2, UtensilsCrossed } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Clock, ChevronRight, ShoppingCart, ChevronDown, ChevronUp, Plus, Trash2, RefreshCw, Camera, CheckCircle2, UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePageData } from '../../hooks';
@@ -18,6 +19,7 @@ import styles from './Diet.module.css';
 
 // Tutorial interativo da lista de refeicoes (ordem = ordem na tela).
 const DIET_TOUR: TourStep[] = [
+  { target: 'diet-shopping', title: 'tour.diet.shopping.title', text: 'tour.diet.shopping.text' },
   { target: 'diet-options', title: 'tour.diet.options.title', text: 'tour.diet.options.text' },
   { target: 'diet-meal', title: 'tour.diet.meal.title', text: 'tour.diet.meal.text' },
   { target: 'diet-photo', title: 'tour.diet.photo.title', text: 'tour.diet.photo.text' },
@@ -110,6 +112,7 @@ function getBrasiliaDisplayDate(locale: Locale): string {
 
 export function Diet() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const { t, tc, locale } = useI18n();
   const [meals, setMeals] = useState<MealWithNutrition[]>([]);
   const [completedMeals, setCompletedMeals] = useState<string[]>([]);
@@ -1174,6 +1177,23 @@ export function Diet() {
         {/* Show diet name if only one diet */}
         {!loading && availableDiets.length === 1 && (
           <div className={styles.singleDietName}>{currentDietName}</div>
+        )}
+
+        {/* Lista de compras da dieta (pedido do Michael, 19/11/2026) */}
+        {!loading && meals.length > 0 && (
+          <button
+            type="button"
+            className={styles.shoppingButton}
+            onClick={() => navigate('/app/compras')}
+            data-tour="diet-shopping"
+          >
+            <span className={styles.shoppingIcon}><ShoppingCart size={20} aria-hidden /></span>
+            <span className={styles.shoppingText}>
+              <strong>{t('shopping.open')}</strong>
+              <span>{t('shopping.openHint')}</span>
+            </span>
+            <ChevronRight size={20} aria-hidden className={styles.shoppingChevron} />
+          </button>
         )}
 
         {/* Barra de Macros do Dia */}

@@ -14,6 +14,7 @@ import { SetPassword } from './pages/auth/SetPassword';
 import { Home } from './pages/client/Home';
 import { Workout } from './pages/client/Workout';
 import { Diet } from './pages/client/Diet';
+import { ShoppingList } from './pages/client/ShoppingList';
 import { Progress } from './pages/client/Progress';
 import { Profile } from './pages/client/Profile';
 import { Ranking } from './pages/client/Ranking';
@@ -291,6 +292,14 @@ function AppRoutes() {
         element={
           <ClientRoute>
             <Diet />
+          </ClientRoute>
+        }
+      />
+      <Route
+        path="/app/compras"
+        element={
+          <ClientRoute>
+            <ShoppingList />
           </ClientRoute>
         }
       />
